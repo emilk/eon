@@ -27,6 +27,10 @@ default = []
 
 
 [dependencies]
+ariadne = "0.5.1"
+indexmap = "2.10.0"
+logos = "0.15.0"
+thiserror = "2.0.12"
 
 
 [dev-dependencies]

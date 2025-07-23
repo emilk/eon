@@ -34,3 +34,4 @@ thiserror = "2.0.12"
 
 
 [dev-dependencies]
+insta = "1.0.9"

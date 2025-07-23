@@ -1,118 +1,4 @@
-use crate::token::Token;
-
-#[derive(Clone, Copy, Debug)]
-pub struct Span {
-    start: usize,
-    end: usize,
-}
-
-impl ariadne::Span for Span {
-    type SourceId = ();
-
-    fn source(&self) -> &Self::SourceId {
-        &()
-    }
-    fn start(&self) -> usize {
-        self.start
-    }
-    fn end(&self) -> usize {
-        self.end
-    }
-}
-
-impl std::ops::BitOr for Span {
-    type Output = Self;
-
-    fn bitor(self, other: Self) -> Self::Output {
-        Span {
-            start: self.start.min(other.start),
-            end: self.end.max(other.end),
-        }
-    }
-}
-
-/// Represent an error during parsing
-pub type Error = ariadne::Report<'static, Span>; // TODO: box, since this is huge
-
-/// A type alias for a result that uses the [`Error`] type defined above.
-pub type Result<T = (), E = Error> = std::result::Result<T, E>;
-
-/// `// A comment`.
-///
-/// The string includes the slashes, but not the trailing newline (if any).
-pub type Comment<'s> = &'s str;
-
-#[derive(Debug)]
-pub struct CommentedValue<'s> {
-    pub span: Span,
-
-    /// Comments on preceeding lines.
-    ///
-    /// ```ignore
-    /// // Like this
-    /// // and this.
-    /// 42
-    /// ```
-    pub prefix_comments: Vec<Comment<'s>>,
-
-    /// The actual value.
-    pub value: Value<'s>,
-
-    /// Comment after the value on the same line.
-    ///
-    /// `value // Like this`.
-    pub suffix_comment: Option<Comment<'s>>,
-}
-
-#[derive(Debug)]
-pub struct KeyValue<'s> {
-    /// The key of the key-value pair.
-    ///
-    /// Includes quotes if the key is a quoted string.
-    pub key: PlacedToken<'s>,
-
-    /// The value of the key-value pair.
-    ///
-    /// Also contains any comments before the key, before the value, and after the value.
-    pub value: CommentedValue<'s>,
-}
-
-/// An object, like `{ key: value, … }`.
-#[derive(Debug)]
-pub struct Object<'s> {
-    pub key_values: Vec<KeyValue<'s>>,
-
-    /// Any comments after the last `key: value` pair, before the closing `}`.
-    pub closing_comments: Vec<Comment<'s>>,
-}
-
-/// A list, like `[ a, b, c, … ]`.
-#[derive(Debug)]
-pub struct List<'s> {
-    pub values: Vec<CommentedValue<'s>>,
-
-    /// Any comments after the last value, before the closing `]`.
-    pub closing_comments: Vec<Comment<'s>>,
-}
-
-#[derive(Debug)]
-pub enum Value<'s> {
-    Null,
-
-    Bool(bool),
-
-    /// A number, like `42`, `3.14`, `-1.0`, `0x53`, `+NaN` etc.
-    Number(&'s str),
-
-    /// Includes the actual quotes of the string, both opening and closing.
-    String(&'s str),
-
-    /// An object, like `{ key: value }`.
-    Object(Object<'s>),
-
-    /// A list, like `[ a, b, c, … ]`.
-    List(List<'s>),
-}
+use crate::{Error, Result, ast::*, span::Span, token::TokenType};
 
 pub struct PlacedTokenResult<'s> {
     /// The span of the token in the input string.
@@ -122,7 +8,7 @@ pub struct PlacedTokenResult<'s> {
     pub slice: &'s str,
 
     /// The token type
-    pub token: Result<Token>,
+    pub token: Result<TokenType>,
 }
 
 impl<'s> PlacedTokenResult<'s> {
@@ -139,20 +25,8 @@ impl<'s> PlacedTokenResult<'s> {
     }
 }
 
-#[derive(Clone, Copy, Debug)]
-pub struct PlacedToken<'s> {
-    /// The span of the token in the input string.
-    pub span: Span,
-
-    /// The token value
-    pub slice: &'s str,
-
-    /// The token type
-    pub token: Token,
-}
-
 pub struct PlacedTokenIter<'s> {
-    iter: logos::SpannedIter<'s, Token>,
+    iter: logos::SpannedIter<'s, TokenType>,
 }
 
 impl<'s> Iterator for PlacedTokenIter<'s> {
@@ -201,7 +75,7 @@ impl<'s> PeekableIter<'s> {
         PeekableIter {
             source,
             iter: PlacedTokenIter {
-                iter: Token::lexer(source).spanned(),
+                iter: TokenType::lexer(source).spanned(),
             },
             peeked: None,
             last_span: Span { start: 0, end: 0 },
@@ -293,7 +167,10 @@ fn parse_object_contents<'s>(tokens: &mut PeekableIter<'s>) -> Result<CommentedV
             });
         };
 
-        if matches!(token.token, Ok(Token::CloseBrace | Token::CloseList)) {
+        if matches!(
+            token.token,
+            Ok(TokenType::CloseBrace | TokenType::CloseList)
+        ) {
             // End of the object
             return Ok(CommentedValue {
                 span: start_span | tokens.span_of_previous(),
@@ -309,7 +186,7 @@ fn parse_object_contents<'s>(tokens: &mut PeekableIter<'s>) -> Result<CommentedV
         let token = tokens.next().unwrap().ok()?;
 
         let key = match token.token {
-            Token::Identifier => token,
+            TokenType::Identifier => token,
             // TODO: quoted strings
             _ => {
                 return Err(Error::build(ariadne::ReportKind::Error, token.span)
@@ -320,7 +197,7 @@ fn parse_object_contents<'s>(tokens: &mut PeekableIter<'s>) -> Result<CommentedV
 
         match tokens.next() {
             Some(next_token) => {
-                if !matches!(next_token.token, Ok(Token::Colon)) {
+                if !matches!(next_token.token, Ok(TokenType::Colon)) {
                     return Err(Error::build(ariadne::ReportKind::Error, next_token.span)
                         .with_message("Expected ':' after object key")
                         .finish());
@@ -362,20 +239,11 @@ fn parse_commented_value<'s>(tokens: &mut PeekableIter<'s>) -> Result<CommentedV
     let token = result.ok()?;
 
     let value = match token.token {
-        Token::OpenBrace => todo!(),
-        Token::OpenList => todo!(),
-        Token::Identifier => match token.slice {
-            "null" => Value::Null,
-            "true" => Value::Bool(true),
-            "false" => Value::Bool(false),
-            _ => {
-                return Err(Error::build(ariadne::ReportKind::Error, token.span)
-                    .with_message("Unknown identifier: expected 'null', 'true', or 'false'. Maybe you forgot to quote a string?")
-                    .finish());
-            }
-        },
-        Token::DoubleQuotedString => todo!(),
-        Token::SingleQuotedString => todo!(),
+        TokenType::OpenBrace => unimplemented!(),
+        TokenType::OpenList => unimplemented!(),
+        TokenType::Identifier => Value::Identifier(token.slice),
+        TokenType::DoubleQuotedString => unimplemented!(),
+        TokenType::SingleQuotedString => unimplemented!(),
         _ => {
             return Err(Error::build(ariadne::ReportKind::Error, token.span)
                 .with_message("Expected a value, like an object, list, number, or string")
@@ -398,7 +266,7 @@ fn parse_suffix_comment<'s>(tokens: &mut PeekableIter<'s>) -> Result<Option<&'s 
     let Some(token) = tokens.peek() else {
         return Ok(None);
     };
-    if !matches!(token.token, Ok(Token::Comment)) {
+    if !matches!(token.token, Ok(TokenType::Comment)) {
         return Ok(None);
     }
     let comment_span = token.span;
@@ -418,7 +286,7 @@ fn parse_suffix_comment<'s>(tokens: &mut PeekableIter<'s>) -> Result<Option<&'s 
 fn parse_comments<'s>(tokens: &mut PeekableIter<'s>) -> Result<Vec<&'s str>> {
     let mut comments = vec![];
     while let Some(token) = tokens.peek() {
-        if matches!(token.token, Ok(Token::Comment)) {
+        if matches!(token.token, Ok(TokenType::Comment)) {
             comments.push(token.slice);
             tokens.next(); // Consume the comment token
         } else {
@@ -484,7 +352,10 @@ mod tests {
                     prefix_comments,
                     &["// Prefix comment A.", "// Prefix comment B."]
                 );
-                assert!(matches!(value, &Value::Null), "Unexpected value: {value:?}");
+                assert!(
+                    matches!(value, &Value::Identifier("null")),
+                    "Unexpected value: {value:?}"
+                );
                 assert_eq!(suffix_comment.as_deref(), None);
             }
 
@@ -506,7 +377,7 @@ mod tests {
                     &["// Prefix comment C.", "// Prefix comment D."]
                 );
                 assert!(
-                    matches!(value, &Value::Bool(true)),
+                    matches!(value, &Value::Identifier("true")),
                     "Unexpected value: {value:?}",
                 );
                 assert_eq!(suffix_comment.as_deref(), Some("// Suffix comment"));

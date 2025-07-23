@@ -2,7 +2,7 @@ use logos::Logos;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Logos)]
 #[logos(skip r"[ \t\n\f]*")] // Ignore this regex pattern between tokens
-pub enum Token {
+pub enum TokenType {
     /// `// Some comment`
     #[regex("//[^\n]*")]
     Comment,
@@ -58,18 +58,18 @@ fn test_parse() {
     "#;
 
     let expect = [
-        (Token::Comment, "// Comment"),
-        (Token::Identifier, "single"),
-        (Token::Colon, ":"),
-        (Token::SingleQuotedString, "'single'"),
-        (Token::DoubleQuotedString, "\"double\""),
-        (Token::OpenList, "["),
-        (Token::OpenBrace, "{"),
-        (Token::CloseBrace, "}"),
-        (Token::Comma, ","),
-        (Token::CloseList, "]"),
+        (TokenType::Comment, "// Comment"),
+        (TokenType::Identifier, "single"),
+        (TokenType::Colon, ":"),
+        (TokenType::SingleQuotedString, "'single'"),
+        (TokenType::DoubleQuotedString, "\"double\""),
+        (TokenType::OpenList, "["),
+        (TokenType::OpenBrace, "{"),
+        (TokenType::CloseBrace, "}"),
+        (TokenType::Comma, ","),
+        (TokenType::CloseList, "]"),
     ];
-    let mut lexer = Token::lexer(input);
+    let mut lexer = TokenType::lexer(input);
 
     for (expected_token, expected_text) in &expect {
         let token = lexer

@@ -1,9 +1,21 @@
 use crate::{
-    ast::{CommentedValue, KeyValue, List, Object, PlacedToken, Value},
+    ast::{AstValue, CommentedKeyValue, CommentedList, CommentedObject, CommentedValue},
     error::{Error, ErrorReport, Result, error_report_at},
     span::Span,
     token::TokenKind,
 };
+
+#[derive(Clone, Copy, Debug)]
+pub struct PlacedToken<'s> {
+    /// The span of the token in the input string.
+    pub span: Span,
+
+    /// The token value
+    pub slice: &'s str,
+
+    /// The token type
+    pub kind: TokenKind,
+}
 
 pub struct PlacedTokenResult<'s> {
     /// The span of the token in the input string.
@@ -140,8 +152,22 @@ impl<'s> Iterator for PeekableIter<'s> {
     }
 }
 
+impl<'s> CommentedValue<'s> {
+    /// Parse a full Con file.
+    pub fn parse_str(source: &'s str) -> Result<Self> {
+        parse_top_str(source)
+    }
+}
+
+impl crate::Value {
+    /// Parse a full Con file.
+    pub fn parse_str(source: &str) -> Result<Self> {
+        CommentedValue::parse_str(source).and_then(|v| v.try_into_value(source))
+    }
+}
+
 /// Parse a full Con file.
-pub fn parse_top_str(source: &str) -> Result<CommentedValue<'_>> {
+fn parse_top_str(source: &str) -> Result<CommentedValue<'_>> {
     // Usually a Con file contains a bunch of `key: value` pairs, without any
     // surrounding braces, so we optimize for that case:
     let mut tokens_a = PeekableIter::new(source);
@@ -154,7 +180,7 @@ pub fn parse_top_str(source: &str) -> Result<CommentedValue<'_>> {
                     end: source.len(),
                 },
                 prefix_comments: vec![],
-                value: Value::Object(object),
+                value: AstValue::Object(object),
                 suffix_comment: None,
             };
             Ok(value)
@@ -191,7 +217,7 @@ fn check_for_trailing_tokens(tokens: &mut PeekableIter<'_>) -> Result {
 }
 
 /// Parse the inside of a list, without consuming either the opening or closing brackets.
-fn parse_list_contents<'s>(tokens: &mut PeekableIter<'s>) -> Result<List<'s>> {
+fn parse_list_contents<'s>(tokens: &mut PeekableIter<'s>) -> Result<CommentedList<'s>> {
     let mut values = vec![];
 
     loop {
@@ -203,7 +229,7 @@ fn parse_list_contents<'s>(tokens: &mut PeekableIter<'s>) -> Result<List<'s>> {
                 Ok(TokenKind::CloseBrace | TokenKind::CloseList)
             )
         }) {
-            return Ok(List {
+            return Ok(CommentedList {
                 values,
                 closing_comments: prefix_comments,
             });
@@ -223,11 +249,11 @@ fn parse_list_contents<'s>(tokens: &mut PeekableIter<'s>) -> Result<List<'s>> {
 }
 
 /// Parse the inside of an object, without consuming either the opening or closing brackets.
-fn parse_object_contents<'s>(tokens: &mut PeekableIter<'s>) -> Result<Object<'s>> {
+fn parse_object_contents<'s>(tokens: &mut PeekableIter<'s>) -> Result<CommentedObject<'s>> {
     let mut key_values = vec![];
 
     loop {
-        let prefix_comments = parse_comments(tokens);
+        let mut prefix_comments = parse_comments(tokens);
 
         if tokens.peek().is_none_or(|peeked| {
             matches!(
@@ -235,38 +261,32 @@ fn parse_object_contents<'s>(tokens: &mut PeekableIter<'s>) -> Result<Object<'s>
                 Ok(TokenKind::CloseBrace | TokenKind::CloseList)
             )
         }) {
-            return Ok(Object {
+            return Ok(CommentedObject {
                 key_values,
                 closing_comments: prefix_comments,
             });
         }
 
-        let Some(token) = tokens.next() else {
-            return Ok(Object {
-                key_values,
-                closing_comments: prefix_comments,
-            });
-        };
-        let token = token.ok()?;
+        let key = parse_commented_value(tokens)?;
 
-        let key = match token.kind {
-            TokenKind::Identifier => token,
-            // TODO: quoted strings
-            _ => {
-                return Err(tokens.error_at(token.span, "Expected object key or '}'"));
-            }
-        };
+        debug_assert!(
+            key.prefix_comments.is_empty(),
+            "We should have already consumed these"
+        );
+        // TODO: handle suffix comments on the key?
 
-        consume_token(tokens, TokenKind::Colon)?; // TODO: allow = too
+        consume_token(tokens, TokenKind::Colon)?; // TODO: allow `=` too?
 
         let mut value = parse_commented_value(tokens)?;
-        {
-            let mut prefix_comments = prefix_comments;
-            prefix_comments.append(&mut value.prefix_comments);
-            value.prefix_comments = prefix_comments;
-        }
 
-        key_values.push(KeyValue { key, value });
+        prefix_comments.append(&mut value.prefix_comments);
+
+        key_values.push(CommentedKeyValue {
+            prefix_comments,
+            key: key.value,
+            value: value.value,
+            suffix_comment: value.suffix_comment.take(),
+        });
 
         // TODO: consume optional comma, with optional suffix comment
     }
@@ -290,16 +310,18 @@ fn parse_commented_value<'s>(tokens: &mut PeekableIter<'s>) -> Result<CommentedV
         TokenKind::OpenList => {
             let list = parse_list_contents(tokens)?;
             consume_token(tokens, TokenKind::CloseBrace)?;
-            Value::List(list)
+            AstValue::List(list)
         }
         TokenKind::OpenBrace => {
             let object = parse_object_contents(tokens)?;
             consume_token(tokens, TokenKind::CloseBrace)?;
-            Value::Object(object)
+            AstValue::Object(object)
         }
-        TokenKind::Identifier => Value::Identifier(token.slice),
-        TokenKind::Number => Value::Number(token.slice),
-        TokenKind::DoubleQuotedString | TokenKind::SingleQuotedString => Value::String(token.slice),
+        TokenKind::Identifier => AstValue::Identifier(token.slice.into()),
+        TokenKind::Number => AstValue::Number(token.slice.into()),
+        TokenKind::DoubleQuotedString | TokenKind::SingleQuotedString => {
+            AstValue::String(token.slice.into())
+        }
         _ => {
             return Err(tokens.error_at(
                 token.span,
@@ -390,12 +412,12 @@ mod tests {
         let input = r#"
         // Prefix comment A.
         // Prefix comment B.
-        key1: null
+        key1: 42
 
         // Prefix comment C.
         key2:
         // Prefix comment D.
-        true // Suffix comment
+        "string" // Suffix comment
 
         // Closing comment 1.
         // Closing comment 2.
@@ -413,7 +435,7 @@ mod tests {
         assert!(prefix_comments.is_empty());
         assert_eq!(suffix_comment, None);
 
-        if let Value::Object(Object {
+        if let AstValue::Object(CommentedObject {
             key_values,
             closing_comments,
         }) = value
@@ -421,50 +443,52 @@ mod tests {
             assert_eq!(key_values.len(), 2);
 
             {
-                let KeyValue {
+                let CommentedKeyValue {
+                    prefix_comments,
                     key,
-                    value:
-                        CommentedValue {
-                            span: _,
-                            prefix_comments,
-                            value,
-                            suffix_comment,
-                        },
+                    value,
+                    suffix_comment,
                 } = &key_values[0];
 
-                assert_eq!(key.slice, "key1");
+                if let AstValue::Identifier(key) = key {
+                    assert_eq!(key, "key1");
+                } else {
+                    panic!("Expected an identfier for key1, got {key:?}");
+                }
                 assert_eq!(
                     prefix_comments,
                     &["// Prefix comment A.", "// Prefix comment B."]
                 );
-                assert!(
-                    matches!(value, &Value::Identifier("null")),
-                    "Unexpected value: {value:?}"
-                );
+                if let AstValue::Number(value) = value {
+                    assert_eq!(value, "42");
+                } else {
+                    panic!("Expected a number for key1, got {key:?}");
+                }
                 assert_eq!(suffix_comment.as_deref(), None);
             }
 
             {
-                let KeyValue {
+                let CommentedKeyValue {
+                    prefix_comments,
                     key,
-                    value:
-                        CommentedValue {
-                            span: _,
-                            prefix_comments,
-                            value,
-                            suffix_comment,
-                        },
+                    value,
+                    suffix_comment,
                 } = &key_values[1];
 
-                assert_eq!(key.slice, "key2");
+                if let AstValue::Identifier(key) = key {
+                    assert_eq!(key, "key2");
+                } else {
+                    panic!("Expected an identfier for key1, got {key:?}");
+                }
                 assert_eq!(
                     prefix_comments,
                     &["// Prefix comment C.", "// Prefix comment D."]
                 );
-                assert!(
-                    matches!(value, &Value::Identifier("true")),
-                    "Unexpected value: {value:?}",
-                );
+                if let AstValue::String(value) = value {
+                    assert_eq!(value, r#""string""#);
+                } else {
+                    panic!("Expected a String for key2, got {key:?}");
+                }
                 assert_eq!(suffix_comment.as_deref(), Some("// Suffix comment"));
             }
 

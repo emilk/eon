@@ -39,8 +39,8 @@ pub enum TokenKind {
     #[regex("[a-zA-Z_][a-zA-Z0-9_]*")]
     Identifier,
 
-    /// Anything that starts with a sign (+/-) or a digit (0-9).
-    #[regex("[+-0-9][0-9a-fA-F.+-]+")]
+    /// Anything that starts with a sign (+/-), a digit (0-9), or a period (decimal separator).
+    #[regex("[+\\-0-9\\.][0-9a-zA-Z\\.+\\-]*")]
     Number,
 
     /// `"this"`
@@ -56,13 +56,13 @@ impl std::fmt::Display for TokenKind {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Self::Comment => write!(f, "// comment"),
-            Self::OpenList => write!(f, "["),
-            Self::CloseList => write!(f, "]"),
-            Self::OpenBrace => write!(f, "{{"),
-            Self::CloseBrace => write!(f, "}}"),
-            Self::Colon => write!(f, ":"),
-            Self::Equals => write!(f, "="),
-            Self::Comma => write!(f, ","),
+            Self::OpenList => write!(f, "Open bracket '['"),
+            Self::CloseList => write!(f, "Close bracket ']'"),
+            Self::OpenBrace => write!(f, "Open brace '{{'"),
+            Self::CloseBrace => write!(f, "Close brace '}}'"),
+            Self::Colon => write!(f, "Colon ':'"),
+            Self::Equals => write!(f, "Equals '='"),
+            Self::Comma => write!(f, "Comma ','"),
             Self::Identifier => write!(f, "identifier"),
             Self::Number => write!(f, "number"),
             Self::DoubleQuotedString => write!(f, r#""double quoted" string"#),
@@ -72,12 +72,16 @@ impl std::fmt::Display for TokenKind {
 }
 
 #[test]
-fn test_parse() {
+fn test_parse_tokens() {
     let input = r#"
     // Comment
     single: 'single'
     "double"
     [ { },]
+    42
+    +inf
+    +1.e3-42
+    0xdeadbeef
     "#;
 
     let expect = [
@@ -91,16 +95,23 @@ fn test_parse() {
         (TokenKind::CloseBrace, "}"),
         (TokenKind::Comma, ","),
         (TokenKind::CloseList, "]"),
+        (TokenKind::Number, "42"),
+        (TokenKind::Number, "+inf"),
+        (TokenKind::Number, "+1.e3-42"),
+        (TokenKind::Number, "0xdeadbeef"),
     ];
     let mut lexer = TokenKind::lexer(input);
 
     for (expected_token, expected_text) in &expect {
-        let token = lexer
+        let actual_token = lexer
             .next()
             .expect("Expected something")
-            .expect("Expected a valid token");
-        assert_eq!(token, *expected_token, "Token mismatch");
-        assert_eq!(lexer.slice(), *expected_text, "Text mismatch");
+            .unwrap_or_else(|()| panic!("Not a valid token: {:?}", lexer.slice()));
+        let actual_text = lexer.slice();
+        assert!(
+            actual_token == *expected_token && actual_text == *expected_text,
+            "Token mismatch. Expected {expected_token} ({expected_text:?}), got {actual_token} ({actual_text:?})"
+        );
     }
     assert!(lexer.next().is_none(), "Expected no more tokens");
 }

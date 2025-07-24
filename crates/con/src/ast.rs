@@ -1,21 +1,15 @@
+//! Implemented an Abstract Syntax Tree (AST), inclduing comments in the source code.
+//!
+//! The comments are preserved for the benefit of the formatter.
+
+use std::borrow::Cow;
+
 use crate::{span::Span, token::TokenKind};
 
 /// `// A comment`.
 ///
 /// The string includes the slashes, but not the trailing newline (if any).
 pub type Comment<'s> = &'s str;
-
-#[derive(Clone, Copy, Debug)]
-pub struct PlacedToken<'s> {
-    /// The span of the token in the input string.
-    pub span: Span,
-
-    /// The token value
-    pub slice: &'s str,
-
-    /// The token type
-    pub kind: TokenKind,
-}
 
 #[derive(Debug)]
 pub struct CommentedValue<'s> {
@@ -31,7 +25,7 @@ pub struct CommentedValue<'s> {
     pub prefix_comments: Vec<Comment<'s>>,
 
     /// The actual value.
-    pub value: Value<'s>,
+    pub value: AstValue<'s>,
 
     /// Comment after the value on the same line.
     ///
@@ -40,22 +34,32 @@ pub struct CommentedValue<'s> {
 }
 
 #[derive(Debug)]
-pub struct KeyValue<'s> {
-    /// The key of the key-value pair.
+pub struct CommentedKeyValue<'s> {
+    /// Comments on proceeding lines.
     ///
-    /// Includes quotes if the key is a quoted string.
-    pub key: PlacedToken<'s>,
+    /// ```ignore
+    /// // Like this
+    /// // and this.
+    /// key: calue
+    /// ```
+    pub prefix_comments: Vec<Comment<'s>>,
+
+    /// The key of the key-value pair.
+    pub key: AstValue<'s>,
 
     /// The value of the key-value pair.
+    pub value: AstValue<'s>,
+
+    /// Comment after the value on the same line.
     ///
-    /// Also contains any comments before the key, before the value, and after the value.
-    pub value: CommentedValue<'s>,
+    /// `key: value // Like this`.
+    pub suffix_comment: Option<Comment<'s>>,
 }
 
 /// An object, like `{ key: value, … }`.
 #[derive(Debug)]
-pub struct Object<'s> {
-    pub key_values: Vec<KeyValue<'s>>,
+pub struct CommentedObject<'s> {
+    pub key_values: Vec<CommentedKeyValue<'s>>,
 
     /// Any comments after the last `key: value` pair, before the closing `}`.
     pub closing_comments: Vec<Comment<'s>>,
@@ -63,7 +67,7 @@ pub struct Object<'s> {
 
 /// A list, like `[ a, b, c, … ]`.
 #[derive(Debug)]
-pub struct List<'s> {
+pub struct CommentedList<'s> {
     pub values: Vec<CommentedValue<'s>>,
 
     /// Any comments after the last value, before the closing `]`.
@@ -71,19 +75,19 @@ pub struct List<'s> {
 }
 
 #[derive(Debug)]
-pub enum Value<'s> {
-    /// `null`, `true`, or `false`.
-    Identifier(&'s str),
+pub enum AstValue<'s> {
+    /// `null`, `true`, or `false`, or the key of an object
+    Identifier(Cow<'s, str>),
 
     /// Anything that starts with a sign (+/-) or a digit (0-9).
-    Number(&'s str),
+    Number(Cow<'s, str>),
 
     /// Includes the actual quotes of the string, both opening and closing.
-    String(&'s str),
+    String(Cow<'s, str>),
 
     /// A list, like `[ a, b, c, … ]`.
-    List(List<'s>),
+    List(CommentedList<'s>),
 
     /// An object, like `{ key: value }`.
-    Object(Object<'s>),
+    Object(CommentedObject<'s>),
 }

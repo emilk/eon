@@ -14,6 +14,10 @@ object: {
 }
 ```
 
+Con is a strict superset of JSON.
+
+The library is rather forgiving with what it accepts as input, but the output is strict.
+
 ## Why another config format?
 There is no format that has both of the following properties:
 * Hierarchy using {} and [] like JSON. Rules out YAML and TOML.
@@ -31,12 +35,23 @@ TOML is a hierarchical format, but unlike almost every other programming languag
 ### Why not YAML?
 It's just so ugly, and filled with foot-guns. Go away.
 
-## Roadmap
+## Performance
+The Con language and library are designed for human-readable, human-sized config files.
+
+There is nothing in the Con spec that would not make it as fast (or as slow) as JSON,
+but the library has not been optimized for performance.
+
+If you plan on having huge files and performance is important to you, I suggest you use a binary format instead.
+
+
+## TODO
 * [ ] Parser
-* [ ] Formatter
+* [ ] Publish formatter binary
 * [ ] Serde
 * [ ] Remove all TODOs
+* [ ] Write a spec.
 * [ ] Fix all lints
+* [ ] Test against common JSON files to make sure Con is a strict superset.
 * [ ] newline-separated as part of spec (parse multiple values in same file)
 * [ ] general maps (keys of any type)
 * [ ] Special types?

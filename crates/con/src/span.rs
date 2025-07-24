@@ -1,5 +1,5 @@
 /// The byte range of something in the source code.
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, Default)]
 pub struct Span {
     pub start: usize,
     pub end: usize,

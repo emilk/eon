@@ -11,6 +11,8 @@ fn test_reformat() {
             key:
             // Very weird comment
             null
+
+            // TODO: add more test cases here
         }
     "#;
 

@@ -1,11 +1,20 @@
-use crate::ast::{CommentedValue, KeyValue, List, Object, Value};
+use crate::ast::{AstValue, CommentedKeyValue, CommentedList, CommentedObject, CommentedValue};
 
 #[derive(Clone, Debug)]
 pub struct FormatOptions {
+    /// `"    "`
     pub indentation: String,
+
+    /// `"\n"`
     pub newline: String,
+
+    /// `" "`
     pub space_before_suffix_comment: String,
+
+    /// `": "`
     pub key_value_separator: String,
+
+    /// Surround the top-level object in { } with an extra level of indentation.
     pub always_include_outer_braces: bool,
 }
 
@@ -26,7 +35,7 @@ pub fn format(value: &CommentedValue<'_>, options: &FormatOptions) -> String {
     let mut f = Formatter::new(options);
 
     if !f.options.always_include_outer_braces {
-        if let Value::Object(object) = &value.value {
+        if let AstValue::Object(object) = &value.value {
             f.indented_comments(&value.prefix_comments);
             f.object_content(object);
             if let Some(suffix_comment) = value.suffix_comment {
@@ -97,23 +106,23 @@ impl<'o> Formatter<'o> {
         }
     }
 
-    fn value(&mut self, value: &Value<'_>) {
+    fn value(&mut self, value: &AstValue<'_>) {
         match value {
-            Value::Identifier(slice) | Value::Number(slice) | Value::String(slice) => {
+            AstValue::Identifier(slice) | AstValue::Number(slice) | AstValue::String(slice) => {
                 self.out.push_str(slice);
             }
-            Value::List(list) => {
+            AstValue::List(list) => {
                 self.list(list);
             }
-            Value::Object(object) => {
+            AstValue::Object(object) => {
                 self.object(object);
             }
         }
     }
 
-    fn list(&mut self, list: &List<'_>) {
+    fn list(&mut self, list: &CommentedList<'_>) {
         // TODO: one-line lists when very short, e.g. `[1 2 3]`
-        let List {
+        let CommentedList {
             values,
             closing_comments,
         } = list;
@@ -136,7 +145,7 @@ impl<'o> Formatter<'o> {
         self.out.push(']');
     }
 
-    fn object(&mut self, value: &Object<'_>) {
+    fn object(&mut self, value: &CommentedObject<'_>) {
         // TODO: one-line objects when possible
         self.out.push('{');
         self.indent += 1;
@@ -146,8 +155,8 @@ impl<'o> Formatter<'o> {
         self.out.push('}');
     }
 
-    fn object_content(&mut self, value: &Object<'_>) {
-        let Object {
+    fn object_content(&mut self, value: &CommentedObject<'_>) {
+        let CommentedObject {
             key_values,
             closing_comments,
         } = value;
@@ -158,17 +167,16 @@ impl<'o> Formatter<'o> {
         self.indented_comments(closing_comments);
     }
 
-    fn indented_key_value(&mut self, key_value: &KeyValue<'_>) {
-        let KeyValue { key, value } = key_value;
-        let CommentedValue {
+    fn indented_key_value(&mut self, key_value: &CommentedKeyValue<'_>) {
+        let CommentedKeyValue {
             prefix_comments,
+            key,
             value,
             suffix_comment,
-            span: _,
-        } = value;
+        } = key_value;
         self.indented_comments(prefix_comments);
         self.add_indent();
-        self.out.push_str(key.slice);
+        self.value(key); // TODO: handle optional quotes around keys
         self.out.push_str(&self.options.key_value_separator);
         self.value(value);
         if let Some(suffix) = suffix_comment {

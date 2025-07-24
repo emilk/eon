@@ -24,6 +24,10 @@ impl Error {
             report: std::rc::Rc::new(report),
         }
     }
+
+    pub fn new_at(source: &str, span: Span, message: impl Into<String>) -> Self {
+        Self::new(source, error_report_at(span, message))
+    }
 }
 
 impl std::fmt::Debug for Error {

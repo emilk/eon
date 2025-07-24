@@ -139,10 +139,10 @@ impl<'s> PeekableIter<'s> {
 pub fn parse_top_str(source: &str) -> Result<CommentedValue<'_>> {
     // Usually a Con file contains a bunch of `key: value` pairs, without any
     // surrounding braces, so we optimize for that case:
-    let mut tokens = PeekableIter::new(source);
-    match parse_object_contents(&mut tokens) {
+    let mut tokens_a = PeekableIter::new(source);
+    match parse_object_contents(&mut tokens_a) {
         Ok(object) => {
-            check_for_trailing_tokens(&mut tokens)?;
+            check_for_trailing_tokens(&mut tokens_a)?;
             let value = CommentedValue {
                 span: Span {
                     start: 0,
@@ -154,15 +154,23 @@ pub fn parse_top_str(source: &str) -> Result<CommentedValue<'_>> {
             };
             Ok(value)
         }
-        Err(err) => {
+        Err(err_a) => {
             // Maybe the use did wrap the file in {}, or maybe it is not an object?
-            let mut tokens = PeekableIter::new(source);
-            if let Ok(value) = parse_commented_value(&mut tokens) {
-                check_for_trailing_tokens(&mut tokens)?;
-                Ok(value)
-            } else {
-                // TODO: figure out which error to return here.
-                Err(err)
+            let mut tokens_b = PeekableIter::new(source);
+
+            match parse_commented_value(&mut tokens_b) {
+                Ok(value) => {
+                    check_for_trailing_tokens(&mut tokens_b)?;
+                    Ok(value)
+                }
+                Err(err_b) => {
+                    // Return the error of the path that processed the most tokens, i.e. got further:
+                    if tokens_a.span_of_previous().end < tokens_b.span_of_previous().end {
+                        Err(err_b)
+                    } else {
+                        Err(err_a)
+                    }
+                }
             }
         }
     }

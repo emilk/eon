@@ -4,13 +4,13 @@ fn test_reformat() {
         // This comment is outside the outermost object.
         {
             // This comment proceeds the first key-value pair.
-            key: "value" //Suffix comment
+            key: true// Suffix comment
 
 
             // Comment about the second key-value pair.
             key:
             // Very weird comment
-            42,
+            null
         }
     "#;
 

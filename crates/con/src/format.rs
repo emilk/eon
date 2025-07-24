@@ -91,6 +91,7 @@ impl<'o> Formatter<'o> {
         self.add_indent();
         self.value(value);
         if let Some(suffix) = suffix_comment {
+            self.out.push(' ');
             self.out.push_str(suffix);
             self.out.push('\n');
         }
@@ -127,6 +128,7 @@ impl<'o> Formatter<'o> {
         self.out.push('\n');
         for value in values {
             self.indented_commented_value(value);
+            self.out.push('\n'); // TODO: only if the values have prefix comments
         }
         self.indented_comments(closing_comments);
         self.indent -= 1;
@@ -151,15 +153,28 @@ impl<'o> Formatter<'o> {
         } = value;
         for key_value in key_values {
             self.indented_key_value(key_value);
+            self.out.push('\n'); // TODO: only if the keys have prefix comments
         }
         self.indented_comments(closing_comments);
     }
 
     fn indented_key_value(&mut self, key_value: &KeyValue<'_>) {
         let KeyValue { key, value } = key_value;
+        let CommentedValue {
+            prefix_comments,
+            value,
+            suffix_comment,
+            span: _,
+        } = value;
+        self.indented_comments(prefix_comments);
         self.add_indent();
         self.out.push_str(key.slice);
         self.out.push_str(&self.options.key_value_separator);
-        self.indented_commented_value(value);
+        self.value(value);
+        if let Some(suffix) = suffix_comment {
+            self.out.push(' ');
+            self.out.push_str(suffix);
+            self.out.push('\n');
+        }
     }
 }

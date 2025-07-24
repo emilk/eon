@@ -1,4 +1,7 @@
-use crate::ast::{AstValue, CommentedKeyValue, CommentedList, CommentedObject, CommentedValue};
+use crate::{
+    Value,
+    ast::{AstValue, CommentedKeyValue, CommentedList, CommentedObject, CommentedValue},
+};
 
 #[derive(Clone, Debug)]
 pub struct FormatOptions {
@@ -30,25 +33,34 @@ impl Default for FormatOptions {
     }
 }
 
-/// Pretty-print a [`CommentedValue`].
-pub fn format(value: &CommentedValue<'_>, options: &FormatOptions) -> String {
-    let mut f = Formatter::new(options);
+impl CommentedValue<'_> {
+    /// Pretty-print a [`CommentedValue`] to a string.
+    pub fn format(&self, options: &FormatOptions) -> String {
+        let mut f = Formatter::new(options);
 
-    if !f.options.always_include_outer_braces {
-        if let AstValue::Object(object) = &value.value {
-            f.indented_comments(&value.prefix_comments);
-            f.object_content(object);
-            if let Some(suffix_comment) = value.suffix_comment {
-                f.out.push(' ');
-                f.out.push_str(suffix_comment);
-                f.out.push_str(&f.options.newline);
+        if !f.options.always_include_outer_braces {
+            if let AstValue::Object(object) = &self.value {
+                f.indented_comments(&self.prefix_comments);
+                f.object_content(object);
+                if let Some(suffix_comment) = self.suffix_comment {
+                    f.out.push(' ');
+                    f.out.push_str(suffix_comment);
+                    f.out.push_str(&f.options.newline);
+                }
+                return f.finish();
             }
-            return f.finish();
         }
-    }
 
-    f.indented_commented_value(value);
-    f.finish()
+        f.indented_commented_value(self);
+        f.finish()
+    }
+}
+
+impl Value {
+    /// Pretty-print a [`Value`] to a string.
+    pub fn format(self, options: &FormatOptions) -> String {
+        CommentedValue::from(self).format(options)
+    }
 }
 
 struct Formatter<'o> {
@@ -108,7 +120,9 @@ impl<'o> Formatter<'o> {
 
     fn value(&mut self, value: &AstValue<'_>) {
         match value {
-            AstValue::Identifier(slice) | AstValue::Number(slice) | AstValue::String(slice) => {
+            AstValue::Identifier(slice)
+            | AstValue::Number(slice)
+            | AstValue::QuotedString(slice) => {
                 self.out.push_str(slice);
             }
             AstValue::List(list) => {
@@ -128,7 +142,7 @@ impl<'o> Formatter<'o> {
         } = list;
 
         if list.values.is_empty() && closing_comments.is_empty() {
-            self.out.push_str("[ ]");
+            self.out.push_str("[]");
             return;
         }
 
@@ -145,21 +159,31 @@ impl<'o> Formatter<'o> {
         self.out.push(']');
     }
 
-    fn object(&mut self, value: &CommentedObject<'_>) {
-        // TODO: one-line objects when possible
+    fn object(&mut self, object: &CommentedObject<'_>) {
+        let CommentedObject {
+            key_values,
+            closing_comments,
+        } = object;
+
+        if key_values.is_empty() && closing_comments.is_empty() {
+            self.out.push_str("{}");
+            return;
+        }
+
         self.out.push('{');
         self.indent += 1;
         self.out.push('\n');
-        self.object_content(value);
+        self.object_content(object);
         self.indent -= 1;
         self.out.push('}');
     }
 
-    fn object_content(&mut self, value: &CommentedObject<'_>) {
+    fn object_content(&mut self, object: &CommentedObject<'_>) {
         let CommentedObject {
             key_values,
             closing_comments,
-        } = value;
+        } = object;
+
         for key_value in key_values {
             self.indented_key_value(key_value);
             self.out.push('\n'); // TODO: only if the keys have prefix comments

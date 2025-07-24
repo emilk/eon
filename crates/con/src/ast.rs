@@ -83,7 +83,9 @@ pub enum AstValue<'s> {
     Number(Cow<'s, str>),
 
     /// Includes the actual quotes of the string, both opening and closing.
-    String(Cow<'s, str>),
+    ///
+    /// Any special characters are escaped, e.g. `\n`, `\t`, `\"`, etc.
+    QuotedString(Cow<'s, str>),
 
     /// A list, like `[ a, b, c, … ]`.
     List(CommentedList<'s>),

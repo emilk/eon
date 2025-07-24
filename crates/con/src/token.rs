@@ -35,6 +35,10 @@ pub enum TokenKind {
     #[token(",")]
     Comma,
 
+    /// `;`  - optional alternative to `,` within objects
+    #[token(";")]
+    Semicolon,
+
     /// Can be an object key, or "false", "true", "null"
     #[regex("[a-zA-Z_][a-zA-Z0-9_]*")]
     Identifier,
@@ -56,13 +60,14 @@ impl std::fmt::Display for TokenKind {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Self::Comment => write!(f, "// comment"),
-            Self::OpenList => write!(f, "Open bracket '['"),
-            Self::CloseList => write!(f, "Close bracket ']'"),
-            Self::OpenBrace => write!(f, "Open brace '{{'"),
-            Self::CloseBrace => write!(f, "Close brace '}}'"),
-            Self::Colon => write!(f, "Colon ':'"),
-            Self::Equals => write!(f, "Equals '='"),
-            Self::Comma => write!(f, "Comma ','"),
+            Self::OpenList => write!(f, "open bracket '['"),
+            Self::CloseList => write!(f, "close bracket ']'"),
+            Self::OpenBrace => write!(f, "open brace '{{'"),
+            Self::CloseBrace => write!(f, "close brace '}}'"),
+            Self::Colon => write!(f, "colon ':'"),
+            Self::Equals => write!(f, "equals '='"),
+            Self::Comma => write!(f, "comma ','"),
+            Self::Semicolon => write!(f, "semicolon ';'"),
             Self::Identifier => write!(f, "identifier"),
             Self::Number => write!(f, "number"),
             Self::DoubleQuotedString => write!(f, r#""double quoted" string"#),

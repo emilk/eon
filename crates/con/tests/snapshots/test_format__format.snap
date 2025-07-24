@@ -1,0 +1,17 @@
+---
+source: crates/con/tests/test_format.rs
+expression: formatted
+---
+string: "a string"
+integer: 42
+float: 1.3
+boolean: true
+null: null
+list: [
+    "item1"
+    1337
+]
+object: {
+    key1: 'a string containing "quotes" and a newline: \n'
+    key2: 42
+}

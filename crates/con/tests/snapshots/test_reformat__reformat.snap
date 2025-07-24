@@ -9,4 +9,11 @@ key: true // Suffix comment
 // Comment about the second key-value pair.
 // Very weird comment
 key: null
+empty_object: {}
+empty_list: []
+short_list: [
+    1
+    2
+    3
+]
 // TODO: add more test cases here

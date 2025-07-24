@@ -1,0 +1,41 @@
+use con::{Number, Value};
+
+#[test]
+fn test_format() {
+    let value = Value::Object(
+        [
+            ("string".to_owned(), Value::String("a string".to_owned())),
+            ("integer".to_owned(), Value::Number(Number::from(42))),
+            ("float".to_owned(), Value::Number(Number::from(1.3))),
+            ("boolean".to_owned(), Value::Bool(true)),
+            ("null".to_owned(), Value::Null),
+            (
+                "list".to_owned(),
+                Value::List(vec![
+                    Value::String("item1".to_owned()),
+                    Value::Number(Number::from(1337)),
+                ]),
+            ),
+            (
+                "object".to_owned(),
+                Value::Object(
+                    [
+                        (
+                            "key1".to_owned(),
+                            Value::String(
+                                "a string containing \"quotes\" and a newline: \n".to_owned(),
+                            ),
+                        ),
+                        ("key2".to_owned(), Value::Number(Number::from(42.0))),
+                    ]
+                    .into_iter()
+                    .collect(),
+                ),
+            ),
+        ]
+        .into_iter()
+        .collect(),
+    );
+    let formatted = value.format(&Default::default());
+    insta::assert_snapshot!(formatted);
+}

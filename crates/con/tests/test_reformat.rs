@@ -12,6 +12,10 @@ fn test_reformat() {
             // Very weird comment
             null
 
+            empty_object: {}
+            empty_list: []
+            short_list: [1, 2, 3]
+
             // TODO: add more test cases here
         }
     "#;

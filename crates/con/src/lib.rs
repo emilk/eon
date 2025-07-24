@@ -25,7 +25,9 @@ pub use crate::{
 };
 
 /// Parses a Con file and re-indents and formats it in a pretty way.
+///
+/// ## Errors
+/// Returns an error if the source is not valid Con syntax.
 pub fn reformat(source: &str, options: &FormatOptions) -> Result<String> {
-    let value = CommentedValue::parse_str(source)?;
-    Ok(format::format(&value, options))
+    CommentedValue::parse_str(source).map(|value| value.format(options))
 }

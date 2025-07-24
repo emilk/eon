@@ -236,15 +236,23 @@ fn parse_list_contents<'s>(tokens: &mut PeekableIter<'s>) -> Result<CommentedLis
         }
 
         let mut value = parse_commented_value(tokens)?;
+
         {
             let mut prefix_comments = prefix_comments;
             prefix_comments.append(&mut value.prefix_comments);
             value.prefix_comments = prefix_comments;
         }
 
-        values.push(value);
+        if tokens
+            .peek()
+            .is_some_and(|peeked| matches!(peeked.kind, Ok(TokenKind::Comma)))
+        {
+            // Consume optional comma
+            tokens.next();
+            value.suffix_comment = parse_suffix_comment(tokens)?;
+        }
 
-        // TODO: consume optional comma, with optional suffix comment
+        values.push(value);
     }
 }
 
@@ -281,14 +289,20 @@ fn parse_object_contents<'s>(tokens: &mut PeekableIter<'s>) -> Result<CommentedO
 
         prefix_comments.append(&mut value.prefix_comments);
 
+        if tokens.peek().is_some_and(|peeked| {
+            matches!(peeked.kind, Ok(TokenKind::Comma | TokenKind::Semicolon))
+        }) {
+            // Consume optional comma
+            tokens.next();
+            value.suffix_comment = parse_suffix_comment(tokens)?;
+        }
+
         key_values.push(CommentedKeyValue {
             prefix_comments,
             key: key.value,
             value: value.value,
             suffix_comment: value.suffix_comment.take(),
         });
-
-        // TODO: consume optional comma, with optional suffix comment
     }
 }
 
@@ -309,7 +323,7 @@ fn parse_commented_value<'s>(tokens: &mut PeekableIter<'s>) -> Result<CommentedV
     let value = match token.kind {
         TokenKind::OpenList => {
             let list = parse_list_contents(tokens)?;
-            consume_token(tokens, TokenKind::CloseBrace)?;
+            consume_token(tokens, TokenKind::CloseList)?;
             AstValue::List(list)
         }
         TokenKind::OpenBrace => {
@@ -320,7 +334,7 @@ fn parse_commented_value<'s>(tokens: &mut PeekableIter<'s>) -> Result<CommentedV
         TokenKind::Identifier => AstValue::Identifier(token.slice.into()),
         TokenKind::Number => AstValue::Number(token.slice.into()),
         TokenKind::DoubleQuotedString | TokenKind::SingleQuotedString => {
-            AstValue::String(token.slice.into())
+            AstValue::QuotedString(token.slice.into())
         }
         _ => {
             return Err(tokens.error_at(
@@ -348,13 +362,13 @@ fn consume_token(tokens: &mut PeekableIter<'_>, expected_token: TokenKind) -> Re
         } else {
             Err(tokens.error_at(
                 token.span,
-                format!("Expected '{expected_token}' but found '{}'", token.kind),
+                format!("Expected {expected_token} but found {}", token.kind),
             ))
         }
     } else {
         Err(tokens.error_at(
             tokens.span_of_previous(),
-            format!("Expected '{expected_token:?}' but reached end of input"),
+            format!("Expected {expected_token} but reached end of input"),
         ))
     }
 }
@@ -484,7 +498,7 @@ mod tests {
                     prefix_comments,
                     &["// Prefix comment C.", "// Prefix comment D."]
                 );
-                if let AstValue::String(value) = value {
+                if let AstValue::QuotedString(value) = value {
                     assert_eq!(value, r#""string""#);
                 } else {
                     panic!("Expected a String for key2, got {key:?}");

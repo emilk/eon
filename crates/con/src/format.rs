@@ -58,7 +58,11 @@ impl<'o> Formatter<'o> {
     }
 
     fn finish(self) -> String {
-        debug_assert_eq!(self.indent, 0);
+        debug_assert_eq!(
+            self.indent, 0,
+            "Formatter finished with non-zero indent of {}",
+            self.indent
+        );
         self.out
     }
 
@@ -83,7 +87,7 @@ impl<'o> Formatter<'o> {
             suffix_comment,
             span: _,
         } = value;
-        self.indented_comments(&prefix_comments);
+        self.indented_comments(prefix_comments);
         self.add_indent();
         self.value(value);
         if let Some(suffix) = suffix_comment {

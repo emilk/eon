@@ -1,4 +1,4 @@
-use crate::{span::Span, token::TokenType};
+use crate::{span::Span, token::TokenKind};
 
 /// `// A comment`.
 ///
@@ -14,7 +14,7 @@ pub struct PlacedToken<'s> {
     pub slice: &'s str,
 
     /// The token type
-    pub token: TokenType,
+    pub kind: TokenKind,
 }
 
 #[derive(Debug)]

@@ -23,7 +23,7 @@ impl std::ops::BitOr for Span {
     type Output = Self;
 
     fn bitor(self, other: Self) -> Self::Output {
-        Span {
+        Self {
             start: self.start.min(other.start),
             end: self.end.max(other.end),
         }

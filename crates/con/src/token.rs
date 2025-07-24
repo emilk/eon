@@ -2,18 +2,10 @@ use logos::Logos;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Logos)]
 #[logos(skip r"[ \t\n\f]*")] // Ignore this regex pattern between tokens
-pub enum TokenType {
+pub enum TokenKind {
     /// `// Some comment`
     #[regex("//[^\n]*")]
     Comment,
-
-    /// `{`
-    #[token("{")]
-    OpenBrace,
-
-    /// `}`
-    #[token("}")]
-    CloseBrace,
 
     /// `[`
     #[token("[")]
@@ -22,6 +14,14 @@ pub enum TokenType {
     /// `]`
     #[token("]")]
     CloseList,
+
+    /// `{`
+    #[token("{")]
+    OpenBrace,
+
+    /// `}`
+    #[token("}")]
+    CloseBrace,
 
     /// `:`
     #[token(":")]
@@ -48,6 +48,24 @@ pub enum TokenType {
     SingleQuotedString,
 }
 
+impl std::fmt::Display for TokenKind {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Comment => write!(f, "// comment"),
+            Self::OpenList => write!(f, "["),
+            Self::CloseList => write!(f, "]"),
+            Self::OpenBrace => write!(f, "{{"),
+            Self::CloseBrace => write!(f, "}}"),
+            Self::Colon => write!(f, ":"),
+            Self::Equals => write!(f, "="),
+            Self::Comma => write!(f, ","),
+            Self::Identifier => write!(f, "identifier"),
+            Self::DoubleQuotedString => write!(f, r#""double quoted" string"#),
+            Self::SingleQuotedString => write!(f, r"'single quoted' string"),
+        }
+    }
+}
+
 #[test]
 fn test_parse() {
     let input = r#"
@@ -58,18 +76,18 @@ fn test_parse() {
     "#;
 
     let expect = [
-        (TokenType::Comment, "// Comment"),
-        (TokenType::Identifier, "single"),
-        (TokenType::Colon, ":"),
-        (TokenType::SingleQuotedString, "'single'"),
-        (TokenType::DoubleQuotedString, "\"double\""),
-        (TokenType::OpenList, "["),
-        (TokenType::OpenBrace, "{"),
-        (TokenType::CloseBrace, "}"),
-        (TokenType::Comma, ","),
-        (TokenType::CloseList, "]"),
+        (TokenKind::Comment, "// Comment"),
+        (TokenKind::Identifier, "single"),
+        (TokenKind::Colon, ":"),
+        (TokenKind::SingleQuotedString, "'single'"),
+        (TokenKind::DoubleQuotedString, "\"double\""),
+        (TokenKind::OpenList, "["),
+        (TokenKind::OpenBrace, "{"),
+        (TokenKind::CloseBrace, "}"),
+        (TokenKind::Comma, ","),
+        (TokenKind::CloseList, "]"),
     ];
-    let mut lexer = TokenType::lexer(input);
+    let mut lexer = TokenKind::lexer(input);
 
     for (expected_token, expected_text) in &expect {
         let token = lexer

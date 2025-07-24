@@ -1,4 +1,4 @@
-# CON - The nice config format
+# Con - The nice config format
 This repository contains the definition of _Con_, a new config format designed for human editing.
 
 It also contains a Rust crate for reading, parsing, and formatting Con files.
@@ -24,10 +24,14 @@ There is no format that has both of the following properties:
 * No top-level {} wrapping the whole file. Rules out JSON5, RON, and others.
 
 
-### Why not JSON5 or Ron?
+### Why not JSON5?
 JSON5 is _almost_ great, but requires wrapping the whole file in an extra `{ }` block, and indent that. That's too ugly for me.
+It also has a bunch of unnessary commas between values.
 
-Ron has the same problem.
+RON has the same problem.
+
+### Why not RON?
+The goal of RON is to perfectly map the Rust datatypes, which is cool, but it means it leans more towards being verobse and complex while Con wants to be lean and simple.
 
 ### Why not TOML?
 TOML is a hierarchical format, but unlike almost every other programming language known, it does not use any indentation to visually aid the reader, leading to very confusing hierarchies.
@@ -43,17 +47,3 @@ but the library has not been optimized for performance.
 
 If you plan on having huge files and performance is important to you, I suggest you use a binary format instead.
 
-
-## TODO
-* [ ] Parser
-* [ ] Publish formatter binary
-* [ ] Serde
-* [ ] Remove all TODOs
-* [ ] Write a spec.
-* [ ] Fix all lints
-* [ ] Test against common JSON files to make sure Con is a strict superset.
-* [ ] newline-separated as part of spec (parse multiple values in same file)
-* [ ] general maps (keys of any type)
-* [ ] Special types?
-    * [ ] UUID?
-    * [ ] Date-time?

@@ -1,8 +1,6 @@
 //! The formatter uses the [`CommentedValue`] type,
 //! so in order to print a [`Value`], we need a way to convert it to [`CommentedValue`].
 
-use std::string;
-
 use crate::{
     Value,
     ast::{AstValue, CommentedKeyValue, CommentedList, CommentedObject, CommentedValue},
@@ -48,6 +46,8 @@ impl From<Value> for AstValue<'static> {
 }
 
 fn escape(raw: &str) -> String {
+    #![expect(clippy::unwrap_used)] // Can't fail - the Debug format always produces a string with quotes.
+
     let escaped = format!("{raw:?}");
 
     if raw.contains('"') && !raw.contains('\'') {

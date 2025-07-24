@@ -4,7 +4,7 @@
 
 use std::borrow::Cow;
 
-use crate::{span::Span, token::TokenKind};
+use crate::span::Span;
 
 /// `// A comment`.
 ///

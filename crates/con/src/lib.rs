@@ -17,6 +17,9 @@ mod value_from_ast;
 #[cfg(feature = "serde")]
 mod serde;
 
+#[cfg(feature = "serde")]
+pub use self::serde::{SerializationError, to_string, to_value};
+
 use crate::ast::CommentedValue;
 pub use crate::{
     error::{Error, Result},

@@ -25,13 +25,21 @@ targets = ["x86_64-unknown-linux-gnu", "wasm32-unknown-unknown"]
 [features]
 default = []
 
+## Enable serializing/deserializing Con values with `serde`.
+serde = ["dep:serde"]
+
 
 [dependencies]
 ariadne = "0.5.1"
 indexmap = "2.10.0"
 logos = "0.15.0"
-thiserror = "2.0.12"
+
+serde = { version = "1.0.219", optional = true }
+
+## Enable this when generating docs.
+document-features = { version = "0.2.11", optional = true }
 
 
 [dev-dependencies]
 insta = "1.0.9"
+serde = { version = "1.0.219", features = ["derive"] }

@@ -66,6 +66,7 @@ pub struct PeekableIter<'s> {
     iter: PlacedTokenIter<'s>,
 
     /// Remember a peeked value, even if it was None.
+    #[expect(clippy::option_option)]
     peeked: Option<Option<PlacedTokenResult<'s>>>,
 
     last_span: Span,
@@ -101,17 +102,6 @@ impl<'s> PeekableIter<'s> {
         self.peeked.get_or_insert_with(|| iter.next()).as_ref()
     }
 
-    pub fn next(&mut self) -> Option<PlacedTokenResult<'s>> {
-        let next = match self.peeked.take() {
-            Some(v) => v,
-            None => self.iter.next(),
-        };
-        if let Some(next) = &next {
-            self.last_span = next.span;
-        }
-        next
-    }
-
     /// Span of the next token returned by [`Self::peek()`].
     ///
     /// If there is no next token, will return [`Self::span_of_previous`].
@@ -132,6 +122,21 @@ impl<'s> PeekableIter<'s> {
             start: self.last_span.end,
             end: self.source.len(),
         }
+    }
+}
+
+impl<'s> Iterator for PeekableIter<'s> {
+    type Item = PlacedTokenResult<'s>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let next = match self.peeked.take() {
+            Some(v) => v,
+            None => self.iter.next(),
+        };
+        if let Some(next) = &next {
+            self.last_span = next.span;
+        }
+        next
     }
 }
 
@@ -293,8 +298,8 @@ fn parse_commented_value<'s>(tokens: &mut PeekableIter<'s>) -> Result<CommentedV
             Value::Object(object)
         }
         TokenKind::Identifier => Value::Identifier(token.slice),
-        TokenKind::DoubleQuotedString => unimplemented!(),
-        TokenKind::SingleQuotedString => unimplemented!(),
+        TokenKind::Number => Value::Number(token.slice),
+        TokenKind::DoubleQuotedString | TokenKind::SingleQuotedString => Value::String(token.slice),
         _ => {
             return Err(tokens.error_at(
                 token.span,
@@ -344,14 +349,23 @@ fn parse_suffix_comment<'s>(tokens: &mut PeekableIter<'s>) -> Result<Option<&'s 
 
     if tokens.source[previous_token_span.end..comment_span.start].contains('\n') {
         // The comment is not on the same line
-        return Ok(None);
+        Ok(None)
+    } else {
+        // The comment is one the same line as the previous token (i.e. the value),
+        // so this is a proper suffix comment.
+
+        if let Some(token) = tokens.next() {
+            let token = token.ok()?;
+            debug_assert_eq!(
+                token.kind,
+                TokenKind::Comment,
+                "Bug in parse_suffix_comment"
+            );
+            Ok(Some(token.slice))
+        } else {
+            Ok(None) // shouldn't be possible
+        }
     }
-
-    // The comment is one the same line as the previous token (i.e. the value),
-    // so this is a proper suffix comment.
-
-    let token = tokens.next().unwrap().ok()?;
-    Ok(Some(token.slice))
 }
 
 fn parse_comments<'s>(tokens: &mut PeekableIter<'s>) -> Vec<&'s str> {

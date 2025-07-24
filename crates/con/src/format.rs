@@ -99,7 +99,7 @@ impl<'o> Formatter<'o> {
 
     fn value(&mut self, value: &Value<'_>) {
         match value {
-            Value::Identifier(slice) | Value::String(slice) => {
+            Value::Identifier(slice) | Value::Number(slice) | Value::String(slice) => {
                 self.out.push_str(slice);
             }
             Value::List(list) => {

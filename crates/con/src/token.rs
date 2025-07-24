@@ -39,6 +39,10 @@ pub enum TokenKind {
     #[regex("[a-zA-Z_][a-zA-Z0-9_]*")]
     Identifier,
 
+    /// Anything that starts with a sign (+/-) or a digit (0-9).
+    #[regex("[+-0-9][0-9a-fA-F.+-]+")]
+    Number,
+
     /// `"this"`
     #[regex(r#""([^"\\]|\\.)*""#)]
     DoubleQuotedString,
@@ -60,6 +64,7 @@ impl std::fmt::Display for TokenKind {
             Self::Equals => write!(f, "="),
             Self::Comma => write!(f, ","),
             Self::Identifier => write!(f, "identifier"),
+            Self::Number => write!(f, "number"),
             Self::DoubleQuotedString => write!(f, r#""double quoted" string"#),
             Self::SingleQuotedString => write!(f, r"'single quoted' string"),
         }

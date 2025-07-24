@@ -30,8 +30,12 @@ impl std::fmt::Debug for Error {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let mut utf8 = vec![];
         let mut cursor = std::io::Cursor::new(&mut utf8);
-        self.report.write(&self.source, &mut cursor).unwrap();
-        write!(f, "{}", String::from_utf8_lossy(&utf8))
+        match self.report.write(&self.source, &mut cursor) {
+            Ok(_) => {
+                write!(f, "{}", String::from_utf8_lossy(&utf8))
+            }
+            Err(_) => self.report.fmt(f),
+        }
     }
 }
 

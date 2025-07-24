@@ -21,7 +21,7 @@ pub struct PlacedToken<'s> {
 pub struct CommentedValue<'s> {
     pub span: Span,
 
-    /// Comments on preceeding lines.
+    /// Comments on proceeding lines.
     ///
     /// ```ignore
     /// // Like this
@@ -74,6 +74,9 @@ pub struct List<'s> {
 pub enum Value<'s> {
     /// `null`, `true`, or `false`.
     Identifier(&'s str),
+
+    /// Anything that starts with a sign (+/-) or a digit (0-9).
+    Number(&'s str),
 
     /// Includes the actual quotes of the string, both opening and closing.
     String(&'s str),

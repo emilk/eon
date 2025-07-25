@@ -5,7 +5,7 @@ mod serializer;
 
 use serde::Serialize;
 
-use crate::{Error, FormatOptions, Value, token_tree::TokenTree, error::ErrorReport};
+use crate::{Error, FormatOptions, Value, error::ErrorReport, token_tree::TokenTree};
 
 use self::serializer::Serializer;
 
@@ -31,7 +31,7 @@ where
     T: serde::de::DeserializeOwned,
 {
     TokenTree::parse_str(source).and_then(|commented_value| {
-        let mut deser = self::deserializer::AstValueDeser::new(&commented_value);
-        T::deserialize(&mut deser).map_err(|err| err.into_error(source))
+        let deser = self::deserializer::TokenTreeDeserializer::new(&commented_value);
+        T::deserialize(deser).map_err(|err| err.into_error(source))
     })
 }

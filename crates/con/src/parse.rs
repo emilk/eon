@@ -1,8 +1,12 @@
+//! Convert tokens into a token tree.
+
 use crate::{
     error::{Error, ErrorReport, Result, error_report_at},
     span::Span,
     token::TokenKind,
-    token_tree::{CommentedKeyValue, CommentedList, CommentedMap, TokenTree, TreeValue},
+    token_tree::{
+        CommentedChoice, CommentedKeyValue, CommentedList, CommentedMap, TokenTree, TreeValue,
+    },
 };
 
 #[derive(Clone, Copy, Debug)]
@@ -226,7 +230,7 @@ fn parse_list_contents<'s>(tokens: &mut PeekableIter<'s>) -> Result<CommentedLis
         if tokens.peek().is_none_or(|peeked| {
             matches!(
                 peeked.kind,
-                Ok(TokenKind::CloseBrace | TokenKind::CloseList)
+                Ok(TokenKind::CloseBrace | TokenKind::CloseList | TokenKind::CloseParen)
             )
         }) {
             return Ok(CommentedList {
@@ -266,7 +270,7 @@ fn parse_map_contents<'s>(tokens: &mut PeekableIter<'s>) -> Result<CommentedMap<
         if tokens.peek().is_none_or(|peeked| {
             matches!(
                 peeked.kind,
-                Ok(TokenKind::CloseBrace | TokenKind::CloseList)
+                Ok(TokenKind::CloseBrace | TokenKind::CloseList | TokenKind::CloseParen)
             )
         }) {
             return Ok(CommentedMap {
@@ -324,7 +328,33 @@ fn parse_commented_value<'s>(tokens: &mut PeekableIter<'s>) -> Result<TokenTree<
             consume_token(tokens, TokenKind::CloseBrace)?;
             TreeValue::Map(map)
         }
-        TokenKind::Identifier => TreeValue::Identifier(token.slice.into()),
+        TokenKind::Identifier => {
+            // This could be a free-floating identifier (like "null"),
+            // or the opening of a choice/variant, like `Rgb(…)`:
+
+            if tokens
+                .peek()
+                .is_some_and(|peeked| matches!(peeked.kind, Ok(TokenKind::OpenParen)))
+            {
+                tokens.next(); // Consume the open parenthesis
+
+                let CommentedList {
+                    values,
+                    closing_comments,
+                } = parse_list_contents(tokens)?;
+
+                consume_token(tokens, TokenKind::CloseParen)?;
+
+                TreeValue::Choice(CommentedChoice {
+                    name_span: token.span,
+                    name: token.slice.into(),
+                    values,
+                    closing_comments,
+                })
+            } else {
+                TreeValue::Identifier(token.slice.into())
+            }
+        }
         TokenKind::Number => TreeValue::Number(token.slice.into()),
         TokenKind::DoubleQuotedString | TokenKind::SingleQuotedString => {
             TreeValue::QuotedString(token.slice.into())

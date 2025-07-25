@@ -1,6 +1,8 @@
 use crate::{
     Value,
-    token_tree::{TreeValue, CommentedKeyValue, CommentedList, CommentedMap, TokenTree},
+    token_tree::{
+        CommentedChoice, CommentedKeyValue, CommentedList, CommentedMap, TokenTree, TreeValue,
+    },
 };
 
 #[derive(Clone, Debug)]
@@ -131,6 +133,9 @@ impl<'o> Formatter<'o> {
             TreeValue::Map(map) => {
                 self.map(map);
             }
+            TreeValue::Choice(choice) => {
+                self.choice(choice);
+            }
         }
     }
 
@@ -175,6 +180,7 @@ impl<'o> Formatter<'o> {
         self.out.push('\n');
         self.map_content(map);
         self.indent -= 1;
+        self.add_indent();
         self.out.push('}');
     }
 
@@ -204,5 +210,35 @@ impl<'o> Formatter<'o> {
             self.out.push_str(suffix);
             self.out.push('\n');
         }
+    }
+
+    fn choice(&mut self, choice: &CommentedChoice<'_>) {
+        let CommentedChoice {
+            name_span: _,
+            name,
+            values,
+            closing_comments,
+        } = choice;
+
+        if values.is_empty() && closing_comments.is_empty() {
+            self.out.push_str(name); // Ommit parentheses if no values
+            return;
+        }
+
+        // TODO: single-line short-form for single value, e.g. `choice(value)`
+        // TODO: put {} braces on next to () for variants containing a single map
+
+        self.out.push_str(name);
+        self.out.push('(');
+        self.indent += 1;
+        self.out.push('\n');
+        for value in values {
+            self.indented_commented_value(value);
+            self.out.push('\n'); // TODO: only if the values have prefix comments
+        }
+        self.indented_comments(closing_comments);
+        self.indent -= 1;
+        self.add_indent();
+        self.out.push(')');
     }
 }

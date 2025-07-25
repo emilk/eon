@@ -63,6 +63,22 @@ pub struct CommentedList<'s> {
     pub closing_comments: Vec<Comment<'s>>,
 }
 
+/// A sum-type choice, like `Rgb(255, 0, 0)`.
+#[derive(Debug)]
+pub struct CommentedChoice<'s> {
+    /// Span of just the name
+    pub name_span: Span,
+
+    /// The name of the choice, like `Rgb`.
+    pub name: Cow<'s, str>,
+
+    /// The contents of the choice, like `255, 0, 0`.
+    pub values: Vec<TokenTree<'s>>,
+
+    /// Any comments after the last value, before the closing `]`.
+    pub closing_comments: Vec<Comment<'s>>,
+}
+
 #[derive(Debug)]
 pub enum TreeValue<'s> {
     /// `null`, `true`, or `false`, or the key of an map
@@ -81,4 +97,7 @@ pub enum TreeValue<'s> {
 
     /// An map, like `{ key: value }`.
     Map(CommentedMap<'s>),
+
+    /// A sum-type choice, like `Rgb(…)`
+    Choice(CommentedChoice<'s>),
 }

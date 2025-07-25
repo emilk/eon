@@ -5,9 +5,9 @@
 
 use crate::{
     Value,
-    token_tree::{TreeValue, TokenTree},
     error::{Error, Result},
     span::Span,
+    token_tree::{TokenTree, TreeValue},
 };
 
 impl TokenTree<'_> {
@@ -74,6 +74,15 @@ impl TreeValue<'_> {
                     })
                     .collect::<Result<_>>()?,
             )),
+            TreeValue::Choice(commented_choice) => {
+                let name = commented_choice.name.into_owned();
+                let values = commented_choice
+                    .values
+                    .into_iter()
+                    .map(|commented_value| commented_value.try_into_value(source))
+                    .collect::<Result<_>>()?;
+                Ok(Value::Choice(crate::value::Choice { name, values }))
+            }
         }
     }
 }

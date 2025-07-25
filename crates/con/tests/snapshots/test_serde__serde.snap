@@ -17,16 +17,18 @@ nested_object: {
     i: 7
     s: "Nested"
 }
-color_a: {
-    r: 255
-    g: 0
-    b: 0
-}
-color_b: [
+color_a: Rgb(
+    {
+        r: 255
+        g: 0
+        b: 0
+    }
+)
+color_b: Hsl(
     0
     100
     200
-]
+)
 tuple: [
     100
     "Tuple"

@@ -1,12 +1,15 @@
 // See https://serde.rs/impl-deserializer.html
 
-use logos::source;
-use serde::de::{self, Error as _, Visitor};
+use serde::{
+    Deserializer as _,
+    de::{self, Error as _, IntoDeserializer as _, Visitor},
+};
 
 use crate::{
     Number, Value,
     span::Span,
-    token_tree::{CommentedKeyValue, TokenTree, TreeValue},
+    token_tree::{CommentedChoice, CommentedKeyValue, TokenTree, TreeValue},
+    value,
 };
 
 // TODO: include spans and rich error messages
@@ -17,6 +20,13 @@ pub struct DeserErrror {
 }
 
 impl DeserErrror {
+    pub fn new(span: Span, msg: impl Into<String>) -> Self {
+        Self {
+            msg: msg.into(),
+            span: Some(span),
+        }
+    }
+
     pub fn into_error(self, source: &str) -> crate::Error {
         let Self { msg, span } = self;
         if let Some(span) = span {
@@ -52,33 +62,34 @@ type Result<T = (), E = DeserErrror> = std::result::Result<T, E>;
 
 // ----------------------------------------------------
 
-pub struct AstValueDeser<'de> {
+/// Consumes a [`TokenTree`] and "deserializes" it into a value that implements
+/// [`serde::de::Deserialize`] (e.g. has `#[derive(serde::Deserialize)]` on it).
+pub struct TokenTreeDeserializer<'de> {
     value: &'de TokenTree<'de>,
 }
 
-impl<'de> AstValueDeser<'de> {
+impl<'de> TokenTreeDeserializer<'de> {
     pub fn new(value: &'de TokenTree<'de>) -> Self {
         Self { value }
     }
 }
 
-impl<'de> de::Deserializer<'de> for &'_ mut AstValueDeser<'de> {
+impl<'de> de::Deserializer<'de> for TokenTreeDeserializer<'de> {
     type Error = DeserErrror;
 
-    // Look at the input data to decide what Serde data model type to
-    // deserialize as. Not all data formats are able to support this operation.
-    // Formats that support `deserialize_any` are known as self-describing.
     fn deserialize_any<V>(self, visitor: V) -> Result<V::Value>
     where
         V: Visitor<'de>,
     {
+        let span = self.value.span;
+
         let mut result = match &self.value.value {
             TreeValue::Identifier(identifier) => match identifier.as_ref() {
                 "null" => visitor.visit_unit(),
                 "true" => visitor.visit_bool(true),
                 "false" => visitor.visit_bool(false),
                 some_other_string => {
-                    // We get here in case map keys
+                    // We get here in case of map keys
                     visitor.visit_borrowed_str(some_other_string)
                 }
             },
@@ -96,25 +107,28 @@ impl<'de> de::Deserializer<'de> for &'_ mut AstValueDeser<'de> {
                     } else if let Some(n) = number.as_u128() {
                         visitor.visit_u128(n)
                     } else {
-                        Err(DeserErrror::custom(format!("Invalid numbner: {number}")))
+                        Err(DeserErrror::new(span, format!("Invalid numbner: {number}")))
                     }
                 }
-                Err(err) => Err(DeserErrror::custom(err)),
+                Err(err) => Err(DeserErrror::new(span, err)),
             },
 
             TreeValue::QuotedString(quoted) => snailquote::unescape(quoted)
                 .map_err(|err| {
-                    DeserErrror::custom(format!(
-                        "Failed to unescape quoted string: {quoted:?}: {err}"
-                    ))
+                    DeserErrror::new(
+                        span,
+                        format!("Failed to unescape quoted string: {quoted:?}: {err}"),
+                    )
                 })
                 .and_then(|unescaped| visitor.visit_string(unescaped)),
 
-            TreeValue::List(list) => visitor.visit_seq(ListAccess(&list.values)),
+            TreeValue::List(list) => visitor.visit_seq(ListAccessor(&list.values)),
 
-            TreeValue::Map(map) => visitor.visit_map(MapAcceses {
+            TreeValue::Map(map) => visitor.visit_map(MapAccesor {
                 kvs: &map.key_values,
             }),
+
+            TreeValue::Choice(_) => Err(DeserErrror::new(span, "Did not expect a choice here")),
         };
 
         if let Err(err) = &mut result {
@@ -139,16 +153,60 @@ impl<'de> de::Deserializer<'de> for &'_ mut AstValueDeser<'de> {
         visitor.visit_some(self)
     }
 
+    fn deserialize_enum<V>(
+        self,
+        _enum_name: &'static str,
+        variant_names: &'static [&'static str],
+        visitor: V,
+    ) -> std::result::Result<V::Value, Self::Error>
+    where
+        V: Visitor<'de>,
+    {
+        let name;
+        let values;
+
+        match &self.value.value {
+            TreeValue::Identifier(identifier) => {
+                name = identifier;
+                values = &[][..];
+            }
+            TreeValue::Choice(choice) => {
+                name = &choice.name;
+                values = choice.values.as_slice();
+            }
+            //  TreeValue::QuotedString(quoed) => { } // TODO: forgiving
+            _ => {
+                return Err(DeserErrror::new(
+                    self.value.span,
+                    format!("Expected a variant name here; one of: {variant_names:?}"),
+                ));
+            }
+        }
+
+        if !variant_names.contains(&name.as_ref()) {
+            return Err(DeserErrror::new(
+                self.value.span,
+                format!("Expected one of: {variant_names:?}"),
+            ));
+        }
+
+        visitor.visit_enum(EnumAccessor {
+            name_span: self.value.span,
+            name,
+            values,
+        })
+    }
+
     serde::forward_to_deserialize_any! {
         bool i8 i16 i32 i64 i128 u8 u16 u32 u64 u128 f32 f64 char str string
         bytes byte_buf unit unit_struct newtype_struct seq tuple
-        tuple_struct map struct enum identifier ignored_any
+        tuple_struct map struct identifier ignored_any
     }
 }
 
-struct ListAccess<'de>(&'de [TokenTree<'de>]);
+struct ListAccessor<'de>(&'de [TokenTree<'de>]);
 
-impl<'de> de::SeqAccess<'de> for ListAccess<'de> {
+impl<'de> de::SeqAccess<'de> for ListAccessor<'de> {
     type Error = DeserErrror;
 
     fn size_hint(&self) -> Option<usize> {
@@ -161,18 +219,19 @@ impl<'de> de::SeqAccess<'de> for ListAccess<'de> {
     {
         if let [first, rest @ ..] = self.0 {
             self.0 = rest;
-            seed.deserialize(&mut AstValueDeser::new(first)).map(Some)
+            seed.deserialize(TokenTreeDeserializer::new(first))
+                .map(Some)
         } else {
             Ok(None)
         }
     }
 }
 
-struct MapAcceses<'de> {
+struct MapAccesor<'de> {
     kvs: &'de [CommentedKeyValue<'de>],
 }
 
-impl<'de> de::MapAccess<'de> for MapAcceses<'de> {
+impl<'de> de::MapAccess<'de> for MapAccesor<'de> {
     type Error = DeserErrror;
 
     fn size_hint(&self) -> Option<usize> {
@@ -184,7 +243,8 @@ impl<'de> de::MapAccess<'de> for MapAcceses<'de> {
         K: de::DeserializeSeed<'de>,
     {
         if let Some(kv) = self.kvs.first() {
-            seed.deserialize(&mut AstValueDeser::new(&kv.key)).map(Some)
+            seed.deserialize(TokenTreeDeserializer::new(&kv.key))
+                .map(Some)
         } else {
             Ok(None)
         }
@@ -196,168 +256,117 @@ impl<'de> de::MapAccess<'de> for MapAcceses<'de> {
     {
         if let [first, rest @ ..] = self.kvs {
             self.kvs = rest;
-            seed.deserialize(&mut AstValueDeser::new(&first.value))
+            seed.deserialize(TokenTreeDeserializer::new(&first.value))
         } else {
             Err(DeserErrror::custom("No more values in map"))
         }
     }
 }
 
-// // ----------------------------------------------------
+struct EnumAccessor<'de> {
+    name_span: Span,
+    name: &'de str,
+    values: &'de [TokenTree<'de>],
+}
 
-// pub struct ValueDeser<'de> {
-//     value: &'de Value,
-// }
+impl<'de> de::EnumAccess<'de> for EnumAccessor<'de> {
+    type Error = DeserErrror;
+    type Variant = Self;
 
-// impl<'de> ValueDeser<'de> {
-//     pub fn new(value: &'de Value) -> Self {
-//         Self { value }
-//     }
-// }
+    fn variant_seed<V>(self, seed: V) -> Result<(V::Value, Self::Variant)>
+    where
+        V: de::DeserializeSeed<'de>,
+    {
+        let val = seed.deserialize(IdentifierDeserializer { name: self.name })?;
+        Ok((val, self))
+    }
+}
 
-// impl<'de> de::Deserializer<'de> for &'_ mut ValueDeser<'de> {
-//     type Error = DeserErrror;
+impl<'de> de::VariantAccess<'de> for EnumAccessor<'de> {
+    type Error = DeserErrror;
 
-//     #[inline]
-//     fn is_human_readable(&self) -> bool {
-//         true
-//     }
+    // `enum Enum { UnitVariant }`
+    fn unit_variant(self) -> Result<()> {
+        Ok(())
+    }
 
-//     // Look at the input data to decide what Serde data model type to
-//     // deserialize as. Not all data formats are able to support this operation.
-//     // Formats that support `deserialize_any` are known as self-describing.
-//     fn deserialize_any<V>(self, visitor: V) -> Result<V::Value>
-//     where
-//         V: Visitor<'de>,
-//     {
-//         match self.value {
-//             Value::Null => visitor.visit_unit(),
+    // `enum Enum { NewtypeVariant(a) }`
+    fn newtype_variant_seed<T>(self, seed: T) -> Result<T::Value>
+    where
+        T: de::DeserializeSeed<'de>,
+    {
+        if self.values.len() != 1 {
+            return Err(DeserErrror::new(
+                self.name_span,
+                format!(
+                    "Expected exactly one value for enum variant `{}`",
+                    self.name
+                ),
+            ));
+        }
 
-//             Value::Bool(b) => visitor.visit_bool(*b),
+        seed.deserialize(TokenTreeDeserializer::new(&self.values[0]))
+    }
 
-//             Value::Number(number) => {
-//                 if let Some(n) = number.as_u64() {
-//                     visitor.visit_u64(n)
-//                 } else if let Some(n) = number.as_i64() {
-//                     visitor.visit_i64(n)
-//                 } else if let Some(n) = number.as_f64() {
-//                     visitor.visit_f64(n)
-//                 } else if let Some(n) = number.as_i128() {
-//                     visitor.visit_i128(n)
-//                 } else if let Some(n) = number.as_u128() {
-//                     visitor.visit_u128(n)
-//                 } else {
-//                     return Err(DeserErrror::custom(format!("Invalid numbner: {number}")));
-//                 }
-//             }
+    // `enum Enum { TupleVariant(a, b, c) }`
+    fn tuple_variant<V>(self, len: usize, visitor: V) -> Result<V::Value>
+    where
+        V: Visitor<'de>,
+    {
+        if len != self.values.len() {
+            return Err(DeserErrror::new(
+                self.name_span,
+                format!(
+                    "Expected {} values for enum variant `{}`, got {}",
+                    len,
+                    self.name,
+                    self.values.len()
+                ),
+            ));
+        }
 
-//             Value::String(string) => visitor.visit_borrowed_str(string),
+        // TODO: if we contain a single element, and that is a list of the correct length,
+        // then that should also be accepted.
 
-//             Value::List(list) => visitor.visit_seq(ValueListAccess(list)),
+        visitor.visit_seq(ListAccessor(self.values))
+    }
 
-//             Value::Map(map) => visitor.visit_map(ValueMapAcceses {
-//                 iter: map.iter(),
-//                 next_value: None,
-//             }),
-//         }
-//     }
+    // `enum Enum { StructVariant{ a: … } }`
+    fn struct_variant<V>(self, _fields: &'static [&'static str], visitor: V) -> Result<V::Value>
+    where
+        V: Visitor<'de>,
+    {
+        if self.values.len() != 1 {
+            return Err(DeserErrror::new(
+                self.name_span,
+                format!(
+                    "Expected exactly one value for enum variant `{}`",
+                    self.name
+                ),
+            ));
+        }
 
-//     fn deserialize_option<V>(self, visitor: V) -> Result<V::Value>
-//     where
-//         V: Visitor<'de>,
-//     {
-//         if self.value == &Value::Null {
-//             visitor.visit_none()
-//         } else {
-//             visitor.visit_some(self)
-//         }
-//     }
+        TokenTreeDeserializer::new(&self.values[0]).deserialize_any(visitor)
+    }
+}
 
-//     serde::forward_to_deserialize_any! {
-//         bool i8 i16 i32 i64 i128 u8 u16 u32 u64 u128 f32 f64 char str string
-//         bytes byte_buf unit unit_struct newtype_struct seq tuple
-//         tuple_struct map struct enum identifier ignored_any
-//     }
-// }
+struct IdentifierDeserializer<'de> {
+    name: &'de str,
+}
 
-// struct ValueListAccess<'de>(&'de [Value]);
+impl<'de> de::Deserializer<'de> for IdentifierDeserializer<'de> {
+    type Error = DeserErrror;
 
-// impl<'de> de::SeqAccess<'de> for ValueListAccess<'de> {
-//     type Error = DeserErrror;
+    fn deserialize_any<V>(self, visitor: V) -> Result<V::Value>
+    where
+        V: Visitor<'de>,
+    {
+        visitor.visit_borrowed_str(self.name)
+    }
 
-//     fn size_hint(&self) -> Option<usize> {
-//         Some(self.0.len())
-//     }
-
-//     fn next_element_seed<T>(&mut self, seed: T) -> Result<Option<T::Value>>
-//     where
-//         T: de::DeserializeSeed<'de>,
-//     {
-//         if let [first, rest @ ..] = self.0 {
-//             self.0 = rest;
-//             seed.deserialize(&mut ValueDeser { value: first }).map(Some)
-//         } else {
-//             Ok(None)
-//         }
-//     }
-// }
-
-// struct ValueMapAcceses<'de, I>
-// where
-//     I: Iterator<Item = (&'de String, &'de Value)>,
-// {
-//     iter: I,
-//     next_value: Option<&'de Value>,
-// }
-
-// impl<'de> de::MapAccess<'de> for ValueMapAcceses<'de, indexmap::map::Iter<'de, String, Value>> {
-//     type Error = DeserErrror;
-
-//     fn size_hint(&self) -> Option<usize> {
-//         Some(self.iter.size_hint().0)
-//     }
-
-//     fn next_key_seed<K>(&mut self, seed: K) -> Result<Option<K::Value>>
-//     where
-//         K: de::DeserializeSeed<'de>,
-//     {
-//         if let Some((key, value)) = self.iter.next() {
-//             self.next_value = Some(value);
-//             seed.deserialize(&mut MapKeyDeser { key }).map(Some)
-//         } else {
-//             Ok(None)
-//         }
-//     }
-
-//     fn next_value_seed<V>(&mut self, seed: V) -> Result<V::Value>
-//     where
-//         V: de::DeserializeSeed<'de>,
-//     {
-//         if let Some(value) = self.next_value.take() {
-//             seed.deserialize(&mut ValueDeser { value })
-//         } else {
-//             Err(DeserErrror::custom("No more values in map"))
-//         }
-//     }
-// }
-
-// struct MapKeyDeser<'de> {
-//     key: &'de String,
-// }
-
-// impl<'de> de::Deserializer<'de> for &'_ mut MapKeyDeser<'de> {
-//     type Error = DeserErrror;
-
-//     fn deserialize_any<V>(self, visitor: V) -> Result<V::Value>
-//     where
-//         V: Visitor<'de>,
-//     {
-//         visitor.visit_borrowed_str(self.key)
-//     }
-
-//     serde::forward_to_deserialize_any! {
-//         bool i8 i16 i32 i64 i128 u8 u16 u32 u64 u128 f32 f64 char str string
-//         bytes byte_buf option unit unit_struct newtype_struct seq tuple
-//         tuple_struct map struct enum identifier ignored_any
-//     }
-// }
+    serde::forward_to_deserialize_any! {
+        bool i8 i16 i32 i64 i128 u8 u16 u32 u64 u128 f32 f64 char str string
+        bytes byte_buf unit unit_struct newtype_struct seq tuple enum option
+        tuple_struct map struct identifier ignored_any
+    }
+}

@@ -23,6 +23,14 @@ pub enum TokenKind {
     #[token("}")]
     CloseBrace,
 
+    /// `(`
+    #[token("(")]
+    OpenParen,
+
+    /// `)`
+    #[token(")")]
+    CloseParen,
+
     /// `:`
     #[token(":")]
     Colon,
@@ -64,6 +72,8 @@ impl std::fmt::Display for TokenKind {
             Self::CloseList => write!(f, "close bracket ']'"),
             Self::OpenBrace => write!(f, "open brace '{{'"),
             Self::CloseBrace => write!(f, "close brace '}}'"),
+            Self::OpenParen => write!(f, "open parenthesis '('"),
+            Self::CloseParen => write!(f, "close parenthesis ')'"),
             Self::Colon => write!(f, "colon ':'"),
             Self::Equals => write!(f, "equals '='"),
             Self::Comma => write!(f, "comma ','"),

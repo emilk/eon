@@ -3,7 +3,9 @@
 
 use crate::{
     Value,
-    token_tree::{TreeValue, CommentedKeyValue, CommentedList, CommentedMap, TokenTree},
+    token_tree::{
+        CommentedChoice, CommentedKeyValue, CommentedList, CommentedMap, TokenTree, TreeValue,
+    },
 };
 
 impl<'s> From<TreeValue<'s>> for TokenTree<'s> {
@@ -48,6 +50,12 @@ impl From<Value> for TreeValue<'static> {
                         value: TokenTree::from(value),
                     })
                     .collect(),
+                closing_comments: Default::default(),
+            }),
+            Value::Choice(choice) => TreeValue::Choice(CommentedChoice {
+                name_span: Default::default(), // TODO
+                name: choice.name.into(),
+                values: choice.values.into_iter().map(Into::into).collect(),
                 closing_comments: Default::default(),
             }),
         }

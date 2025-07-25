@@ -5,7 +5,7 @@ use serde::{
     ser::{self, Error as _},
 };
 
-use crate::{Map, Value, serde::to_value};
+use crate::{Map, Value, serde::to_value, value::Choice};
 
 #[derive(Debug, Clone)]
 pub struct SerializationError {
@@ -45,7 +45,7 @@ impl ser::Serializer for &'_ Serializer {
     type SerializeTupleVariant = TupleVariantSerializer;
     type SerializeMap = MapSerializer;
     type SerializeStruct = MapSerializer;
-    type SerializeStructVariant = MapSerializer;
+    type SerializeStructVariant = StructVariantSerializer;
 
     #[inline]
     fn serialize_bool(self, v: bool) -> Result<Value> {
@@ -230,13 +230,13 @@ impl ser::Serializer for &'_ Serializer {
 
     #[inline]
     fn serialize_map(self, len: Option<usize>) -> Result<Self::SerializeMap> {
-        Ok(MapSerializer::with_capacity(None, len.unwrap_or(0)))
+        Ok(MapSerializer::with_capacity(len.unwrap_or(0)))
     }
 
     #[inline]
     fn serialize_struct(self, _name: &'static str, len: usize) -> Result<Self::SerializeStruct> {
         // TODO: include name?
-        Ok(MapSerializer::with_capacity(None, len))
+        Ok(MapSerializer::with_capacity(len))
     }
 
     /// ```ignore
@@ -256,7 +256,7 @@ impl ser::Serializer for &'_ Serializer {
         variant_name: &'static str,
         len: usize,
     ) -> Result<Self::SerializeStructVariant> {
-        Ok(MapSerializer::with_capacity(Some(variant_name), len))
+        Ok(StructVariantSerializer::with_capacity(variant_name, len))
     }
 }
 
@@ -340,14 +340,15 @@ impl ser::SerializeTupleStruct for ListSerializer {
 
 /// Enum variant that are tuples, e.g. `enum Color { Rgb(u8, u8, u8), … }`.
 pub struct TupleVariantSerializer {
-    list: Vec<Value>,
+    variant_name: &'static str,
+    values: Vec<Value>,
 }
 
 impl TupleVariantSerializer {
     fn with_capacity(variant_name: &'static str, capacity: usize) -> Self {
-        // TODO: make use of name, somehow
         Self {
-            list: Vec::with_capacity(capacity),
+            variant_name,
+            values: Vec::with_capacity(capacity),
         }
     }
 }
@@ -361,13 +362,20 @@ impl ser::SerializeTupleVariant for TupleVariantSerializer {
     where
         T: ?Sized + Serialize,
     {
-        self.list.push(to_value(value)?);
+        self.values.push(to_value(value)?);
         Ok(())
     }
 
     #[inline]
     fn end(self) -> Result<Value> {
-        Ok(Value::List(self.list))
+        let Self {
+            variant_name,
+            values,
+        } = self;
+        Ok(Value::Choice(Choice {
+            name: variant_name.to_owned(),
+            values,
+        }))
     }
 }
 
@@ -375,15 +383,13 @@ impl ser::SerializeTupleVariant for TupleVariantSerializer {
 
 /// Used for maps, structs, and enum variants that are structs.
 pub struct MapSerializer {
-    name: Option<&'static str>,
     map: Map,
     last_key: Option<String>,
 }
 
 impl MapSerializer {
-    fn with_capacity(name: Option<&'static str>, capacity: usize) -> Self {
+    fn with_capacity(capacity: usize) -> Self {
         Self {
-            name,
             map: Map::with_capacity(capacity),
             last_key: None,
         }
@@ -459,6 +465,25 @@ impl ser::SerializeStruct for MapSerializer {
     }
 }
 
+// -----------------------------------------------------------------------------------------------
+
+/// For enum choices containing a struct, e.g. `enum EnumName { VariantName { key: Value, … }, … }`.
+pub struct StructVariantSerializer {
+    name: &'static str,
+    map: Map,
+    last_key: Option<String>,
+}
+
+impl StructVariantSerializer {
+    fn with_capacity(name: &'static str, capacity: usize) -> Self {
+        Self {
+            name,
+            map: Map::with_capacity(capacity),
+            last_key: None,
+        }
+    }
+}
+
 /// ```ignore
 /// enum EnumName {
 ///     VariantName {
@@ -468,7 +493,7 @@ impl ser::SerializeStruct for MapSerializer {
 ///     …
 /// }
 /// ```
-impl ser::SerializeStructVariant for MapSerializer {
+impl ser::SerializeStructVariant for StructVariantSerializer {
     type Ok = Value;
     type Error = SerializationError;
 
@@ -483,6 +508,9 @@ impl ser::SerializeStructVariant for MapSerializer {
 
     #[inline]
     fn end(self) -> Result<Value> {
-        Ok(Value::Map(self.map))
+        Ok(Value::Choice(Choice {
+            name: self.name.to_owned(),
+            values: vec![Value::Map(self.map)],
+        }))
     }
 }

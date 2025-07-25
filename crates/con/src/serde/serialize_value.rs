@@ -1,6 +1,6 @@
 use serde::ser::{Error as _, SerializeMap as _};
 
-use crate::{Map, Number, Value};
+use crate::{Map, Number, Value, value::Choice};
 
 impl serde::Serialize for Value {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
@@ -8,12 +8,18 @@ impl serde::Serialize for Value {
         S: serde::Serializer,
     {
         match self {
+            Self::Null => serializer.serialize_none(),
             Self::Bool(v) => serializer.serialize_bool(*v),
             Self::Number(n) => n.serialize(serializer),
             Self::String(s) => serializer.serialize_str(s),
             Self::Map(map) => map.serialize(serializer),
             Self::List(a) => a.serialize(serializer),
-            Self::Null => serializer.serialize_none(),
+            Self::Choice(choice) => {
+                // TODO: should we even implement Serialize for Value?
+                Err(S::Error::custom(format!(
+                    "Cannot serialize Choice directly (not supported by serde): {choice:?}"
+                )))
+            }
         }
     }
 }

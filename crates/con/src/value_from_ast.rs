@@ -29,9 +29,15 @@ impl AstValue<'_> {
                     "Unknown keyword. Expected 'null', 'true', or 'false'.",
                 )),
             },
-            AstValue::Number(string) => {
-                crate::Number::try_parse(source, &string).map(Value::Number)
-            }
+            AstValue::Number(string) => crate::Number::try_parse(&string)
+                .map(Value::Number)
+                .map_err(|err| {
+                    Error::new_at(
+                        source,
+                        span,
+                        format!("Failed to parse number: {err}. The string: {string:?}"),
+                    )
+                }),
             AstValue::QuotedString(escaped) => match snailquote::unescape(&escaped) {
                 Ok(unescaped) => Ok(Value::String(unescaped)),
                 Err(err) => Err(Error::new_at(

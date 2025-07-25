@@ -1,23 +1,41 @@
 // See https://serde.rs/impl-deserializer.html
 
+use logos::source;
 use serde::de::{self, Error as _, Visitor};
 
 use crate::{
-    Value,
+    Number, Value,
     ast::{AstValue, CommentedKeyValue, CommentedValue},
+    span::Span,
 };
 
 // TODO: include spans and rich error messages
 #[derive(Debug, Clone)]
 pub struct DeserErrror {
-    msg: String,
+    pub msg: String,
+    pub span: Option<Span>,
+}
+
+impl DeserErrror {
+    pub fn into_error(self, source: &str) -> crate::Error {
+        let Self { msg, span } = self;
+        if let Some(span) = span {
+            crate::Error::new_at(source, span, msg)
+        } else {
+            crate::Error::custom(msg)
+        }
+    }
 }
 
 impl std::error::Error for DeserErrror {}
 
 impl std::fmt::Display for DeserErrror {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        self.msg.fmt(f)
+        if cfg!(debug_assertions) {
+            panic!("Do not call this directlty!");
+        } else {
+            self.msg.fmt(f)
+        }
     }
 }
 
@@ -25,6 +43,7 @@ impl de::Error for DeserErrror {
     fn custom<T: std::fmt::Display>(msg: T) -> Self {
         Self {
             msg: msg.to_string(),
+            span: None,
         }
     }
 }
@@ -53,31 +72,58 @@ impl<'de> de::Deserializer<'de> for &'_ mut AstValueDeser<'de> {
     where
         V: Visitor<'de>,
     {
-        match &self.value.value {
+        let mut result = match &self.value.value {
             AstValue::Identifier(identifier) => match identifier.as_ref() {
                 "null" => visitor.visit_unit(),
                 "true" => visitor.visit_bool(true),
                 "false" => visitor.visit_bool(false),
-                _ => Err(DeserErrror::custom(format!(
-                    "Unknown identifier: {identifier:?}"
-                ))),
+                some_other_string => {
+                    // We get here in case map keys
+                    visitor.visit_borrowed_str(some_other_string)
+                }
             },
-            AstValue::Number(num) => {
-                todo!("Parse number: {num:?}");
-            }
-            AstValue::QuotedString(quoted) => {
-                let unescaped = snailquote::unescape(quoted).map_err(|err| {
+
+            AstValue::Number(num_str) => match Number::try_parse(num_str) {
+                Ok(number) => {
+                    if let Some(n) = number.as_u64() {
+                        visitor.visit_u64(n)
+                    } else if let Some(n) = number.as_i64() {
+                        visitor.visit_i64(n)
+                    } else if let Some(n) = number.as_f64() {
+                        visitor.visit_f64(n)
+                    } else if let Some(n) = number.as_i128() {
+                        visitor.visit_i128(n)
+                    } else if let Some(n) = number.as_u128() {
+                        visitor.visit_u128(n)
+                    } else {
+                        Err(DeserErrror::custom(format!("Invalid numbner: {number}")))
+                    }
+                }
+                Err(err) => Err(DeserErrror::custom(err)),
+            },
+
+            AstValue::QuotedString(quoted) => snailquote::unescape(quoted)
+                .map_err(|err| {
                     DeserErrror::custom(format!(
                         "Failed to unescape quoted string: {quoted:?}: {err}"
                     ))
-                })?;
-                visitor.visit_string(unescaped)
-            }
+                })
+                .and_then(|unescaped| visitor.visit_string(unescaped)),
+
             AstValue::List(list) => visitor.visit_seq(ListAccess(&list.values)),
+
             AstValue::Map(map) => visitor.visit_map(MapAcceses {
                 kvs: &map.key_values,
             }),
+        };
+
+        if let Err(err) = &mut result {
+            if err.span.is_none() {
+                err.span = Some(self.value.span);
+            }
         }
+
+        result
     }
 
     serde::forward_to_deserialize_any! {
@@ -125,9 +171,7 @@ impl<'de> de::MapAccess<'de> for MapAcceses<'de> {
         K: de::DeserializeSeed<'de>,
     {
         if let Some(kv) = self.kvs.first() {
-            seed.deserialize(&mut AstValueDeser::new(&kv.key))
-                .map(Some)
-                .map_err(DeserErrror::custom)
+            seed.deserialize(&mut AstValueDeser::new(&kv.key)).map(Some)
         } else {
             Ok(None)
         }
@@ -140,7 +184,6 @@ impl<'de> de::MapAccess<'de> for MapAcceses<'de> {
         if let [first, rest @ ..] = self.kvs {
             self.kvs = rest;
             seed.deserialize(&mut AstValueDeser::new(&first.value))
-                .map_err(DeserErrror::custom)
         } else {
             Err(DeserErrror::custom("No more values in map"))
         }
@@ -251,9 +294,7 @@ impl<'de> de::MapAccess<'de> for ValueMapAcceses<'de, indexmap::map::Iter<'de, S
     {
         if let Some((key, value)) = self.iter.next() {
             self.next_value = Some(value);
-            seed.deserialize(&mut MapKeyDeser { key })
-                .map_err(DeserErrror::custom)
-                .map(Some)
+            seed.deserialize(&mut MapKeyDeser { key }).map(Some)
         } else {
             Ok(None)
         }
@@ -265,7 +306,6 @@ impl<'de> de::MapAccess<'de> for ValueMapAcceses<'de, indexmap::map::Iter<'de, S
     {
         if let Some(value) = self.next_value.take() {
             seed.deserialize(&mut ValueDeser { value })
-                .map_err(DeserErrror::custom)
         } else {
             Err(DeserErrror::custom("No more values in map"))
         }

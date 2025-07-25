@@ -1,26 +1,117 @@
-use crate::Result;
+use crate::{Error, Result, span::Span};
 
 /// Represents a number (float, integer, …)
 #[derive(Debug, Clone, PartialEq)]
 pub struct Number(NumberImpl);
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq)] // TODO: explicitly implement PartialEq, Eq, Hash
 enum NumberImpl {
     I128(i128),
     U128(u128),
 
-    // Having this seperatedly allows us to encode f32 using less precision.
+    // Having this seperatedly for `f64` allows us to encode `f32` using fewer decimals.
     F32(f32),
 
     F64(f64),
+}
 
-    /// Yet-to-be parsed.
-    String(String),
+impl std::ops::Not for Number {
+    type Output = Self;
+
+    fn not(self) -> Self::Output {
+        match self.0 {
+            NumberImpl::I128(n) => Number(NumberImpl::I128(-n)),
+            NumberImpl::U128(n) => Number(NumberImpl::U128(n)),
+            NumberImpl::F32(n) => Number(NumberImpl::F32(-n)),
+            NumberImpl::F64(n) => Number(NumberImpl::F64(-n)),
+        }
+    }
 }
 
 impl Number {
-    pub(crate) fn try_parse(source: &str, string: &str) -> Result<Self> {
-        Ok(Self(NumberImpl::String(string.to_owned())))
+    // TODO: parse/FromStr
+    pub(crate) fn try_parse(mut string: &str) -> Result<Self, String> {
+        match string {
+            "+NaN" => {
+                return Ok(Number(NumberImpl::F32(f32::NAN)));
+            }
+            "-inf" => {
+                return Ok(Number(NumberImpl::F32(f32::NEG_INFINITY)));
+            }
+            "+inf" => {
+                return Ok(Number(NumberImpl::F32(f32::INFINITY)));
+            }
+            _ => {}
+        }
+
+        let sign = if let Some(rest) = string.strip_prefix('+') {
+            string = rest;
+            1
+        } else if let Some(rest) = string.strip_prefix('-') {
+            string = rest;
+            -1
+        } else {
+            1
+        };
+
+        let unsigned = if let Some(binary) = string.strip_prefix("0b") {
+            let number = u128::from_str_radix(binary, 2)
+                .map_err(|_| "Failed to parse binary number. Expected '0b...'".to_owned())?;
+            NumberImpl::U128(number)
+        } else if let Some(hex) = string.strip_prefix("0x") {
+            let number = u128::from_str_radix(hex, 16)
+                .map_err(|_| "Failed to parse hexadecimal number. Expected '0x...'".to_owned())?;
+            NumberImpl::U128(number)
+        } else if let Some(octal) = string.strip_prefix("0o") {
+            let number = u128::from_str_radix(octal, 8)
+                .map_err(|_| "Failed to parse octal number. Expected '0o...'".to_owned())?;
+            NumberImpl::U128(number)
+        } else if string.contains('.') || string.contains('e') {
+            let as_f64 = string
+                .parse::<f64>()
+                .map_err(|_| "Failed to parse float number. Expected a valid float.".to_owned())?;
+            let as_f32 = as_f64 as f32;
+            if as_f32 as f64 == as_f64 {
+                NumberImpl::F32(as_f32)
+            } else {
+                NumberImpl::F64(as_f64)
+            }
+        } else {
+            NumberImpl::U128(string.parse().map_err(|_| {
+                "Failed to parse integer number. Expected a valid integer.".to_owned()
+            })?)
+        };
+
+        if sign == -1 {
+            Self(unsigned)
+                .try_negate()
+                .ok_or_else(|| "Number too small".to_owned())
+        } else {
+            Ok(Self(unsigned))
+        }
+    }
+
+    /// Returns None if the negation cannot be represented
+    pub fn try_negate(&self) -> Option<Self> {
+        match self.0 {
+            NumberImpl::I128(value) => {
+                if value == i128::MIN {
+                    None // negation would overflow
+                } else {
+                    Some(NumberImpl::I128(-value))
+                }
+            }
+            NumberImpl::U128(value) => {
+                if value <= i128::MAX as u128 {
+                    Some(NumberImpl::I128(-(value as i128)))
+                } else {
+                    None // negation would overflow
+                }
+            }
+            NumberImpl::F32(value) => Some(NumberImpl::F32(-value)),
+            NumberImpl::F64(value) => Some(NumberImpl::F64(-value)),
+        }
+        .map(Self)
     }
 
     /// Returns the value iff it can be represented without narrowing.
@@ -36,7 +127,6 @@ impl Number {
                 let i = n.round() as i64;
                 if n == i as f64 { Some(i) } else { None }
             }
-            NumberImpl::String(_) => None, // TODO: parse string
         }
     }
 
@@ -53,7 +143,6 @@ impl Number {
                 let i = n.round() as u64;
                 if n == i as f64 { Some(i) } else { None }
             }
-            NumberImpl::String(_) => None, // TODO: parse string
         }
     }
 
@@ -70,7 +159,6 @@ impl Number {
                 let i = n.round() as i128;
                 if n == i as f64 { Some(i) } else { None }
             }
-            NumberImpl::String(_) => None, // TODO: parse string
         }
     }
 
@@ -87,7 +175,6 @@ impl Number {
                 let i = n.round() as u128;
                 if n == i as f64 { Some(i) } else { None }
             }
-            NumberImpl::String(_) => None, // TODO: parse string
         }
     }
 
@@ -110,7 +197,6 @@ impl Number {
             }
             NumberImpl::F32(n) => Some(n as f64),
             NumberImpl::F64(n) => Some(n),
-            NumberImpl::String(_) => None, // TODO: parse string
         }
     }
 }
@@ -231,8 +317,6 @@ impl std::fmt::Display for Number {
                     n.fmt(f)
                 }
             }
-
-            NumberImpl::String(s) => s.fmt(f),
         }
     }
 }

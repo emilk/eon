@@ -51,6 +51,6 @@ fn test_serde() {
     let string = con::to_string(&top, &con::FormatOptions::default()).unwrap();
     insta::assert_snapshot!(string);
 
-    // let roundtripped: Top = con::from_str(&string).unwrap(); // TODO
-    // assert_eq!(top, roundtripped);
+    let roundtripped: Top = con::from_str(&string).unwrap();
+    assert_eq!(top, roundtripped);
 }

@@ -40,7 +40,7 @@ pub struct CommentedKeyValue<'s> {
     /// ```ignore
     /// // Like this
     /// // and this.
-    /// key: calue
+    /// key: value
     /// ```
     pub prefix_comments: Vec<Comment<'s>>,
 

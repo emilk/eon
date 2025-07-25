@@ -1,12 +1,16 @@
 mod map;
 mod number;
 
+use crate::ast::CommentedValue;
+
 pub use self::{map::Map, number::Number};
 
 /// Represents any Con value.
 ///
 /// This does NOT include comments.
 /// For that, use [`crate::ast::CommentedValue`].
+
+#[derive(Debug, Clone, PartialEq)]
 pub enum Value {
     /// Special `null` value
     Null,
@@ -25,6 +29,40 @@ pub enum Value {
 
     /// Maps strings to values, i.e. like a `struct`.
     Map(Map),
+}
+
+impl Value {
+    /// Return the bool value iff this is a [`Value::Bool`].
+    pub fn as_bool(&self) -> Option<bool> {
+        if let Value::Bool(b) = self {
+            Some(*b)
+        } else {
+            None
+        }
+    }
+
+    /// Return the number iff this is a [`Value::Number`].
+    pub fn as_number(&self) -> Option<&Number> {
+        if let Value::Number(n) = self {
+            Some(n)
+        } else {
+            None
+        }
+    }
+}
+
+impl std::fmt::Display for Value {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        self.format(&crate::FormatOptions::default()).fmt(f)
+    }
+}
+
+impl std::str::FromStr for Value {
+    type Err = crate::Error;
+
+    fn from_str(source: &str) -> Result<Self, Self::Err> {
+        CommentedValue::parse_str(source).and_then(|value| value.try_into_value(source))
+    }
 }
 
 impl From<bool> for Value {

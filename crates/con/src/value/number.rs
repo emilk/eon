@@ -1,8 +1,10 @@
 use crate::Result;
 
 /// Represents a number (float, integer, …)
+#[derive(Debug, Clone, PartialEq)]
 pub struct Number(NumberImpl);
 
+#[derive(Debug, Clone, PartialEq)]
 enum NumberImpl {
     I128(i128),
     U128(u128),

@@ -58,8 +58,8 @@ impl CommentedValue<'_> {
 
 impl Value {
     /// Pretty-print a [`Value`] to a string.
-    pub fn format(self, options: &FormatOptions) -> String {
-        CommentedValue::from(self).format(options)
+    pub fn format(&self, options: &FormatOptions) -> String {
+        CommentedValue::from(self.clone()).format(options)
     }
 }
 

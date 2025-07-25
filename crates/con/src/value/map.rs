@@ -3,7 +3,7 @@ use std::ops::{Deref, DerefMut};
 use crate::Value;
 
 /// Maps strings to values, i.e. like a `struct`.
-#[derive(Default)]
+#[derive(Default, Debug, Clone, PartialEq)]
 pub struct Map(indexmap::IndexMap<String, Value>); // TODO: Value to Value
 
 impl Map {

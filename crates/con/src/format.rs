@@ -1,6 +1,6 @@
 use crate::{
     Value,
-    ast::{AstValue, CommentedKeyValue, CommentedList, CommentedMap, CommentedValue},
+    token_tree::{TreeValue, CommentedKeyValue, CommentedList, CommentedMap, TokenTree},
 };
 
 #[derive(Clone, Debug)]
@@ -33,13 +33,13 @@ impl Default for FormatOptions {
     }
 }
 
-impl CommentedValue<'_> {
+impl TokenTree<'_> {
     /// Pretty-print a [`CommentedValue`] to a string.
     pub fn format(&self, options: &FormatOptions) -> String {
         let mut f = Formatter::new(options);
 
         if !f.options.always_include_outer_braces {
-            if let AstValue::Map(map) = &self.value {
+            if let TreeValue::Map(map) = &self.value {
                 f.indented_comments(&self.prefix_comments);
                 f.map_content(map);
                 if let Some(suffix_comment) = self.suffix_comment {
@@ -59,7 +59,7 @@ impl CommentedValue<'_> {
 impl Value {
     /// Pretty-print a [`Value`] to a string.
     pub fn format(&self, options: &FormatOptions) -> String {
-        CommentedValue::from(self.clone()).format(options)
+        TokenTree::from(self.clone()).format(options)
     }
 }
 
@@ -101,8 +101,8 @@ impl<'o> Formatter<'o> {
         }
     }
 
-    fn indented_commented_value(&mut self, value: &CommentedValue<'_>) {
-        let CommentedValue {
+    fn indented_commented_value(&mut self, value: &TokenTree<'_>) {
+        let TokenTree {
             prefix_comments,
             value,
             suffix_comment,
@@ -118,17 +118,17 @@ impl<'o> Formatter<'o> {
         }
     }
 
-    fn value(&mut self, value: &AstValue<'_>) {
+    fn value(&mut self, value: &TreeValue<'_>) {
         match value {
-            AstValue::Identifier(slice)
-            | AstValue::Number(slice)
-            | AstValue::QuotedString(slice) => {
+            TreeValue::Identifier(slice)
+            | TreeValue::Number(slice)
+            | TreeValue::QuotedString(slice) => {
                 self.out.push_str(slice);
             }
-            AstValue::List(list) => {
+            TreeValue::List(list) => {
                 self.list(list);
             }
-            AstValue::Map(map) => {
+            TreeValue::Map(map) => {
                 self.map(map);
             }
         }

@@ -1,8 +1,8 @@
 use crate::{
-    ast::{AstValue, CommentedKeyValue, CommentedList, CommentedMap, CommentedValue},
     error::{Error, ErrorReport, Result, error_report_at},
     span::Span,
     token::TokenKind,
+    token_tree::{CommentedKeyValue, CommentedList, CommentedMap, TokenTree, TreeValue},
 };
 
 #[derive(Clone, Copy, Debug)]
@@ -152,7 +152,7 @@ impl<'s> Iterator for PeekableIter<'s> {
     }
 }
 
-impl<'s> CommentedValue<'s> {
+impl<'s> TokenTree<'s> {
     /// Parse a full Con file.
     pub fn parse_str(source: &'s str) -> Result<Self> {
         parse_top_str(source)
@@ -162,25 +162,25 @@ impl<'s> CommentedValue<'s> {
 impl crate::Value {
     /// Parse a full Con file.
     pub fn parse_str(source: &str) -> Result<Self> {
-        CommentedValue::parse_str(source).and_then(|v| v.try_into_value(source))
+        TokenTree::parse_str(source).and_then(|v| v.try_into_value(source))
     }
 }
 
 /// Parse a full Con file.
-fn parse_top_str(source: &str) -> Result<CommentedValue<'_>> {
+fn parse_top_str(source: &str) -> Result<TokenTree<'_>> {
     // Usually a Con file contains a bunch of `key: value` pairs, without any
     // surrounding braces, so we optimize for that case:
     let mut tokens_a = PeekableIter::new(source);
     match parse_map_contents(&mut tokens_a) {
         Ok(map) => {
             check_for_trailing_tokens(&mut tokens_a)?;
-            let value = CommentedValue {
+            let value = TokenTree {
                 span: Span {
                     start: 0,
                     end: source.len(),
                 },
                 prefix_comments: vec![],
-                value: AstValue::Map(map),
+                value: TreeValue::Map(map),
                 suffix_comment: None,
             };
             Ok(value)
@@ -300,7 +300,7 @@ fn parse_map_contents<'s>(tokens: &mut PeekableIter<'s>) -> Result<CommentedMap<
 }
 
 /// Parse a value, including prefix and suffix comments.
-fn parse_commented_value<'s>(tokens: &mut PeekableIter<'s>) -> Result<CommentedValue<'s>> {
+fn parse_commented_value<'s>(tokens: &mut PeekableIter<'s>) -> Result<TokenTree<'s>> {
     let start_span = tokens.span_of_next();
     let prefix_comments = parse_comments(tokens);
 
@@ -317,17 +317,17 @@ fn parse_commented_value<'s>(tokens: &mut PeekableIter<'s>) -> Result<CommentedV
         TokenKind::OpenList => {
             let list = parse_list_contents(tokens)?;
             consume_token(tokens, TokenKind::CloseList)?;
-            AstValue::List(list)
+            TreeValue::List(list)
         }
         TokenKind::OpenBrace => {
             let map = parse_map_contents(tokens)?;
             consume_token(tokens, TokenKind::CloseBrace)?;
-            AstValue::Map(map)
+            TreeValue::Map(map)
         }
-        TokenKind::Identifier => AstValue::Identifier(token.slice.into()),
-        TokenKind::Number => AstValue::Number(token.slice.into()),
+        TokenKind::Identifier => TreeValue::Identifier(token.slice.into()),
+        TokenKind::Number => TreeValue::Number(token.slice.into()),
         TokenKind::DoubleQuotedString | TokenKind::SingleQuotedString => {
-            AstValue::QuotedString(token.slice.into())
+            TreeValue::QuotedString(token.slice.into())
         }
         _ => {
             return Err(tokens.error_at(
@@ -339,7 +339,7 @@ fn parse_commented_value<'s>(tokens: &mut PeekableIter<'s>) -> Result<CommentedV
 
     let suffix_comment = parse_suffix_comment(tokens)?;
 
-    Ok(CommentedValue {
+    Ok(TokenTree {
         span: start_span | tokens.span_of_previous(),
         prefix_comments,
         value,
@@ -432,7 +432,7 @@ mod tests {
 
         let value = parse_top_str(input).unwrap();
 
-        let CommentedValue {
+        let TokenTree {
             span: _,
             prefix_comments,
             value,
@@ -442,7 +442,7 @@ mod tests {
         assert!(prefix_comments.is_empty());
         assert_eq!(suffix_comment, None);
 
-        if let AstValue::Map(CommentedMap {
+        if let TreeValue::Map(CommentedMap {
             key_values,
             closing_comments,
         }) = value
@@ -452,7 +452,7 @@ mod tests {
             {
                 let CommentedKeyValue { key, value } = &key_values[0];
 
-                if let AstValue::Identifier(key) = &key.value {
+                if let TreeValue::Identifier(key) = &key.value {
                     assert_eq!(key, "key1");
                 } else {
                     panic!("Expected an identfier for key1, got {key:?}");
@@ -461,7 +461,7 @@ mod tests {
                     key.prefix_comments,
                     &["// Prefix comment A.", "// Prefix comment B."]
                 );
-                if let AstValue::Number(value) = &value.value {
+                if let TreeValue::Number(value) = &value.value {
                     assert_eq!(value, "42");
                 } else {
                     panic!("Expected a number for key1, got {key:?}");
@@ -472,13 +472,13 @@ mod tests {
             {
                 let CommentedKeyValue { key, value } = &key_values[1];
 
-                if let AstValue::Identifier(key) = &key.value {
+                if let TreeValue::Identifier(key) = &key.value {
                     assert_eq!(key, "key2");
                 } else {
                     panic!("Expected an identfier for key1, got {key:?}");
                 }
                 assert_eq!(key.prefix_comments, &["// Prefix comment C."]);
-                if let AstValue::QuotedString(value) = &value.value {
+                if let TreeValue::QuotedString(value) = &value.value {
                     assert_eq!(value, r#""string""#);
                 } else {
                     panic!("Expected a String for key2, got {key:?}");

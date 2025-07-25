@@ -44,8 +44,8 @@ impl Error {
 impl std::fmt::Debug for Error {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Error::Custom { msg } => msg.fmt(f),
-            Error::AtSource { source, report } => {
+            Self::Custom { msg } => msg.fmt(f),
+            Self::AtSource { source, report } => {
                 let mut utf8 = vec![];
                 let mut cursor = std::io::Cursor::new(&mut utf8);
                 match report.write(source, &mut cursor) {

@@ -12,6 +12,7 @@
 * [ ] general maps (keys of any type)
 * [ ] Generate comparison with https://docs.rs/ron/latest/ron/
 * [ ] What strings should we use for infinities?
+* [ ] Warn about unused keys (i.e. mistyped keys that was never accssed during deserialization)
 * [ ] Special types?
     * [ ] UUID?
     * [ ] Date-time?

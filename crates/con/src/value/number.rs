@@ -1,4 +1,4 @@
-use crate::{Error, Result, span::Span};
+use crate::Result;
 
 /// Represents a number (float, integer, …)
 #[derive(Debug, Clone, PartialEq)]
@@ -15,31 +15,18 @@ enum NumberImpl {
     F64(f64),
 }
 
-impl std::ops::Not for Number {
-    type Output = Self;
-
-    fn not(self) -> Self::Output {
-        match self.0 {
-            NumberImpl::I128(n) => Number(NumberImpl::I128(-n)),
-            NumberImpl::U128(n) => Number(NumberImpl::U128(n)),
-            NumberImpl::F32(n) => Number(NumberImpl::F32(-n)),
-            NumberImpl::F64(n) => Number(NumberImpl::F64(-n)),
-        }
-    }
-}
-
 impl Number {
     // TODO: parse/FromStr
     pub(crate) fn try_parse(mut string: &str) -> Result<Self, String> {
         match string {
             "+NaN" => {
-                return Ok(Number(NumberImpl::F32(f32::NAN)));
+                return Ok(Self(NumberImpl::F32(f32::NAN)));
             }
             "-inf" => {
-                return Ok(Number(NumberImpl::F32(f32::NEG_INFINITY)));
+                return Ok(Self(NumberImpl::F32(f32::NEG_INFINITY)));
             }
             "+inf" => {
-                return Ok(Number(NumberImpl::F32(f32::INFINITY)));
+                return Ok(Self(NumberImpl::F32(f32::INFINITY)));
             }
             _ => {}
         }
@@ -56,20 +43,21 @@ impl Number {
 
         let unsigned = if let Some(binary) = string.strip_prefix("0b") {
             let number = u128::from_str_radix(binary, 2)
-                .map_err(|_| "Failed to parse binary number. Expected '0b...'".to_owned())?;
+                .map_err(|_err| "Failed to parse binary number. Expected '0b...'".to_owned())?;
             NumberImpl::U128(number)
         } else if let Some(hex) = string.strip_prefix("0x") {
-            let number = u128::from_str_radix(hex, 16)
-                .map_err(|_| "Failed to parse hexadecimal number. Expected '0x...'".to_owned())?;
+            let number = u128::from_str_radix(hex, 16).map_err(|_err| {
+                "Failed to parse hexadecimal number. Expected '0x...'".to_owned()
+            })?;
             NumberImpl::U128(number)
         } else if let Some(octal) = string.strip_prefix("0o") {
             let number = u128::from_str_radix(octal, 8)
-                .map_err(|_| "Failed to parse octal number. Expected '0o...'".to_owned())?;
+                .map_err(|_err| "Failed to parse octal number. Expected '0o...'".to_owned())?;
             NumberImpl::U128(number)
         } else if string.contains('.') || string.contains('e') {
-            let as_f64 = string
-                .parse::<f64>()
-                .map_err(|_| "Failed to parse float number. Expected a valid float.".to_owned())?;
+            let as_f64 = string.parse::<f64>().map_err(|_err| {
+                "Failed to parse float number. Expected a valid float.".to_owned()
+            })?;
             let as_f32 = as_f64 as f32;
             if as_f32 as f64 == as_f64 {
                 NumberImpl::F32(as_f32)
@@ -77,7 +65,7 @@ impl Number {
                 NumberImpl::F64(as_f64)
             }
         } else {
-            NumberImpl::U128(string.parse().map_err(|_| {
+            NumberImpl::U128(string.parse().map_err(|_err| {
                 "Failed to parse integer number. Expected a valid integer.".to_owned()
             })?)
         };

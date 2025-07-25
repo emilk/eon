@@ -3,12 +3,12 @@
 
 use crate::{
     Value,
-    ast::{AstValue, CommentedKeyValue, CommentedList, CommentedMap, CommentedValue},
+    token_tree::{TreeValue, CommentedKeyValue, CommentedList, CommentedMap, TokenTree},
 };
 
-impl<'s> From<AstValue<'s>> for CommentedValue<'s> {
-    fn from(value: AstValue<'s>) -> Self {
-        CommentedValue {
+impl<'s> From<TreeValue<'s>> for TokenTree<'s> {
+    fn from(value: TreeValue<'s>) -> Self {
+        TokenTree {
             span: Default::default(), // TODO
             prefix_comments: vec![],
             value,
@@ -17,35 +17,35 @@ impl<'s> From<AstValue<'s>> for CommentedValue<'s> {
     }
 }
 
-impl From<Value> for CommentedValue<'static> {
+impl From<Value> for TokenTree<'static> {
     fn from(value: Value) -> Self {
-        Self::from(AstValue::from(value))
+        Self::from(TreeValue::from(value))
     }
 }
 
-impl From<Value> for AstValue<'static> {
+impl From<Value> for TreeValue<'static> {
     fn from(value: Value) -> Self {
         match value {
-            Value::Null => AstValue::Identifier("null".into()),
-            Value::Bool(true) => AstValue::Identifier("true".into()),
-            Value::Bool(false) => AstValue::Identifier("false".into()),
-            Value::Number(number) => AstValue::Number(number.to_string().into()),
-            Value::String(string) => AstValue::QuotedString(escape(&string).into()),
-            Value::List(list) => AstValue::List(CommentedList {
+            Value::Null => TreeValue::Identifier("null".into()),
+            Value::Bool(true) => TreeValue::Identifier("true".into()),
+            Value::Bool(false) => TreeValue::Identifier("false".into()),
+            Value::Number(number) => TreeValue::Number(number.to_string().into()),
+            Value::String(string) => TreeValue::QuotedString(escape(&string).into()),
+            Value::List(list) => TreeValue::List(CommentedList {
                 values: list.into_iter().map(Into::into).collect(),
                 closing_comments: vec![],
             }),
-            Value::Map(map) => AstValue::Map(CommentedMap {
+            Value::Map(map) => TreeValue::Map(CommentedMap {
                 key_values: map
                     .into_iter()
                     .map(|(key, value)| CommentedKeyValue {
-                        key: CommentedValue {
+                        key: TokenTree {
                             span: Default::default(), // TODO
                             prefix_comments: vec![],
-                            value: AstValue::Identifier(key.into()),
+                            value: TreeValue::Identifier(key.into()),
                             suffix_comment: None,
                         },
-                        value: CommentedValue::from(value),
+                        value: TokenTree::from(value),
                     })
                     .collect(),
                 closing_comments: Default::default(),

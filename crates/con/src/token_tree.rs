@@ -1,4 +1,5 @@
-//! Implemented an Abstract Syntax Tree (AST), inclduing comments in the source code.
+//! This module describes the structure of a Con document,
+//! including comments.
 //!
 //! The comments are preserved for the benefit of the formatter.
 
@@ -11,8 +12,10 @@ use crate::span::Span;
 /// The string includes the slashes, but not the trailing newline (if any).
 pub type Comment<'s> = &'s str;
 
+/// A tree of tokens, representing the structure of the Con source code, including comments.
 #[derive(Debug)]
-pub struct CommentedValue<'s> {
+pub struct TokenTree<'s> {
+    /// The span of the token tree in the source code.
     pub span: Span,
 
     /// Comments on proceeding lines.
@@ -25,7 +28,7 @@ pub struct CommentedValue<'s> {
     pub prefix_comments: Vec<Comment<'s>>,
 
     /// The actual value.
-    pub value: AstValue<'s>,
+    pub value: TreeValue<'s>,
 
     /// Comment after the value on the same line.
     ///
@@ -36,10 +39,10 @@ pub struct CommentedValue<'s> {
 #[derive(Debug)]
 pub struct CommentedKeyValue<'s> {
     /// The key of the key-value pair.
-    pub key: CommentedValue<'s>,
+    pub key: TokenTree<'s>,
 
     /// The value of the key-value pair.
-    pub value: CommentedValue<'s>,
+    pub value: TokenTree<'s>,
 }
 
 /// An object, like `{ key: value, … }`.
@@ -54,14 +57,14 @@ pub struct CommentedMap<'s> {
 /// A list, like `[ a, b, c, … ]`.
 #[derive(Debug)]
 pub struct CommentedList<'s> {
-    pub values: Vec<CommentedValue<'s>>,
+    pub values: Vec<TokenTree<'s>>,
 
     /// Any comments after the last value, before the closing `]`.
     pub closing_comments: Vec<Comment<'s>>,
 }
 
 #[derive(Debug)]
-pub enum AstValue<'s> {
+pub enum TreeValue<'s> {
     /// `null`, `true`, or `false`, or the key of an map
     Identifier(Cow<'s, str>),
 

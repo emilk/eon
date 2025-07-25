@@ -1,7 +1,7 @@
 mod map;
 mod number;
 
-use crate::ast::CommentedValue;
+use crate::token_tree::TokenTree;
 
 pub use self::{map::Map, number::Number};
 
@@ -34,7 +34,7 @@ pub enum Value {
 impl Value {
     /// Return the bool value iff this is a [`Value::Bool`].
     pub fn as_bool(&self) -> Option<bool> {
-        if let Value::Bool(b) = self {
+        if let Self::Bool(b) = self {
             Some(*b)
         } else {
             None
@@ -43,7 +43,7 @@ impl Value {
 
     /// Return the number iff this is a [`Value::Number`].
     pub fn as_number(&self) -> Option<&Number> {
-        if let Value::Number(n) = self {
+        if let Self::Number(n) = self {
             Some(n)
         } else {
             None
@@ -61,7 +61,7 @@ impl std::str::FromStr for Value {
     type Err = crate::Error;
 
     fn from_str(source: &str) -> Result<Self, Self::Err> {
-        CommentedValue::parse_str(source).and_then(|value| value.try_into_value(source))
+        TokenTree::parse_str(source).and_then(|value| value.try_into_value(source))
     }
 }
 

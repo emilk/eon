@@ -4,13 +4,13 @@
 //! ## Feature flags
 #![cfg_attr(feature = "document-features", doc = document_features::document_features!())]
 
-pub mod ast;
 mod ast_from_value;
 pub mod error;
 pub mod format;
 pub mod parse;
 pub mod span;
 pub mod token;
+pub mod token_tree;
 mod value;
 mod value_from_ast;
 
@@ -20,7 +20,8 @@ mod serde;
 #[cfg(feature = "serde")]
 pub use self::serde::{SerializationError, from_str, to_string, to_value};
 
-use crate::ast::CommentedValue;
+use crate::token_tree::TokenTree;
+
 pub use crate::{
     error::{Error, Result},
     format::FormatOptions,
@@ -32,5 +33,5 @@ pub use crate::{
 /// ## Errors
 /// Returns an error if the source is not valid Con syntax.
 pub fn reformat(source: &str, options: &FormatOptions) -> Result<String> {
-    CommentedValue::parse_str(source).map(|value| value.format(options))
+    TokenTree::parse_str(source).map(|value| value.format(options))
 }

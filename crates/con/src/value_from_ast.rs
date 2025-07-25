@@ -5,21 +5,21 @@
 
 use crate::{
     Value,
-    ast::{AstValue, CommentedValue},
+    token_tree::{TreeValue, TokenTree},
     error::{Error, Result},
     span::Span,
 };
 
-impl CommentedValue<'_> {
+impl TokenTree<'_> {
     pub fn try_into_value(self, source: &str) -> Result<Value> {
         self.value.try_into_value(source, self.span)
     }
 }
 
-impl AstValue<'_> {
+impl TreeValue<'_> {
     pub fn try_into_value(self, source: &str, span: Span) -> Result<Value> {
         match self {
-            AstValue::Identifier(identifier) => match identifier.to_ascii_lowercase().as_str() {
+            TreeValue::Identifier(identifier) => match identifier.to_ascii_lowercase().as_str() {
                 "null" | "nil" => Ok(Value::Null),
                 "true" => Ok(Value::Bool(true)),
                 "false" => Ok(Value::Bool(false)),
@@ -29,7 +29,7 @@ impl AstValue<'_> {
                     "Unknown keyword. Expected 'null', 'true', or 'false'.",
                 )),
             },
-            AstValue::Number(string) => crate::Number::try_parse(&string)
+            TreeValue::Number(string) => crate::Number::try_parse(&string)
                 .map(Value::Number)
                 .map_err(|err| {
                     Error::new_at(
@@ -38,7 +38,7 @@ impl AstValue<'_> {
                         format!("Failed to parse number: {err}. The string: {string:?}"),
                     )
                 }),
-            AstValue::QuotedString(escaped) => match snailquote::unescape(&escaped) {
+            TreeValue::QuotedString(escaped) => match snailquote::unescape(&escaped) {
                 Ok(unescaped) => Ok(Value::String(unescaped)),
                 Err(err) => Err(Error::new_at(
                     source,
@@ -46,20 +46,20 @@ impl AstValue<'_> {
                     format!("Failed to unescape string: {err}. The string: {escaped}"),
                 )),
             },
-            AstValue::List(commented_list) => Ok(Value::List(
+            TreeValue::List(commented_list) => Ok(Value::List(
                 commented_list
                     .values
                     .into_iter()
                     .map(|commented_value| commented_value.try_into_value(source))
                     .collect::<Result<_>>()?,
             )),
-            AstValue::Map(commented_map) => Ok(Value::Map(
+            TreeValue::Map(commented_map) => Ok(Value::Map(
                 commented_map
                     .key_values
                     .into_iter()
                     .map(|commented_key_value| {
                         let key = match commented_key_value.key.value {
-                            AstValue::Identifier(key) => key.into_owned(),
+                            TreeValue::Identifier(key) => key.into_owned(),
                             _ => {
                                 return Err(Error::new_at(
                                     source,

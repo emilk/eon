@@ -5,8 +5,8 @@ use serde::de::{self, Error as _, Visitor};
 
 use crate::{
     Number, Value,
-    ast::{AstValue, CommentedKeyValue, CommentedValue},
     span::Span,
+    token_tree::{CommentedKeyValue, TokenTree, TreeValue},
 };
 
 // TODO: include spans and rich error messages
@@ -53,11 +53,11 @@ type Result<T = (), E = DeserErrror> = std::result::Result<T, E>;
 // ----------------------------------------------------
 
 pub struct AstValueDeser<'de> {
-    value: &'de CommentedValue<'de>,
+    value: &'de TokenTree<'de>,
 }
 
 impl<'de> AstValueDeser<'de> {
-    pub fn new(value: &'de CommentedValue<'de>) -> Self {
+    pub fn new(value: &'de TokenTree<'de>) -> Self {
         Self { value }
     }
 }
@@ -73,7 +73,7 @@ impl<'de> de::Deserializer<'de> for &'_ mut AstValueDeser<'de> {
         V: Visitor<'de>,
     {
         let mut result = match &self.value.value {
-            AstValue::Identifier(identifier) => match identifier.as_ref() {
+            TreeValue::Identifier(identifier) => match identifier.as_ref() {
                 "null" => visitor.visit_unit(),
                 "true" => visitor.visit_bool(true),
                 "false" => visitor.visit_bool(false),
@@ -83,7 +83,7 @@ impl<'de> de::Deserializer<'de> for &'_ mut AstValueDeser<'de> {
                 }
             },
 
-            AstValue::Number(num_str) => match Number::try_parse(num_str) {
+            TreeValue::Number(num_str) => match Number::try_parse(num_str) {
                 Ok(number) => {
                     if let Some(n) = number.as_u64() {
                         visitor.visit_u64(n)
@@ -102,7 +102,7 @@ impl<'de> de::Deserializer<'de> for &'_ mut AstValueDeser<'de> {
                 Err(err) => Err(DeserErrror::custom(err)),
             },
 
-            AstValue::QuotedString(quoted) => snailquote::unescape(quoted)
+            TreeValue::QuotedString(quoted) => snailquote::unescape(quoted)
                 .map_err(|err| {
                     DeserErrror::custom(format!(
                         "Failed to unescape quoted string: {quoted:?}: {err}"
@@ -110,9 +110,9 @@ impl<'de> de::Deserializer<'de> for &'_ mut AstValueDeser<'de> {
                 })
                 .and_then(|unescaped| visitor.visit_string(unescaped)),
 
-            AstValue::List(list) => visitor.visit_seq(ListAccess(&list.values)),
+            TreeValue::List(list) => visitor.visit_seq(ListAccess(&list.values)),
 
-            AstValue::Map(map) => visitor.visit_map(MapAcceses {
+            TreeValue::Map(map) => visitor.visit_map(MapAcceses {
                 kvs: &map.key_values,
             }),
         };
@@ -126,14 +126,27 @@ impl<'de> de::Deserializer<'de> for &'_ mut AstValueDeser<'de> {
         result
     }
 
+    fn deserialize_option<V>(self, visitor: V) -> Result<V::Value>
+    where
+        V: Visitor<'de>,
+    {
+        if let TreeValue::Identifier(identifier) = &self.value.value {
+            if identifier == "null" {
+                return visitor.visit_none();
+            }
+        }
+
+        visitor.visit_some(self)
+    }
+
     serde::forward_to_deserialize_any! {
         bool i8 i16 i32 i64 i128 u8 u16 u32 u64 u128 f32 f64 char str string
-        bytes byte_buf option unit unit_struct newtype_struct seq tuple
+        bytes byte_buf unit unit_struct newtype_struct seq tuple
         tuple_struct map struct enum identifier ignored_any
     }
 }
 
-struct ListAccess<'de>(&'de [CommentedValue<'de>]);
+struct ListAccess<'de>(&'de [TokenTree<'de>]);
 
 impl<'de> de::SeqAccess<'de> for ListAccess<'de> {
     type Error = DeserErrror;
@@ -148,7 +161,7 @@ impl<'de> de::SeqAccess<'de> for ListAccess<'de> {
     {
         if let [first, rest @ ..] = self.0 {
             self.0 = rest;
-            seed.deserialize(&mut AstValueDeser::new(&first)).map(Some)
+            seed.deserialize(&mut AstValueDeser::new(first)).map(Some)
         } else {
             Ok(None)
         }
@@ -190,145 +203,161 @@ impl<'de> de::MapAccess<'de> for MapAcceses<'de> {
     }
 }
 
-// ----------------------------------------------------
+// // ----------------------------------------------------
 
-pub struct ValueDeser<'de> {
-    value: &'de Value,
-}
+// pub struct ValueDeser<'de> {
+//     value: &'de Value,
+// }
 
-impl<'de> ValueDeser<'de> {
-    pub fn new(value: &'de Value) -> Self {
-        Self { value }
-    }
-}
+// impl<'de> ValueDeser<'de> {
+//     pub fn new(value: &'de Value) -> Self {
+//         Self { value }
+//     }
+// }
 
-impl<'de> de::Deserializer<'de> for &'_ mut ValueDeser<'de> {
-    type Error = DeserErrror;
+// impl<'de> de::Deserializer<'de> for &'_ mut ValueDeser<'de> {
+//     type Error = DeserErrror;
 
-    // Look at the input data to decide what Serde data model type to
-    // deserialize as. Not all data formats are able to support this operation.
-    // Formats that support `deserialize_any` are known as self-describing.
-    fn deserialize_any<V>(self, visitor: V) -> Result<V::Value>
-    where
-        V: Visitor<'de>,
-    {
-        match self.value {
-            Value::Null => visitor.visit_unit(),
+//     #[inline]
+//     fn is_human_readable(&self) -> bool {
+//         true
+//     }
 
-            Value::Bool(b) => visitor.visit_bool(*b),
+//     // Look at the input data to decide what Serde data model type to
+//     // deserialize as. Not all data formats are able to support this operation.
+//     // Formats that support `deserialize_any` are known as self-describing.
+//     fn deserialize_any<V>(self, visitor: V) -> Result<V::Value>
+//     where
+//         V: Visitor<'de>,
+//     {
+//         match self.value {
+//             Value::Null => visitor.visit_unit(),
 
-            Value::Number(number) => {
-                if let Some(n) = number.as_u64() {
-                    visitor.visit_u64(n)
-                } else if let Some(n) = number.as_i64() {
-                    visitor.visit_i64(n)
-                } else if let Some(n) = number.as_f64() {
-                    visitor.visit_f64(n)
-                } else if let Some(n) = number.as_i128() {
-                    visitor.visit_i128(n)
-                } else if let Some(n) = number.as_u128() {
-                    visitor.visit_u128(n)
-                } else {
-                    return Err(DeserErrror::custom(format!("Invalid numbner: {number}")));
-                }
-            }
+//             Value::Bool(b) => visitor.visit_bool(*b),
 
-            Value::String(string) => visitor.visit_borrowed_str(string),
+//             Value::Number(number) => {
+//                 if let Some(n) = number.as_u64() {
+//                     visitor.visit_u64(n)
+//                 } else if let Some(n) = number.as_i64() {
+//                     visitor.visit_i64(n)
+//                 } else if let Some(n) = number.as_f64() {
+//                     visitor.visit_f64(n)
+//                 } else if let Some(n) = number.as_i128() {
+//                     visitor.visit_i128(n)
+//                 } else if let Some(n) = number.as_u128() {
+//                     visitor.visit_u128(n)
+//                 } else {
+//                     return Err(DeserErrror::custom(format!("Invalid numbner: {number}")));
+//                 }
+//             }
 
-            Value::List(list) => visitor.visit_seq(ValueListAccess(list)),
+//             Value::String(string) => visitor.visit_borrowed_str(string),
 
-            Value::Map(map) => visitor.visit_map(ValueMapAcceses {
-                iter: map.iter(),
-                next_value: None,
-            }),
-        }
-    }
+//             Value::List(list) => visitor.visit_seq(ValueListAccess(list)),
 
-    serde::forward_to_deserialize_any! {
-        bool i8 i16 i32 i64 i128 u8 u16 u32 u64 u128 f32 f64 char str string
-        bytes byte_buf option unit unit_struct newtype_struct seq tuple
-        tuple_struct map struct enum identifier ignored_any
-    }
-}
+//             Value::Map(map) => visitor.visit_map(ValueMapAcceses {
+//                 iter: map.iter(),
+//                 next_value: None,
+//             }),
+//         }
+//     }
 
-struct ValueListAccess<'de>(&'de [Value]);
+//     fn deserialize_option<V>(self, visitor: V) -> Result<V::Value>
+//     where
+//         V: Visitor<'de>,
+//     {
+//         if self.value == &Value::Null {
+//             visitor.visit_none()
+//         } else {
+//             visitor.visit_some(self)
+//         }
+//     }
 
-impl<'de> de::SeqAccess<'de> for ValueListAccess<'de> {
-    type Error = DeserErrror;
+//     serde::forward_to_deserialize_any! {
+//         bool i8 i16 i32 i64 i128 u8 u16 u32 u64 u128 f32 f64 char str string
+//         bytes byte_buf unit unit_struct newtype_struct seq tuple
+//         tuple_struct map struct enum identifier ignored_any
+//     }
+// }
 
-    fn size_hint(&self) -> Option<usize> {
-        Some(self.0.len())
-    }
+// struct ValueListAccess<'de>(&'de [Value]);
 
-    fn next_element_seed<T>(&mut self, seed: T) -> Result<Option<T::Value>>
-    where
-        T: de::DeserializeSeed<'de>,
-    {
-        if let [first, rest @ ..] = self.0 {
-            self.0 = rest;
-            seed.deserialize(&mut ValueDeser { value: first }).map(Some)
-        } else {
-            Ok(None)
-        }
-    }
-}
+// impl<'de> de::SeqAccess<'de> for ValueListAccess<'de> {
+//     type Error = DeserErrror;
 
-struct ValueMapAcceses<'de, I>
-where
-    I: Iterator<Item = (&'de String, &'de Value)>,
-{
-    iter: I,
-    next_value: Option<&'de Value>,
-}
+//     fn size_hint(&self) -> Option<usize> {
+//         Some(self.0.len())
+//     }
 
-impl<'de> de::MapAccess<'de> for ValueMapAcceses<'de, indexmap::map::Iter<'de, String, Value>> {
-    type Error = DeserErrror;
+//     fn next_element_seed<T>(&mut self, seed: T) -> Result<Option<T::Value>>
+//     where
+//         T: de::DeserializeSeed<'de>,
+//     {
+//         if let [first, rest @ ..] = self.0 {
+//             self.0 = rest;
+//             seed.deserialize(&mut ValueDeser { value: first }).map(Some)
+//         } else {
+//             Ok(None)
+//         }
+//     }
+// }
 
-    fn size_hint(&self) -> Option<usize> {
-        Some(self.iter.size_hint().0)
-    }
+// struct ValueMapAcceses<'de, I>
+// where
+//     I: Iterator<Item = (&'de String, &'de Value)>,
+// {
+//     iter: I,
+//     next_value: Option<&'de Value>,
+// }
 
-    fn next_key_seed<K>(&mut self, seed: K) -> Result<Option<K::Value>>
-    where
-        K: de::DeserializeSeed<'de>,
-    {
-        if let Some((key, value)) = self.iter.next() {
-            self.next_value = Some(value);
-            seed.deserialize(&mut MapKeyDeser { key }).map(Some)
-        } else {
-            Ok(None)
-        }
-    }
+// impl<'de> de::MapAccess<'de> for ValueMapAcceses<'de, indexmap::map::Iter<'de, String, Value>> {
+//     type Error = DeserErrror;
 
-    fn next_value_seed<V>(&mut self, seed: V) -> Result<V::Value>
-    where
-        V: de::DeserializeSeed<'de>,
-    {
-        if let Some(value) = self.next_value.take() {
-            seed.deserialize(&mut ValueDeser { value })
-        } else {
-            Err(DeserErrror::custom("No more values in map"))
-        }
-    }
-}
+//     fn size_hint(&self) -> Option<usize> {
+//         Some(self.iter.size_hint().0)
+//     }
 
-struct MapKeyDeser<'de> {
-    key: &'de String,
-}
+//     fn next_key_seed<K>(&mut self, seed: K) -> Result<Option<K::Value>>
+//     where
+//         K: de::DeserializeSeed<'de>,
+//     {
+//         if let Some((key, value)) = self.iter.next() {
+//             self.next_value = Some(value);
+//             seed.deserialize(&mut MapKeyDeser { key }).map(Some)
+//         } else {
+//             Ok(None)
+//         }
+//     }
 
-impl<'de> de::Deserializer<'de> for &'_ mut MapKeyDeser<'de> {
-    type Error = DeserErrror;
+//     fn next_value_seed<V>(&mut self, seed: V) -> Result<V::Value>
+//     where
+//         V: de::DeserializeSeed<'de>,
+//     {
+//         if let Some(value) = self.next_value.take() {
+//             seed.deserialize(&mut ValueDeser { value })
+//         } else {
+//             Err(DeserErrror::custom("No more values in map"))
+//         }
+//     }
+// }
 
-    fn deserialize_any<V>(self, visitor: V) -> Result<V::Value>
-    where
-        V: Visitor<'de>,
-    {
-        visitor.visit_borrowed_str(self.key)
-    }
+// struct MapKeyDeser<'de> {
+//     key: &'de String,
+// }
 
-    serde::forward_to_deserialize_any! {
-        bool i8 i16 i32 i64 i128 u8 u16 u32 u64 u128 f32 f64 char str string
-        bytes byte_buf option unit unit_struct newtype_struct seq tuple
-        tuple_struct map struct enum identifier ignored_any
-    }
-}
+// impl<'de> de::Deserializer<'de> for &'_ mut MapKeyDeser<'de> {
+//     type Error = DeserErrror;
+
+//     fn deserialize_any<V>(self, visitor: V) -> Result<V::Value>
+//     where
+//         V: Visitor<'de>,
+//     {
+//         visitor.visit_borrowed_str(self.key)
+//     }
+
+//     serde::forward_to_deserialize_any! {
+//         bool i8 i16 i32 i64 i128 u8 u16 u32 u64 u128 f32 f64 char str string
+//         bytes byte_buf option unit unit_struct newtype_struct seq tuple
+//         tuple_struct map struct enum identifier ignored_any
+//     }
+// }

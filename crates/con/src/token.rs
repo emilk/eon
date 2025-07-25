@@ -35,11 +35,11 @@ pub enum TokenKind {
     #[token(",")]
     Comma,
 
-    /// `;`  - optional alternative to `,` within objects
+    /// `;`  - optional alternative to `,` within maps
     #[token(";")]
     Semicolon,
 
-    /// Can be an object key, or "false", "true", "null"
+    /// Can be an map key, or "false", "true", "null"
     #[regex("[a-zA-Z_][a-zA-Z0-9_]*")]
     Identifier,
 

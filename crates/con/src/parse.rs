@@ -171,8 +171,8 @@ fn parse_top_str(source: &str) -> Result<CommentedValue<'_>> {
     // Usually a Con file contains a bunch of `key: value` pairs, without any
     // surrounding braces, so we optimize for that case:
     let mut tokens_a = PeekableIter::new(source);
-    match parse_object_contents(&mut tokens_a) {
-        Ok(object) => {
+    match parse_map_contents(&mut tokens_a) {
+        Ok(map) => {
             check_for_trailing_tokens(&mut tokens_a)?;
             let value = CommentedValue {
                 span: Span {
@@ -180,13 +180,13 @@ fn parse_top_str(source: &str) -> Result<CommentedValue<'_>> {
                     end: source.len(),
                 },
                 prefix_comments: vec![],
-                value: AstValue::Object(object),
+                value: AstValue::Map(map),
                 suffix_comment: None,
             };
             Ok(value)
         }
         Err(err_a) => {
-            // Maybe the use did wrap the file in {}, or maybe it is not an object?
+            // Maybe the use did wrap the file in {}, or maybe it is not an map?
             let mut tokens_b = PeekableIter::new(source);
 
             match parse_commented_value(&mut tokens_b) {
@@ -256,8 +256,8 @@ fn parse_list_contents<'s>(tokens: &mut PeekableIter<'s>) -> Result<CommentedLis
     }
 }
 
-/// Parse the inside of an object, without consuming either the opening or closing brackets.
-fn parse_object_contents<'s>(tokens: &mut PeekableIter<'s>) -> Result<CommentedMap<'s>> {
+/// Parse the inside of an map, without consuming either the opening or closing brackets.
+fn parse_map_contents<'s>(tokens: &mut PeekableIter<'s>) -> Result<CommentedMap<'s>> {
     let mut key_values = vec![];
 
     loop {
@@ -327,9 +327,9 @@ fn parse_commented_value<'s>(tokens: &mut PeekableIter<'s>) -> Result<CommentedV
             AstValue::List(list)
         }
         TokenKind::OpenBrace => {
-            let object = parse_object_contents(tokens)?;
+            let map = parse_map_contents(tokens)?;
             consume_token(tokens, TokenKind::CloseBrace)?;
-            AstValue::Object(object)
+            AstValue::Map(map)
         }
         TokenKind::Identifier => AstValue::Identifier(token.slice.into()),
         TokenKind::Number => AstValue::Number(token.slice.into()),
@@ -339,7 +339,7 @@ fn parse_commented_value<'s>(tokens: &mut PeekableIter<'s>) -> Result<CommentedV
         _ => {
             return Err(tokens.error_at(
                 token.span,
-                "Expected a value, like an object, list, number, or string",
+                "Expected a value, like a map, list, number, or string",
             ));
         }
     };
@@ -422,7 +422,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_parse_object() {
+    fn test_parse_map() {
         let input = r#"
         // Prefix comment A.
         // Prefix comment B.
@@ -449,7 +449,7 @@ mod tests {
         assert!(prefix_comments.is_empty());
         assert_eq!(suffix_comment, None);
 
-        if let AstValue::Object(CommentedMap {
+        if let AstValue::Map(CommentedMap {
             key_values,
             closing_comments,
         }) = value
@@ -511,7 +511,7 @@ mod tests {
                 vec!["// Closing comment 1.", "// Closing comment 2."]
             );
         } else {
-            panic!("Expected an object value, got {value:?}");
+            panic!("Expected a map value, got {value:?}");
         }
     }
 }

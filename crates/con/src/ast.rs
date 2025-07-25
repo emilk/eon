@@ -76,7 +76,7 @@ pub struct CommentedList<'s> {
 
 #[derive(Debug)]
 pub enum AstValue<'s> {
-    /// `null`, `true`, or `false`, or the key of an object
+    /// `null`, `true`, or `false`, or the key of an map
     Identifier(Cow<'s, str>),
 
     /// Anything that starts with a sign (+/-) or a digit (0-9).
@@ -90,6 +90,6 @@ pub enum AstValue<'s> {
     /// A list, like `[ a, b, c, … ]`.
     List(CommentedList<'s>),
 
-    /// An object, like `{ key: value }`.
-    Object(CommentedMap<'s>),
+    /// An map, like `{ key: value }`.
+    Map(CommentedMap<'s>),
 }

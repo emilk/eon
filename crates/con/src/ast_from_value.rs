@@ -29,7 +29,7 @@ impl From<Value> for AstValue<'static> {
                 values: list.into_iter().map(Into::into).collect(),
                 closing_comments: vec![],
             }),
-            Value::Map(map) => AstValue::Object(CommentedMap {
+            Value::Map(map) => AstValue::Map(CommentedMap {
                 key_values: map
                     .into_iter()
                     .map(|(key, value)| CommentedKeyValue {

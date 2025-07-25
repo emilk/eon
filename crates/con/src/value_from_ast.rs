@@ -47,8 +47,8 @@ impl AstValue<'_> {
                     .map(|commented_value| commented_value.try_into_value(source))
                     .collect::<Result<_>>()?,
             )),
-            AstValue::Object(commented_object) => Ok(Value::Map(
-                commented_object
+            AstValue::Map(commented_map) => Ok(Value::Map(
+                commented_map
                     .key_values
                     .into_iter()
                     .map(|commented_key_value| {
@@ -58,7 +58,7 @@ impl AstValue<'_> {
                                 return Err(Error::new_at(
                                     source,
                                     span,
-                                    "Expected an identifier for the object key.",
+                                    "Expected an identifier for the map key.",
                                 ));
                             }
                         };

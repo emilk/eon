@@ -2,14 +2,14 @@
 source: crates/con/tests/test_reformat.rs
 expression: formatted
 ---
-// This comment is outside the outermost object.
+// This comment is outside the outermost map.
 // This comment proceeds the first key-value pair.
 key: true // Suffix comment
 
 // Comment about the second key-value pair.
 // Very weird comment
 key: null
-empty_object: {}
+empty_map: {}
 empty_list: []
 short_list: [
     1

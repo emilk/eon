@@ -85,13 +85,13 @@ impl<'de> Deserialize<'de> for Value {
             where
                 V: MapAccess<'de>,
             {
-                let mut object = Map::with_capacity(access.size_hint().unwrap_or(0));
+                let mut map = Map::with_capacity(access.size_hint().unwrap_or(0));
 
                 while let Some((key, value)) = access.next_entry()? {
-                    object.insert(key, value);
+                    map.insert(key, value);
                 }
 
-                Ok(Value::Map(object))
+                Ok(Value::Map(map))
             }
         }
 

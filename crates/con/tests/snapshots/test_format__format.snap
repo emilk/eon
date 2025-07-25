@@ -11,7 +11,7 @@ list: [
     "item1"
     1337
 ]
-object: {
+map: {
     key1: 'a string containing "quotes" and a newline: \n'
     key2: 42
 }

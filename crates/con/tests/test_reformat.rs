@@ -1,7 +1,7 @@
 #[test]
 fn test_reformat() {
     let input = r#"
-        // This comment is outside the outermost object.
+        // This comment is outside the outermost map.
         {
             // This comment proceeds the first key-value pair.
             key: true// Suffix comment
@@ -12,7 +12,7 @@ fn test_reformat() {
             // Very weird comment
             null
 
-            empty_object: {}
+            empty_map: {}
             empty_list: []
             short_list: [1, 2, 3]
 

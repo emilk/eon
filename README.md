@@ -8,10 +8,10 @@ It also contains a Rust crate for reading, parsing, and formatting Con files.
 // comments
 key: "value"
 list: [1 2 3]
-special_floats: [+inf -inf +NaN]
-object: {
+map: {
     key: "value"
 }
+special_floats: [+inf -inf +NaN]
 ```
 
 Con is a strict superset of JSON.

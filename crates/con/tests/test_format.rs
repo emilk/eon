@@ -17,7 +17,7 @@ fn test_format() {
                 ]),
             ),
             (
-                "object".to_owned(),
+                "map".to_owned(),
                 Value::Map(
                     [
                         (

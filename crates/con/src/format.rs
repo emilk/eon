@@ -17,7 +17,7 @@ pub struct FormatOptions {
     /// `": "`
     pub key_value_separator: String,
 
-    /// Surround the top-level object in { } with an extra level of indentation.
+    /// Surround the top-level map in { } with an extra level of indentation.
     pub always_include_outer_braces: bool,
 }
 
@@ -39,9 +39,9 @@ impl CommentedValue<'_> {
         let mut f = Formatter::new(options);
 
         if !f.options.always_include_outer_braces {
-            if let AstValue::Object(object) = &self.value {
+            if let AstValue::Map(map) = &self.value {
                 f.indented_comments(&self.prefix_comments);
-                f.object_content(object);
+                f.map_content(map);
                 if let Some(suffix_comment) = self.suffix_comment {
                     f.out.push(' ');
                     f.out.push_str(suffix_comment);
@@ -128,8 +128,8 @@ impl<'o> Formatter<'o> {
             AstValue::List(list) => {
                 self.list(list);
             }
-            AstValue::Object(object) => {
-                self.object(object);
+            AstValue::Map(map) => {
+                self.map(map);
             }
         }
     }
@@ -159,11 +159,11 @@ impl<'o> Formatter<'o> {
         self.out.push(']');
     }
 
-    fn object(&mut self, object: &CommentedMap<'_>) {
+    fn map(&mut self, map: &CommentedMap<'_>) {
         let CommentedMap {
             key_values,
             closing_comments,
-        } = object;
+        } = map;
 
         if key_values.is_empty() && closing_comments.is_empty() {
             self.out.push_str("{}");
@@ -173,16 +173,16 @@ impl<'o> Formatter<'o> {
         self.out.push('{');
         self.indent += 1;
         self.out.push('\n');
-        self.object_content(object);
+        self.map_content(map);
         self.indent -= 1;
         self.out.push('}');
     }
 
-    fn object_content(&mut self, object: &CommentedMap<'_>) {
+    fn map_content(&mut self, map: &CommentedMap<'_>) {
         let CommentedMap {
             key_values,
             closing_comments,
-        } = object;
+        } = map;
 
         for key_value in key_values {
             self.indented_key_value(key_value);

@@ -1,7 +1,7 @@
 
 ## TODO
-* [ ] Parser
-* [ ] Serde
+* [x] Parser
+* [x] Serde
 * [ ] Remove all TODOs
 * [ ] Hexal and binary numbers
 * [ ] Write a spec

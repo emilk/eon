@@ -10,8 +10,7 @@ struct Top {
     none: Option<String>,
     list: Vec<String>,
     nested_object: NestedObject,
-    color_a: Color,
-    color_b: Color,
+    colors: Vec<Color>,
     tuple: (i32, String),
 }
 
@@ -24,8 +23,10 @@ struct NestedObject {
 
 #[derive(serde::Deserialize, serde::Serialize, Debug, PartialEq)]
 enum Color {
-    Rgb { r: u8, g: u8, b: u8 },
+    Black,
+    Gray(u8),
     Hsl(u8, u8, u8),
+    Rgb { r: u8, g: u8, b: u8 },
 }
 
 #[test]
@@ -43,8 +44,12 @@ fn test_serde() {
             i: 7,
             s: "Nested".to_owned(),
         },
-        color_a: Color::Rgb { r: 255, g: 0, b: 0 },
-        color_b: Color::Hsl(0, 100, 200),
+        colors: vec![
+            Color::Black,
+            Color::Gray(128),
+            Color::Hsl(0, 100, 200),
+            Color::Rgb { r: 255, g: 0, b: 0 },
+        ],
         tuple: (100, "Tuple".to_owned()),
     };
 

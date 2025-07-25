@@ -163,7 +163,10 @@ impl ser::Serializer for &'_ Serializer {
         _variant_index: u32,
         variant_name: &'static str,
     ) -> Result<Value> {
-        self.serialize_str(variant_name)
+        Ok(Value::Choice(Choice {
+            name: variant_name.to_owned(),
+            values: vec![],
+        }))
     }
 
     // Treat newtype structs as insignificant wrappers around the data they contain.
@@ -187,11 +190,10 @@ impl ser::Serializer for &'_ Serializer {
     where
         T: ?Sized + Serialize,
     {
-        // TODO: consider using a RON-like syntax here, e.g. `VariantName(Value)`.
-        Ok(Value::Map(crate::Map::from_iter(vec![(
-            variant_name.to_owned(),
-            value.serialize(self)?,
-        )])))
+        Ok(Value::Choice(Choice {
+            name: variant_name.to_owned(),
+            values: vec![value.serialize(self)?],
+        }))
     }
 
     /// Serialize a list

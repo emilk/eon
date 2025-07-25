@@ -13,12 +13,12 @@ use crate::{
 
 // TODO: include spans and rich error messages
 #[derive(Debug, Clone)]
-pub struct DeserErrror {
+pub struct DeserError {
     pub msg: String,
     pub span: Option<Span>,
 }
 
-impl DeserErrror {
+impl DeserError {
     pub fn new(span: Span, msg: impl Into<String>) -> Self {
         Self {
             msg: msg.into(),
@@ -36,9 +36,9 @@ impl DeserErrror {
     }
 }
 
-impl std::error::Error for DeserErrror {}
+impl std::error::Error for DeserError {}
 
-impl std::fmt::Display for DeserErrror {
+impl std::fmt::Display for DeserError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         if cfg!(debug_assertions) {
             panic!("Do not call this directlty!");
@@ -48,7 +48,7 @@ impl std::fmt::Display for DeserErrror {
     }
 }
 
-impl de::Error for DeserErrror {
+impl de::Error for DeserError {
     fn custom<T: std::fmt::Display>(msg: T) -> Self {
         Self {
             msg: msg.to_string(),
@@ -57,7 +57,7 @@ impl de::Error for DeserErrror {
     }
 }
 
-type Result<T = (), E = DeserErrror> = std::result::Result<T, E>;
+type Result<T = (), E = DeserError> = std::result::Result<T, E>;
 
 // ----------------------------------------------------
 
@@ -74,7 +74,7 @@ impl<'de> TokenTreeDeserializer<'de> {
 }
 
 impl<'de> de::Deserializer<'de> for TokenTreeDeserializer<'de> {
-    type Error = DeserErrror;
+    type Error = DeserError;
 
     fn deserialize_any<V>(self, visitor: V) -> Result<V::Value>
     where
@@ -106,15 +106,15 @@ impl<'de> de::Deserializer<'de> for TokenTreeDeserializer<'de> {
                     } else if let Some(n) = number.as_u128() {
                         visitor.visit_u128(n)
                     } else {
-                        Err(DeserErrror::new(span, format!("Invalid numbner: {number}")))
+                        Err(DeserError::new(span, format!("Invalid numbner: {number}")))
                     }
                 }
-                Err(err) => Err(DeserErrror::new(span, err)),
+                Err(err) => Err(DeserError::new(span, err)),
             },
 
             TreeValue::QuotedString(quoted) => snailquote::unescape(quoted)
                 .map_err(|err| {
-                    DeserErrror::new(
+                    DeserError::new(
                         span,
                         format!("Failed to unescape quoted string: {quoted:?}: {err}"),
                     )
@@ -123,11 +123,11 @@ impl<'de> de::Deserializer<'de> for TokenTreeDeserializer<'de> {
 
             TreeValue::List(list) => visitor.visit_seq(ListAccessor(&list.values)),
 
-            TreeValue::Map(map) => visitor.visit_map(MapAccesor {
+            TreeValue::Map(map) => visitor.visit_map(MapAccessor {
                 kvs: &map.key_values,
             }),
 
-            TreeValue::Choice(_) => Err(DeserErrror::new(span, "Did not expect a choice here")),
+            TreeValue::Choice(_) => Err(DeserError::new(span, "Did not expect a choice here")),
         };
 
         if let Err(err) = &mut result {
@@ -175,7 +175,7 @@ impl<'de> de::Deserializer<'de> for TokenTreeDeserializer<'de> {
             }
             //  TreeValue::QuotedString(quoed) => { } // TODO: forgiving
             _ => {
-                return Err(DeserErrror::new(
+                return Err(DeserError::new(
                     self.value.span,
                     format!("Expected a variant name here; one of: {variant_names:?}"),
                 ));
@@ -183,7 +183,7 @@ impl<'de> de::Deserializer<'de> for TokenTreeDeserializer<'de> {
         }
 
         if !variant_names.contains(&name.as_ref()) {
-            return Err(DeserErrror::new(
+            return Err(DeserError::new(
                 self.value.span,
                 format!("Expected one of: {variant_names:?}"),
             ));
@@ -206,7 +206,7 @@ impl<'de> de::Deserializer<'de> for TokenTreeDeserializer<'de> {
 struct ListAccessor<'de>(&'de [TokenTree<'de>]);
 
 impl<'de> de::SeqAccess<'de> for ListAccessor<'de> {
-    type Error = DeserErrror;
+    type Error = DeserError;
 
     fn size_hint(&self) -> Option<usize> {
         Some(self.0.len())
@@ -226,12 +226,12 @@ impl<'de> de::SeqAccess<'de> for ListAccessor<'de> {
     }
 }
 
-struct MapAccesor<'de> {
+struct MapAccessor<'de> {
     kvs: &'de [CommentedKeyValue<'de>],
 }
 
-impl<'de> de::MapAccess<'de> for MapAccesor<'de> {
-    type Error = DeserErrror;
+impl<'de> de::MapAccess<'de> for MapAccessor<'de> {
+    type Error = DeserError;
 
     fn size_hint(&self) -> Option<usize> {
         Some(self.kvs.len())
@@ -257,7 +257,7 @@ impl<'de> de::MapAccess<'de> for MapAccesor<'de> {
             self.kvs = rest;
             seed.deserialize(TokenTreeDeserializer::new(&first.value))
         } else {
-            Err(DeserErrror::custom("No more values in map"))
+            Err(DeserError::custom("No more values in map"))
         }
     }
 }
@@ -269,7 +269,7 @@ struct EnumAccessor<'de> {
 }
 
 impl<'de> de::EnumAccess<'de> for EnumAccessor<'de> {
-    type Error = DeserErrror;
+    type Error = DeserError;
     type Variant = Self;
 
     fn variant_seed<V>(self, seed: V) -> Result<(V::Value, Self::Variant)>
@@ -282,7 +282,7 @@ impl<'de> de::EnumAccess<'de> for EnumAccessor<'de> {
 }
 
 impl<'de> de::VariantAccess<'de> for EnumAccessor<'de> {
-    type Error = DeserErrror;
+    type Error = DeserError;
 
     // `enum Enum { UnitVariant }`
     fn unit_variant(self) -> Result<()> {
@@ -295,7 +295,7 @@ impl<'de> de::VariantAccess<'de> for EnumAccessor<'de> {
         T: de::DeserializeSeed<'de>,
     {
         if self.values.len() != 1 {
-            return Err(DeserErrror::new(
+            return Err(DeserError::new(
                 self.name_span,
                 format!(
                     "Expected exactly one value for enum variant `{}`",
@@ -313,7 +313,7 @@ impl<'de> de::VariantAccess<'de> for EnumAccessor<'de> {
         V: Visitor<'de>,
     {
         if len != self.values.len() {
-            return Err(DeserErrror::new(
+            return Err(DeserError::new(
                 self.name_span,
                 format!(
                     "Expected {} values for enum variant `{}`, got {}",
@@ -336,7 +336,7 @@ impl<'de> de::VariantAccess<'de> for EnumAccessor<'de> {
         V: Visitor<'de>,
     {
         if self.values.len() != 1 {
-            return Err(DeserErrror::new(
+            return Err(DeserError::new(
                 self.name_span,
                 format!(
                     "Expected exactly one value for enum variant `{}`",
@@ -354,7 +354,7 @@ struct IdentifierDeserializer<'de> {
 }
 
 impl<'de> de::Deserializer<'de> for IdentifierDeserializer<'de> {
-    type Error = DeserErrror;
+    type Error = DeserError;
 
     fn deserialize_any<V>(self, visitor: V) -> Result<V::Value>
     where

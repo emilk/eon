@@ -179,7 +179,7 @@ impl ser::Serializer for &'_ Serializer {
     #[inline]
     fn serialize_newtype_variant<T>(
         self,
-        _enmum_name: &'static str,
+        _enum_name: &'static str,
         _variant_index: u32,
         variant_name: &'static str,
         value: &T,

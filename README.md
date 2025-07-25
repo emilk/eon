@@ -32,7 +32,7 @@ There is no format that has both of the following properties:
 
 ### Why not JSON5?
 JSON5 is _almost_ great, but requires wrapping the whole file in an extra `{ }` block, and indent that. That's too ugly for me.
-It also has a bunch of unnessary commas between values.
+It also has a bunch of unnecessary commas between values.
 
 RON has the same problem.
 
@@ -82,10 +82,10 @@ So different values for the above choice would be written as:
 * `D(42, "hello")
 * `E({a: 1, b: 2})`
 
-Note that all paranthesis (outside of quotes) MUST be proceeded by an identifier.
+Note that all parenthesis (outside of quotes) MUST be proceeded by an identifier.
 
-We could be tempted to allow `E{a: 1, b: 2}`, but that would be inconsistent. Worse, it would be ambigious when parsing: is it one enum variant, or an enum variant followed by an object? `E, {a: 1, b: 2}` (remember: commas are optional in Con).
+We could be tempted to allow `E{a: 1, b: 2}`, but that would be inconsistent. Worse, it would be ambiguous when parsing: is it one enum variant, or an enum variant followed by an object? `E, {a: 1, b: 2}` (remember: commas are optional in Con).
 
 When decoding, we will forgivingly allow writing `"A"` instead of `A`.
 
-That means we can still ommit commas
+That means we can still omit commas

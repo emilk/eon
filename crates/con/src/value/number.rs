@@ -9,7 +9,7 @@ enum NumberImpl {
     I128(i128),
     U128(u128),
 
-    // Having this seperatedly for `f64` allows us to encode `f32` using fewer decimals.
+    // Having this separately for `f64` allows us to encode `f32` using fewer decimals.
     F32(f32),
 
     F64(f64),

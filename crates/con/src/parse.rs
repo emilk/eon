@@ -485,7 +485,7 @@ mod tests {
                 if let TreeValue::Identifier(key) = &key.value {
                     assert_eq!(key, "key1");
                 } else {
-                    panic!("Expected an identfier for key1, got {key:?}");
+                    panic!("Expected an identifier for key1, got {key:?}");
                 }
                 assert_eq!(
                     key.prefix_comments,
@@ -505,7 +505,7 @@ mod tests {
                 if let TreeValue::Identifier(key) = &key.value {
                     assert_eq!(key, "key2");
                 } else {
-                    panic!("Expected an identfier for key1, got {key:?}");
+                    panic!("Expected an identifier for key1, got {key:?}");
                 }
                 assert_eq!(key.prefix_comments, &["// Prefix comment C."]);
                 if let TreeValue::QuotedString(value) = &value.value {

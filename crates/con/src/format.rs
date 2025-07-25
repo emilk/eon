@@ -221,7 +221,7 @@ impl<'o> Formatter<'o> {
         } = choice;
 
         if values.is_empty() && closing_comments.is_empty() {
-            self.out.push_str(name); // Ommit parentheses if no values
+            self.out.push_str(name); // Omit parentheses if no values
             return;
         }
 

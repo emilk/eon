@@ -2,7 +2,7 @@ use std::fmt;
 
 use serde::de::{Deserialize, Deserializer, MapAccess, SeqAccess, Visitor};
 
-use crate::{Number, Object, Value};
+use crate::{Map, Number, Value};
 
 impl<'de> Deserialize<'de> for Value {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
@@ -85,13 +85,13 @@ impl<'de> Deserialize<'de> for Value {
             where
                 V: MapAccess<'de>,
             {
-                let mut object = Object::with_capacity(access.size_hint().unwrap_or(0));
+                let mut object = Map::with_capacity(access.size_hint().unwrap_or(0));
 
                 while let Some((key, value)) = access.next_entry()? {
                     object.insert(key, value);
                 }
 
-                Ok(Value::Object(object))
+                Ok(Value::Map(object))
             }
         }
 

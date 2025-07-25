@@ -1,5 +1,5 @@
 use crate::{
-    ast::{AstValue, CommentedKeyValue, CommentedList, CommentedObject, CommentedValue},
+    ast::{AstValue, CommentedKeyValue, CommentedList, CommentedMap, CommentedValue},
     error::{Error, ErrorReport, Result, error_report_at},
     span::Span,
     token::TokenKind,
@@ -257,7 +257,7 @@ fn parse_list_contents<'s>(tokens: &mut PeekableIter<'s>) -> Result<CommentedLis
 }
 
 /// Parse the inside of an object, without consuming either the opening or closing brackets.
-fn parse_object_contents<'s>(tokens: &mut PeekableIter<'s>) -> Result<CommentedObject<'s>> {
+fn parse_object_contents<'s>(tokens: &mut PeekableIter<'s>) -> Result<CommentedMap<'s>> {
     let mut key_values = vec![];
 
     loop {
@@ -269,7 +269,7 @@ fn parse_object_contents<'s>(tokens: &mut PeekableIter<'s>) -> Result<CommentedO
                 Ok(TokenKind::CloseBrace | TokenKind::CloseList)
             )
         }) {
-            return Ok(CommentedObject {
+            return Ok(CommentedMap {
                 key_values,
                 closing_comments: prefix_comments,
             });
@@ -449,7 +449,7 @@ mod tests {
         assert!(prefix_comments.is_empty());
         assert_eq!(suffix_comment, None);
 
-        if let AstValue::Object(CommentedObject {
+        if let AstValue::Object(CommentedMap {
             key_values,
             closing_comments,
         }) = value

@@ -47,7 +47,7 @@ impl AstValue<'_> {
                     .map(|commented_value| commented_value.try_into_value(source))
                     .collect::<Result<_>>()?,
             )),
-            AstValue::Object(commented_object) => Ok(Value::Object(
+            AstValue::Object(commented_object) => Ok(Value::Map(
                 commented_object
                     .key_values
                     .into_iter()

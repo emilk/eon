@@ -3,7 +3,7 @@
 
 use crate::{
     Value,
-    ast::{AstValue, CommentedKeyValue, CommentedList, CommentedObject, CommentedValue},
+    ast::{AstValue, CommentedKeyValue, CommentedList, CommentedMap, CommentedValue},
 };
 
 impl From<Value> for CommentedValue<'static> {
@@ -29,8 +29,8 @@ impl From<Value> for AstValue<'static> {
                 values: list.into_iter().map(Into::into).collect(),
                 closing_comments: vec![],
             }),
-            Value::Object(object) => AstValue::Object(CommentedObject {
-                key_values: object
+            Value::Map(map) => AstValue::Object(CommentedMap {
+                key_values: map
                     .into_iter()
                     .map(|(key, value)| CommentedKeyValue {
                         key: AstValue::Identifier(key.into()),

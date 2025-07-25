@@ -1,6 +1,6 @@
 use crate::{
     Value,
-    ast::{AstValue, CommentedKeyValue, CommentedList, CommentedObject, CommentedValue},
+    ast::{AstValue, CommentedKeyValue, CommentedList, CommentedMap, CommentedValue},
 };
 
 #[derive(Clone, Debug)]
@@ -159,8 +159,8 @@ impl<'o> Formatter<'o> {
         self.out.push(']');
     }
 
-    fn object(&mut self, object: &CommentedObject<'_>) {
-        let CommentedObject {
+    fn object(&mut self, object: &CommentedMap<'_>) {
+        let CommentedMap {
             key_values,
             closing_comments,
         } = object;
@@ -178,8 +178,8 @@ impl<'o> Formatter<'o> {
         self.out.push('}');
     }
 
-    fn object_content(&mut self, object: &CommentedObject<'_>) {
-        let CommentedObject {
+    fn object_content(&mut self, object: &CommentedMap<'_>) {
+        let CommentedMap {
             key_values,
             closing_comments,
         } = object;

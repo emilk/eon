@@ -24,7 +24,7 @@ use crate::ast::CommentedValue;
 pub use crate::{
     error::{Error, Result},
     format::FormatOptions,
-    value::{Number, Object, Value},
+    value::{Map, Number, Value},
 };
 
 /// Parses a Con file and re-indents and formats it in a pretty way.

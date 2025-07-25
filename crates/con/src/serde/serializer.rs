@@ -1,11 +1,11 @@
-// TODO: fill in based on https://serde.rs/impl-serializer.html
+// See https://serde.rs/impl-serializer.html
 
 use serde::{
     Serialize,
     ser::{self, Error as _},
 };
 
-use crate::{Object, Value, serde::to_value};
+use crate::{Map, Value, serde::to_value};
 
 #[derive(Debug, Clone)]
 pub struct SerializationError {
@@ -188,7 +188,7 @@ impl ser::Serializer for &'_ Serializer {
         T: ?Sized + Serialize,
     {
         // TODO: consider using a RON-like syntax here, e.g. `VariantName(Value)`.
-        Ok(Value::Object(crate::Object::from_iter(vec![(
+        Ok(Value::Map(crate::Map::from_iter(vec![(
             variant_name.to_owned(),
             value.serialize(self)?,
         )])))
@@ -376,7 +376,7 @@ impl ser::SerializeTupleVariant for TupleVariantSerializer {
 /// Used for maps, structs, and enum variants that are structs.
 pub struct MapSerializer {
     name: Option<&'static str>,
-    map: Object,
+    map: Map,
     last_key: Option<String>,
 }
 
@@ -384,7 +384,7 @@ impl MapSerializer {
     fn with_capacity(name: Option<&'static str>, capacity: usize) -> Self {
         Self {
             name,
-            map: Object::with_capacity(capacity),
+            map: Map::with_capacity(capacity),
             last_key: None,
         }
     }
@@ -436,7 +436,7 @@ impl ser::SerializeMap for MapSerializer {
     fn end(self) -> Result<Value> {
         // TODO: report error instead
         debug_assert!(self.last_key.is_none());
-        Ok(Value::Object(self.map))
+        Ok(Value::Map(self.map))
     }
 }
 
@@ -455,7 +455,7 @@ impl ser::SerializeStruct for MapSerializer {
 
     #[inline]
     fn end(self) -> Result<Value> {
-        Ok(Value::Object(self.map))
+        Ok(Value::Map(self.map))
     }
 }
 
@@ -483,6 +483,6 @@ impl ser::SerializeStructVariant for MapSerializer {
 
     #[inline]
     fn end(self) -> Result<Value> {
-        Ok(Value::Object(self.map))
+        Ok(Value::Map(self.map))
     }
 }

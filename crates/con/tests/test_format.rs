@@ -2,7 +2,7 @@ use con::{Number, Value};
 
 #[test]
 fn test_format() {
-    let value = Value::Object(
+    let value = Value::Map(
         [
             ("string".to_owned(), Value::String("a string".to_owned())),
             ("integer".to_owned(), Value::Number(Number::from(42))),
@@ -18,7 +18,7 @@ fn test_format() {
             ),
             (
                 "object".to_owned(),
-                Value::Object(
+                Value::Map(
                     [
                         (
                             "key1".to_owned(),

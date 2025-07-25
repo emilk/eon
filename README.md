@@ -18,6 +18,12 @@ Con is a strict superset of JSON.
 
 The library is rather forgiving with what it accepts as input, but the output is strict.
 
+Con is:
+* Familiar: strongly resembles JSON
+* Clean: forgoes unnecessary commas and quotes
+* Simple: lists are enclosed in [], maps with {}
+* Powerful: supports sum types, like Rust enums.
+
 ## Why another config format?
 There is no format that has both of the following properties:
 * Hierarchy using {} and [] like JSON. Rules out YAML and TOML.
@@ -47,3 +53,39 @@ but the library has not been optimized for performance.
 
 If you plan on having huge files and performance is important to you, I suggest you use a binary format instead.
 
+## Con specification
+* Numbers: +123
+* Simple enums: `option: Choice`
+
+### Sum types
+Consider this Rust example:
+
+```rs
+enum Choice {
+    A,
+    B(i32),
+    C(i32),
+    D(i32, i32),
+    E{a: i32, b: i32}
+}
+```
+
+JSON has no one standard for this, and all the popular alternatives have their own drawbacks.
+
+In Con, enum variants are written as `Variant(data)`.
+
+So different values for the above choice would be written as:
+
+* `A` (equivalent to `A()`)
+* `B(42)`
+* `C(42)`
+* `D(42, "hello")
+* `E({a: 1, b: 2})`
+
+Note that all paranthesis (outside of quotes) MUST be proceeded by an identifier.
+
+We could be tempted to allow `E{a: 1, b: 2}`, but that would be inconsistent. Worse, it would be ambigious when parsing: is it one enum variant, or an enum variant followed by an object? `E, {a: 1, b: 2}` (remember: commas are optional in Con).
+
+When decoding, we will forgivingly allow writing `"A"` instead of `A`.
+
+That means we can still ommit commas

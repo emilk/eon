@@ -58,7 +58,7 @@ pub struct CommentedKeyValue<'s> {
 
 /// An object, like `{ key: value, … }`.
 #[derive(Debug)]
-pub struct CommentedObject<'s> {
+pub struct CommentedMap<'s> {
     pub key_values: Vec<CommentedKeyValue<'s>>,
 
     /// Any comments after the last `key: value` pair, before the closing `}`.
@@ -91,5 +91,5 @@ pub enum AstValue<'s> {
     List(CommentedList<'s>),
 
     /// An object, like `{ key: value }`.
-    Object(CommentedObject<'s>),
+    Object(CommentedMap<'s>),
 }

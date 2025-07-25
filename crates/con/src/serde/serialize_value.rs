@@ -1,6 +1,6 @@
 use serde::ser::{Error as _, SerializeMap as _};
 
-use crate::{Map, Number, Value, value::Choice};
+use crate::{Map, Number, Value};
 
 impl serde::Serialize for Value {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>

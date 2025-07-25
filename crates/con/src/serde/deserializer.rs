@@ -2,14 +2,13 @@
 
 use serde::{
     Deserializer as _,
-    de::{self, Error as _, IntoDeserializer as _, Visitor},
+    de::{self, Error as _, Visitor},
 };
 
 use crate::{
-    Number, Value,
+    Number,
     span::Span,
-    token_tree::{CommentedChoice, CommentedKeyValue, TokenTree, TreeValue},
-    value,
+    token_tree::{CommentedKeyValue, TokenTree, TreeValue},
 };
 
 // TODO: include spans and rich error messages

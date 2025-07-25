@@ -405,8 +405,12 @@ impl ser::SerializeMap for MapSerializer {
     where
         T: ?Sized + Serialize,
     {
-        // TODO: report error instead
-        debug_assert!(self.last_key.is_none());
+        if self.last_key.is_some() {
+            return Err(SerializationError::custom(
+                "serialize_key called twice without serialize_value",
+            ));
+        }
+
         let key = to_value(key)?;
         match key {
             Value::String(s) => {
@@ -440,8 +444,11 @@ impl ser::SerializeMap for MapSerializer {
 
     #[inline]
     fn end(self) -> Result<Value> {
-        // TODO: report error instead
-        debug_assert!(self.last_key.is_none());
+        if self.last_key.is_some() {
+            return Err(SerializationError::custom(
+                "serialize_value not called after serialize_key",
+            ));
+        }
         Ok(Value::Map(self.map))
     }
 }
@@ -471,7 +478,6 @@ impl ser::SerializeStruct for MapSerializer {
 pub struct StructVariantSerializer {
     name: &'static str,
     map: Map,
-    last_key: Option<String>,
 }
 
 impl StructVariantSerializer {
@@ -479,7 +485,6 @@ impl StructVariantSerializer {
         Self {
             name,
             map: Map::with_capacity(capacity),
-            last_key: None,
         }
     }
 }

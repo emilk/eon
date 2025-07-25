@@ -31,7 +31,7 @@ where
     T: serde::de::DeserializeOwned,
 {
     CommentedValue::parse_str(source).and_then(|commented_value| {
-        let mut deser = self::deserializer::AstValueDeser::new(&commented_value.value);
+        let mut deser = self::deserializer::AstValueDeser::new(&commented_value);
         T::deserialize(&mut deser).map_err(|err| unimplemented!())
     })
 }

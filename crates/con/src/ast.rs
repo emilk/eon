@@ -35,25 +35,11 @@ pub struct CommentedValue<'s> {
 
 #[derive(Debug)]
 pub struct CommentedKeyValue<'s> {
-    /// Comments on proceeding lines.
-    ///
-    /// ```ignore
-    /// // Like this
-    /// // and this.
-    /// key: value
-    /// ```
-    pub prefix_comments: Vec<Comment<'s>>,
-
     /// The key of the key-value pair.
-    pub key: AstValue<'s>,
+    pub key: CommentedValue<'s>,
 
     /// The value of the key-value pair.
-    pub value: AstValue<'s>,
-
-    /// Comment after the value on the same line.
-    ///
-    /// `key: value // Like this`.
-    pub suffix_comment: Option<Comment<'s>>,
+    pub value: CommentedValue<'s>,
 }
 
 /// An object, like `{ key: value, … }`.

@@ -6,14 +6,20 @@ use crate::{
     ast::{AstValue, CommentedKeyValue, CommentedList, CommentedMap, CommentedValue},
 };
 
-impl From<Value> for CommentedValue<'static> {
-    fn from(value: Value) -> Self {
+impl<'s> From<AstValue<'s>> for CommentedValue<'s> {
+    fn from(value: AstValue<'s>) -> Self {
         CommentedValue {
-            span: Default::default(),
+            span: Default::default(), // TODO
             prefix_comments: vec![],
-            value: AstValue::from(value),
+            value,
             suffix_comment: None,
         }
+    }
+}
+
+impl From<Value> for CommentedValue<'static> {
+    fn from(value: Value) -> Self {
+        Self::from(AstValue::from(value))
     }
 }
 
@@ -33,10 +39,13 @@ impl From<Value> for AstValue<'static> {
                 key_values: map
                     .into_iter()
                     .map(|(key, value)| CommentedKeyValue {
-                        key: AstValue::Identifier(key.into()),
-                        value: AstValue::from(value),
-                        prefix_comments: Default::default(),
-                        suffix_comment: Default::default(),
+                        key: CommentedValue {
+                            span: Default::default(), // TODO
+                            prefix_comments: vec![],
+                            value: AstValue::Identifier(key.into()),
+                            suffix_comment: None,
+                        },
+                        value: CommentedValue::from(value),
                     })
                     .collect(),
                 closing_comments: Default::default(),

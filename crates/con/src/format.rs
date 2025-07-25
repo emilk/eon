@@ -192,18 +192,14 @@ impl<'o> Formatter<'o> {
     }
 
     fn indented_key_value(&mut self, key_value: &CommentedKeyValue<'_>) {
-        let CommentedKeyValue {
-            prefix_comments,
-            key,
-            value,
-            suffix_comment,
-        } = key_value;
-        self.indented_comments(prefix_comments);
+        let CommentedKeyValue { key, value } = key_value;
+        self.indented_comments(&key.prefix_comments);
+        self.indented_comments(&value.prefix_comments);
         self.add_indent();
-        self.value(key); // TODO: handle optional quotes around keys
+        self.value(&key.value); // TODO: handle optional quotes around keys
         self.out.push_str(&self.options.key_value_separator);
-        self.value(value);
-        if let Some(suffix) = suffix_comment {
+        self.value(&value.value);
+        if let Some(suffix) = value.suffix_comment {
             self.out.push(' ');
             self.out.push_str(suffix);
             self.out.push('\n');

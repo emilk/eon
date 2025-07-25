@@ -52,7 +52,7 @@ impl AstValue<'_> {
                     .key_values
                     .into_iter()
                     .map(|commented_key_value| {
-                        let key = match commented_key_value.key {
+                        let key = match commented_key_value.key.value {
                             AstValue::Identifier(key) => key.into_owned(),
                             _ => {
                                 return Err(Error::new_at(
@@ -63,7 +63,7 @@ impl AstValue<'_> {
                             }
                         };
                         // TODO: handle string keys
-                        let value = commented_key_value.value.try_into_value(source, span)?;
+                        let value = commented_key_value.value.try_into_value(source)?;
                         Ok((key, value))
                     })
                     .collect::<Result<_>>()?,

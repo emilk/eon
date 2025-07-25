@@ -34,11 +34,11 @@ type Result<T = (), E = DeserErrror> = std::result::Result<T, E>;
 // ----------------------------------------------------
 
 pub struct AstValueDeser<'de> {
-    value: &'de AstValue<'de>,
+    value: &'de CommentedValue<'de>,
 }
 
 impl<'de> AstValueDeser<'de> {
-    pub fn new(value: &'de AstValue<'de>) -> Self {
+    pub fn new(value: &'de CommentedValue<'de>) -> Self {
         Self { value }
     }
 }
@@ -53,7 +53,7 @@ impl<'de> de::Deserializer<'de> for &'_ mut AstValueDeser<'de> {
     where
         V: Visitor<'de>,
     {
-        match &self.value {
+        match &self.value.value {
             AstValue::Identifier(identifier) => match identifier.as_ref() {
                 "null" => visitor.visit_unit(),
                 "true" => visitor.visit_bool(true),
@@ -102,8 +102,7 @@ impl<'de> de::SeqAccess<'de> for ListAccess<'de> {
     {
         if let [first, rest @ ..] = self.0 {
             self.0 = rest;
-            seed.deserialize(&mut AstValueDeser::new(&first.value))
-                .map(Some)
+            seed.deserialize(&mut AstValueDeser::new(&first)).map(Some)
         } else {
             Ok(None)
         }

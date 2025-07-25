@@ -261,7 +261,7 @@ fn parse_map_contents<'s>(tokens: &mut PeekableIter<'s>) -> Result<CommentedMap<
     let mut key_values = vec![];
 
     loop {
-        let mut prefix_comments = parse_comments(tokens);
+        let prefix_comments = parse_comments(tokens);
 
         if tokens.peek().is_none_or(|peeked| {
             matches!(
@@ -275,19 +275,17 @@ fn parse_map_contents<'s>(tokens: &mut PeekableIter<'s>) -> Result<CommentedMap<
             });
         }
 
-        let key = parse_commented_value(tokens)?;
-
+        let mut key = parse_commented_value(tokens)?;
         debug_assert!(
             key.prefix_comments.is_empty(),
             "We should have already consumed these"
         );
+        key.prefix_comments = prefix_comments;
         // TODO: handle suffix comments on the key?
 
         consume_token(tokens, TokenKind::Colon)?; // TODO: allow `=` too?
 
         let mut value = parse_commented_value(tokens)?;
-
-        prefix_comments.append(&mut value.prefix_comments);
 
         if tokens.peek().is_some_and(|peeked| {
             matches!(peeked.kind, Ok(TokenKind::Comma | TokenKind::Semicolon))
@@ -297,12 +295,7 @@ fn parse_map_contents<'s>(tokens: &mut PeekableIter<'s>) -> Result<CommentedMap<
             value.suffix_comment = parse_suffix_comment(tokens)?;
         }
 
-        key_values.push(CommentedKeyValue {
-            prefix_comments,
-            key: key.value,
-            value: value.value,
-            suffix_comment: value.suffix_comment.take(),
-        });
+        key_values.push(CommentedKeyValue { key, value });
     }
 }
 
@@ -457,53 +450,41 @@ mod tests {
             assert_eq!(key_values.len(), 2);
 
             {
-                let CommentedKeyValue {
-                    prefix_comments,
-                    key,
-                    value,
-                    suffix_comment,
-                } = &key_values[0];
+                let CommentedKeyValue { key, value } = &key_values[0];
 
-                if let AstValue::Identifier(key) = key {
+                if let AstValue::Identifier(key) = &key.value {
                     assert_eq!(key, "key1");
                 } else {
                     panic!("Expected an identfier for key1, got {key:?}");
                 }
                 assert_eq!(
-                    prefix_comments,
+                    key.prefix_comments,
                     &["// Prefix comment A.", "// Prefix comment B."]
                 );
-                if let AstValue::Number(value) = value {
+                if let AstValue::Number(value) = &value.value {
                     assert_eq!(value, "42");
                 } else {
                     panic!("Expected a number for key1, got {key:?}");
                 }
-                assert_eq!(suffix_comment.as_deref(), None);
+                assert_eq!(value.suffix_comment, None);
             }
 
             {
-                let CommentedKeyValue {
-                    prefix_comments,
-                    key,
-                    value,
-                    suffix_comment,
-                } = &key_values[1];
+                let CommentedKeyValue { key, value } = &key_values[1];
 
-                if let AstValue::Identifier(key) = key {
+                if let AstValue::Identifier(key) = &key.value {
                     assert_eq!(key, "key2");
                 } else {
                     panic!("Expected an identfier for key1, got {key:?}");
                 }
-                assert_eq!(
-                    prefix_comments,
-                    &["// Prefix comment C.", "// Prefix comment D."]
-                );
-                if let AstValue::QuotedString(value) = value {
+                assert_eq!(key.prefix_comments, &["// Prefix comment C."]);
+                if let AstValue::QuotedString(value) = &value.value {
                     assert_eq!(value, r#""string""#);
                 } else {
                     panic!("Expected a String for key2, got {key:?}");
                 }
-                assert_eq!(suffix_comment.as_deref(), Some("// Suffix comment"));
+                assert_eq!(value.prefix_comments, ["// Prefix comment D."]);
+                assert_eq!(value.suffix_comment, Some("// Suffix comment"));
             }
 
             assert_eq!(

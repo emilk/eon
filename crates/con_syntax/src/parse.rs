@@ -1,7 +1,7 @@
 //! Convert tokens into a token tree.
 
 use crate::{
-    error::{Error, ErrorReport, Result, error_report_at},
+    error::{Error, Result},
     span::Span,
     token_kind::TokenKind,
     token_tree::{
@@ -67,11 +67,14 @@ impl<'s> Iterator for PlacedTokenIter<'s> {
                 kind: Ok(token),
             })
         } else {
-            let report = error_report_at(span, format!("Invalid token: '{slice}'"));
             Some(PlacedTokenResult {
                 span,
                 slice,
-                kind: Err(Error::new(self.iter.source(), report)),
+                kind: Err(Error::new_at(
+                    self.iter.source(),
+                    span,
+                    format!("Invalid token: '{slice}'"),
+                )),
             })
         }
     }
@@ -101,12 +104,8 @@ impl<'s> PeekableIter<'s> {
         }
     }
 
-    pub fn error(&self, report: ErrorReport) -> Error {
-        Error::new(self.source, report)
-    }
-
     pub fn error_at(&self, span: Span, message: impl Into<String>) -> Error {
-        self.error(error_report_at(span, message))
+        Error::new_at(self.source, span, message)
     }
 
     pub fn peek(&mut self) -> Option<&PlacedTokenResult<'s>> {

@@ -16,7 +16,7 @@ object: {
 }
 map: {
     1: "map keys don't need to be strings"
-    2: "they can be"
+    2: "they can be any Con value"
 }
 special_floats: [+inf, -inf, +NaN]
 ```
@@ -72,7 +72,7 @@ enum Color {
 }
 ```
 
-JSON has no one standard for how to encode the different alternatives, and the different alternatives (external tagging, internal tagging, adjaceny tagging, …) all have their own shortcomings.
+There are many competing techniques of encoding this in JSON (external tagging, internal tagging, adjaceny tagging, …) all with their own shortcomings.
 
 In Con, enum variants are written as `Variant(data)`.
 

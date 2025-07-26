@@ -1,8 +1,9 @@
 [workspace]
 resolver = "2"
 members = [
-    "crates/con",
     "crates/con_syntax",
+    "crates/con",
+    "crates/confmt",
 ]
 
 [workspace.package]
@@ -19,7 +20,9 @@ rust-version = "1.85"
 con_syntax = { path = "crates/con_syntax" }
 
 ariadne = "0.5.1"
+clap = "4.5.41"
 document-features = "0.2.11"
+ignore = "0.4.23"
 indexmap = "2.10.0"
 insta = "1.0.9"
 logos = "0.15.0"

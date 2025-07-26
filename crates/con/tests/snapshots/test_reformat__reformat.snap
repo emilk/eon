@@ -11,9 +11,5 @@ key: true // Suffix comment
 key: null
 empty_map: {}
 empty_list: []
-short_list: [
-    1
-    2
-    3
-]
+short_list: [1, 2, 3]
 // TODO: add more test cases here

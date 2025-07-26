@@ -1,3 +1,5 @@
+//! Serialize a [`TokenTree`] to a Con string.
+
 use crate::{
     Value,
     token_tree::{
@@ -26,7 +28,7 @@ pub struct FormatOptions {
 impl Default for FormatOptions {
     fn default() -> Self {
         Self {
-            indentation: "    ".to_owned(), // TODO: what should be the default?
+            indentation: "    ".to_owned(),
             newline: "\n".to_owned(),
             space_before_suffix_comment: " ".to_owned(),
             key_value_separator: ": ".to_owned(),
@@ -140,7 +142,6 @@ impl<'o> Formatter<'o> {
     }
 
     fn list(&mut self, list: &CommentedList<'_>) {
-        // TODO: one-line lists when very short, e.g. `[1 2 3]`
         let CommentedList {
             values,
             closing_comments,
@@ -151,17 +152,28 @@ impl<'o> Formatter<'o> {
             return;
         }
 
-        self.out.push('[');
-        self.indent += 1;
-        self.out.push('\n');
-        for value in values {
-            self.indented_commented_value(value);
-            self.out.push('\n'); // TODO: only if the values have prefix comments
+        if should_format_list_on_one_line(list) {
+            self.out.push('[');
+            for (i, value) in values.iter().enumerate() {
+                self.value(&value.value);
+                if i + 1 < values.len() {
+                    self.out.push_str(", "); // We use commas for single-line lists, just for extra readability
+                }
+            }
+            self.out.push(']');
+        } else {
+            self.out.push('[');
+            self.indent += 1;
+            self.out.push('\n');
+            for value in values {
+                self.indented_commented_value(value);
+                self.out.push('\n'); // TODO: only if the values have prefix comments
+            }
+            self.indented_comments(closing_comments);
+            self.indent -= 1;
+            self.add_indent();
+            self.out.push(']');
         }
-        self.indented_comments(closing_comments);
-        self.indent -= 1;
-        self.add_indent();
-        self.out.push(']');
     }
 
     fn map(&mut self, map: &CommentedMap<'_>) {
@@ -240,5 +252,66 @@ impl<'o> Formatter<'o> {
         self.indent -= 1;
         self.add_indent();
         self.out.push(')');
+    }
+}
+
+fn should_format_list_on_one_line(list: &CommentedList<'_>) -> bool {
+    if list.values.len() <= 4 && list.values.iter().all(|tt| tt.value.is_number()) {
+        return true; // e.g. [1 2 3 4]
+    }
+
+    if list.values.len() > 4 {
+        return false;
+    }
+
+    let mut estimated_width = 0;
+    for value in &list.values {
+        if !is_simple(value) {
+            return false;
+        }
+        if let TreeValue::QuotedString(string) = &value.value {
+            estimated_width += string.len();
+        } else {
+            estimated_width += 5;
+        }
+        estimated_width += 2;
+    }
+
+    estimated_width < 60
+}
+
+fn is_simple(value: &TokenTree<'_>) -> bool {
+    if value.prefix_comments.is_empty() && value.suffix_comment.is_none() {
+        match &value.value {
+            TreeValue::Identifier(_) | TreeValue::Number(_) | TreeValue::QuotedString(_) => true,
+
+            TreeValue::List(list) => {
+                let CommentedList {
+                    values,
+                    closing_comments,
+                } = list;
+                values.is_empty() && closing_comments.is_empty()
+            }
+
+            TreeValue::Map(map) => {
+                let CommentedMap {
+                    key_values,
+                    closing_comments,
+                } = map;
+                key_values.is_empty() && closing_comments.is_empty()
+            }
+
+            TreeValue::Choice(choice) => {
+                let CommentedChoice {
+                    name_span: _,
+                    name: _,
+                    values,
+                    closing_comments,
+                } = choice;
+                values.is_empty() && closing_comments.is_empty()
+            }
+        }
+    } else {
+        false
     }
 }

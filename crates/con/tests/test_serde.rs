@@ -8,7 +8,7 @@ struct Top {
     b: bool,
     some: Option<String>,
     none: Option<String>,
-    list: Vec<String>,
+    floats: Vec<f32>,
     nested_object: NestedObject,
     colors: Vec<Color>,
     tuple: (i32, String),
@@ -38,7 +38,7 @@ fn test_serde() {
         b: true,
         some: Some("Some".to_owned()),
         none: None,
-        list: vec!["item1".to_owned(), "item2".to_owned()],
+        floats: vec![1.1, f32::NEG_INFINITY, f32::INFINITY],
         nested_object: NestedObject {
             f: 3.2,
             i: 7,

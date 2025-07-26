@@ -1,10 +1,12 @@
+use std::hash::Hash;
+
 use crate::Result;
 
 /// Represents a number (float, integer, …)
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone)]
 pub struct Number(NumberImpl);
 
-#[derive(Debug, Clone, PartialEq)] // TODO: explicitly implement PartialEq, Eq, Hash
+#[derive(Debug, Clone)]
 enum NumberImpl {
     I128(i128),
     U128(u128),
@@ -13,6 +15,46 @@ enum NumberImpl {
     F32(f32),
 
     F64(f64),
+}
+
+impl PartialEq for Number {
+    fn eq(&self, other: &Self) -> bool {
+        if let (Some(a), Some(b)) = (self.as_i128(), other.as_i128()) {
+            a == b
+        } else if let (Some(a), Some(b)) = (self.as_u128(), other.as_u128()) {
+            a == b
+        } else if let (Some(a), Some(b)) = (self.as_f64(), other.as_f64()) {
+            a.is_nan() && b.is_nan() || a == b
+        } else {
+            false // different types
+        }
+    }
+}
+
+impl Eq for Number {}
+
+impl Hash for Number {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        if let Some(n) = self.as_i128() {
+            n.hash(state);
+        } else if let Some(n) = self.as_u128() {
+            n.hash(state);
+        } else if let Some(n) = self.as_f64() {
+            if n == 0.0 {
+                0_u64.hash(state);
+            } else if n.is_nan() {
+                1_u64.hash(state);
+            } else if n == f64::NEG_INFINITY {
+                2_u64.hash(state);
+            } else if n == f64::INFINITY {
+                3_u64.hash(state);
+            } else {
+                n.to_bits().hash(state);
+            }
+        } else {
+            // We should never get here
+        }
+    }
 }
 
 impl Number {
@@ -43,16 +85,11 @@ impl Number {
 
         let unsigned = if let Some(binary) = string.strip_prefix("0b") {
             let number = u128::from_str_radix(binary, 2)
-                .map_err(|_err| "Failed to parse binary number. Expected '0b...'".to_owned())?;
+                .map_err(|_err| "Failed to parse binary number. Expected '0b…'".to_owned())?;
             NumberImpl::U128(number)
         } else if let Some(hex) = string.strip_prefix("0x") {
-            let number = u128::from_str_radix(hex, 16).map_err(|_err| {
-                "Failed to parse hexadecimal number. Expected '0x...'".to_owned()
-            })?;
-            NumberImpl::U128(number)
-        } else if let Some(octal) = string.strip_prefix("0o") {
-            let number = u128::from_str_radix(octal, 8)
-                .map_err(|_err| "Failed to parse octal number. Expected '0o...'".to_owned())?;
+            let number = u128::from_str_radix(hex, 16)
+                .map_err(|_err| "Failed to parse hexadecimal number. Expected '0x…'".to_owned())?;
             NumberImpl::U128(number)
         } else if string.contains('.') || string.contains('e') {
             let as_f64 = string.parse::<f64>().map_err(|_err| {
@@ -282,27 +319,25 @@ impl std::fmt::Display for Number {
 
             NumberImpl::F32(n) => {
                 if n.is_nan() {
-                    write!(f, "NaN")
+                    "+NaN".fmt(f)
                 } else if *n == f32::NEG_INFINITY {
-                    write!(f, "-inf")
+                    "-inf".fmt(f)
                 } else if *n == f32::INFINITY {
-                    write!(f, "+inf")
+                    "+inf".fmt(f)
                 } else {
-                    // TODO: always include a decimal point?
-                    n.fmt(f)
+                    n.fmt(f) // TODO: always include a decimal point?
                 }
             }
 
             NumberImpl::F64(n) => {
                 if n.is_nan() {
-                    write!(f, "NaN")
+                    "+NaN".fmt(f)
                 } else if *n == f64::NEG_INFINITY {
-                    write!(f, "-inf")
+                    "-inf".fmt(f)
                 } else if *n == f64::INFINITY {
-                    write!(f, "+inf")
+                    "+inf".fmt(f)
                 } else {
-                    // TODO: always include a decimal point?
-                    n.fmt(f)
+                    n.fmt(f) // TODO: always include a decimal point?
                 }
             }
         }

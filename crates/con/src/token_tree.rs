@@ -101,3 +101,9 @@ pub enum TreeValue<'s> {
     /// A sum-type choice, like `Rgb(…)`
     Choice(CommentedChoice<'s>),
 }
+
+impl TreeValue<'_> {
+    pub fn is_number(&self) -> bool {
+        matches!(self, Self::Number(_))
+    }
+}

@@ -8,10 +8,7 @@ s: "Hello, world!"
 b: true
 some: "Some"
 none: null
-list: [
-    "item1"
-    "item2"
-]
+floats: [1.1, -inf, +inf]
 nested_object: {
     f: 3.2
     i: 7
@@ -35,7 +32,4 @@ colors: [
         }
     )
 ]
-tuple: [
-    100
-    "Tuple"
-]
+tuple: [100, "Tuple"]

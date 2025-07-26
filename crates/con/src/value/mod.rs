@@ -9,8 +9,7 @@ pub use self::{map::Map, number::Number};
 ///
 /// This does NOT include comments.
 /// For that, use [`crate::ast::CommentedValue`].
-
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Value {
     /// Special `null` value
     Null,
@@ -35,7 +34,7 @@ pub enum Value {
 }
 
 /// A sum-type (enum) choice, like `Rgb(255, 0, 0)` or `Maybe`.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Choice {
     /// The name of the choice, like `Rgb`.
     pub name: String,

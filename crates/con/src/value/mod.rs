@@ -9,7 +9,7 @@ pub use self::{map::Map, number::Number};
 ///
 /// This does NOT include comments.
 /// For that, use [`crate::ast::CommentedValue`].
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum Value {
     /// Special `null` value
     Null,
@@ -20,7 +20,9 @@ pub enum Value {
     /// An integer or floating point number
     Number(Number),
 
-    /// The contents of a string, i.e. without surrounding quotes.
+    /// A string value, like `"Hello, world!"`
+    ///
+    /// Also commonly used as the key in a [`Map`].
     String(String),
 
     /// A list of values.
@@ -34,7 +36,7 @@ pub enum Value {
 }
 
 /// A sum-type (enum) choice, like `Rgb(255, 0, 0)` or `Maybe`.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Choice {
     /// The name of the choice, like `Rgb`.
     pub name: String,

@@ -1,5 +1,7 @@
 #![cfg(feature = "serde")]
 
+use std::collections::BTreeMap;
+
 #[derive(serde::Deserialize, serde::Serialize, Debug, PartialEq)]
 struct Top {
     f: f32,
@@ -12,6 +14,7 @@ struct Top {
     nested_object: NestedObject,
     colors: Vec<Color>,
     tuple: (i32, String),
+    map: BTreeMap<i32, f32>,
 }
 
 #[derive(serde::Deserialize, serde::Serialize, Debug, PartialEq)]
@@ -51,6 +54,7 @@ fn test_serde() {
             Color::Rgb { r: 255, g: 0, b: 0 },
         ],
         tuple: (100, "Tuple".to_owned()),
+        map: BTreeMap::from([(1, 1.1), (2, f32::NEG_INFINITY), (3, f32::INFINITY)]),
     };
 
     let string = con::to_string(&top, &con::FormatOptions::default()).unwrap();

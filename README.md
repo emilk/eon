@@ -1,18 +1,22 @@
-# Con - The human-friendly config format
-This repository contains the definition of _Con_, a new config format designed for human editing.
+# Con - The simple and friendly config format
+This repository contains the definition of _Con_, a simple config format designed for human editing.
 
 Con uses the `.con` file ending.
 
-It also contains a Rust crate for using Con with `serde`, and a binary for formatting Con files.
+This repository also contains a Rust crate for using Con with `serde`, and a binary for formatting Con files.
 
 ## In short
 ```c
 // Comment
 string: "Hello Con!"
 list: [1 2 3]
-map: {
-    bool: true
+object: {
+    boolean: true
     key: 'Use single quotes if your string contains "quotes"'
+}
+map: {
+    1: "map keys don't need to be strings"
+    2: "they can be"
 }
 special_floats: [+inf, -inf, +NaN]
 ```
@@ -20,8 +24,8 @@ special_floats: [+inf, -inf, +NaN]
 Con is designed to be
 * **Familiar**: strongly resembles JSON
 * **Clean**: forgoes unnecessary commas, quotes, and indentation
-* **Clear**: lists are enclosed in `[ ]`, maps with `{ }`
-* **Powerful**: supports sum types, like Rust enums
+* **Clear**: lists are enclosed in `[ ]`, maps in `{ }`
+* **Powerful**: supports sum types (e.g. Rust enums) and arbitrary map keys
 
 Con is a strict superset of JSON, i.e. any JSON file is also valid Con.
 

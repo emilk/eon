@@ -15,7 +15,7 @@ pub type Comment<'s> = &'s str;
 /// A tree of tokens, representing the structure of the Con source code, including comments.
 #[derive(Debug)]
 pub struct TokenTree<'s> {
-    /// The span of the token tree in the source code.
+    /// The span of this token tree in the source code.
     pub span: Span,
 
     /// Comments on proceeding lines.
@@ -81,7 +81,7 @@ pub struct CommentedChoice<'s> {
 
 #[derive(Debug)]
 pub enum TreeValue<'s> {
-    /// `null`, `true`, or `false`, or the key of an map
+    /// `null`, `true`, or `false`, or the key of an map (when quotes aren't needed).
     Identifier(Cow<'s, str>),
 
     /// Anything that starts with a sign (+/-) or a digit (0-9).

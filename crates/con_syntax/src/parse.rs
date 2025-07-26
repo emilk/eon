@@ -3,7 +3,7 @@
 use crate::{
     error::{Error, ErrorReport, Result, error_report_at},
     span::Span,
-    token::TokenKind,
+    token_kind::TokenKind,
     token_tree::{
         CommentedChoice, CommentedKeyValue, CommentedList, CommentedMap, TokenTree, TreeValue,
     },

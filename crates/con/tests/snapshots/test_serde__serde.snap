@@ -25,3 +25,8 @@ colors: [
 	})
 ]
 tuple: [100, "Tuple"]
+map: {
+	1: 1.1
+	2: -inf
+	3: +inf
+}

@@ -8,13 +8,14 @@ mod error;
 mod format;
 mod parse;
 mod span;
-mod token;
+mod token_kind;
 mod token_tree;
 
 pub use crate::{
     error::{Error, Result},
     format::FormatOptions,
     span::Span,
+    token_kind::needs_quotes,
     token_tree::{
         CommentedChoice, CommentedKeyValue, CommentedList, CommentedMap, TokenTree, TreeValue,
     },

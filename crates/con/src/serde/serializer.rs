@@ -386,7 +386,7 @@ impl ser::SerializeTupleVariant for TupleVariantSerializer {
 /// Used for maps, structs, and enum variants that are structs.
 pub struct MapSerializer {
     map: Map,
-    last_key: Option<String>,
+    last_key: Option<Value>,
 }
 
 impl MapSerializer {
@@ -413,17 +413,9 @@ impl ser::SerializeMap for MapSerializer {
             ));
         }
 
-        let key = to_value(key)?;
-        match key {
-            Value::String(s) => {
-                self.last_key = Some(s);
-                Ok(())
-            }
-            _ => {
-                // TODO: relax this restriction
-                Err(SerializationError::custom("Map keys must be strings"))
-            }
-        }
+        self.last_key = Some(to_value(key)?);
+
+        Ok(())
     }
 
     // It doesn't make a difference whether the colon is printed at the end of
@@ -464,7 +456,7 @@ impl ser::SerializeStruct for MapSerializer {
     where
         T: ?Sized + Serialize,
     {
-        self.map.insert(key.to_owned(), to_value(value)?);
+        self.map.insert(to_value(key)?, to_value(value)?);
         Ok(())
     }
 
@@ -509,7 +501,7 @@ impl ser::SerializeStructVariant for StructVariantSerializer {
     where
         T: ?Sized + Serialize,
     {
-        self.map.insert(key.to_owned(), to_value(value)?);
+        self.map.insert(to_value(key)?, to_value(value)?);
         Ok(())
     }
 

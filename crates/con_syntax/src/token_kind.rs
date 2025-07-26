@@ -1,5 +1,37 @@
 use logos::Logos;
 
+/// Returns `true` if the string does NOT match `[a-zA-Z_][a-zA-Z0-9_]*`
+pub fn needs_quotes(string: &str) -> bool {
+    let mut chars = string.chars();
+
+    if chars
+        .next()
+        .is_none_or(|c| !c.is_ascii_alphabetic() && c != '_')
+    {
+        return true;
+    }
+
+    for c in chars {
+        if !c.is_ascii_alphanumeric() && c != '_' {
+            return true;
+        }
+    }
+
+    false
+}
+#[test]
+fn test_needs_quotes() {
+    assert!(needs_quotes(""));
+    assert!(!needs_quotes("a"));
+    assert!(!needs_quotes("a1"));
+    assert!(!needs_quotes("a_b"));
+    assert!(!needs_quotes("a_b1"));
+    assert!(needs_quotes("1a"));
+    assert!(!needs_quotes("_1a"));
+    assert!(needs_quotes("a-b"));
+    assert!(needs_quotes("a b"));
+}
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Logos)]
 #[logos(skip r"[ \t\n\f]*")] // Ignore this regex pattern between tokens
 pub enum TokenKind {
@@ -40,7 +72,7 @@ pub enum TokenKind {
     Comma,
 
     /// Can be an map key, or "false", "true", "null"
-    #[regex("[a-zA-Z_][a-zA-Z0-9_\\-]*")]
+    #[regex("[a-zA-Z_][a-zA-Z0-9_]*")]
     Identifier,
 
     /// Anything that starts with a sign (+/-), a digit (0-9), or a period (decimal separator).

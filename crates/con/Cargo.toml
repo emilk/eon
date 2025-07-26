@@ -30,17 +30,17 @@ serde = ["dep:serde"]
 
 
 [dependencies]
-ariadne = "0.5.1"
-indexmap = "2.10.0"
-logos = "0.15.0"
+con_syntax.workspace = true
 
-serde = { version = "1.0.219", optional = true }
+indexmap.workspace = true
+
+serde = { workspace = true, optional = true }
 
 ## Enable this when generating docs.
-document-features = { version = "0.2.11", optional = true }
-snailquote = "0.3.1"
+document-features = { workspace = true, optional = true }
+snailquote.workspace = true
 
 
 [dev-dependencies]
-insta = "1.0.9"
-serde = { version = "1.0.219", features = ["derive"] }
+insta.workspace = true
+serde = { workspace = true, features = ["derive"] }

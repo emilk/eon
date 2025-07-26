@@ -1,33 +1,34 @@
-# Con - The nice config format
+# Con - The human-friendly config format
 This repository contains the definition of _Con_, a new config format designed for human editing.
 
-It also contains a Rust crate for reading, parsing, and formatting Con files.
+Con uses the `.con` file ending.
+
+It also contains a Rust crate for using Con with `serde`, and a binary for formatting Con files.
 
 ## In short
 ```c
-// comments
-key: "value"
+// Comment
+string: "Hello Con!"
 list: [1 2 3]
 map: {
-    key: "value"
+    bool: true
+    key: 'Use single quotes if your string contains "quotes"'
 }
-special_floats: [+inf -inf +NaN]
+special_floats: [+inf, -inf, +NaN]
 ```
 
-Con is a strict superset of JSON.
+Con is designed to be
+* **Familiar**: strongly resembles JSON
+* **Clean**: forgoes unnecessary commas, quotes, and indentation
+* **Clear**: lists are enclosed in `[ ]`, maps with `{ }`
+* **Powerful**: supports sum types, like Rust enums
 
-The library is rather forgiving with what it accepts as input, but the output is strict.
-
-Con is:
-* Familiar: strongly resembles JSON
-* Clean: forgoes unnecessary commas and quotes
-* Simple: lists are enclosed in [], maps with {}
-* Powerful: supports sum types, like Rust enums.
+Con is a strict superset of JSON, i.e. any JSON file is also valid Con.
 
 ## Why another config format?
-There is no format that has both of the following properties:
-* Hierarchy using {} and [] like JSON. Rules out YAML and TOML.
-* No top-level {} wrapping the whole file. Rules out JSON5, RON, and others.
+I wanted a format designed for human eyes with
+* Indented hierarchy using `{ }` and `[ ]` (like JSON, C, Rust, …). Rules out YAML and TOML.
+* No top-level `{ }` wrapping the whole file. Rules out JSON5, RON, and others.
 
 
 ### Why not JSON5?
@@ -48,44 +49,36 @@ It's just so ugly, and filled with foot-guns. Go away.
 ## Performance
 The Con language and library are designed for human-readable, human-sized config files.
 
-There is nothing in the Con spec that would not make it as fast (or as slow) as JSON,
-but the library has not been optimized for performance.
+There is nothing in the Con spec that would not make it as fast (or as slow, depending on your perspective) as JSON, but the library has not been optimized for performance (no crazy SIMD stuff etc).
 
-If you plan on having huge files and performance is important to you, I suggest you use a binary format instead.
+If you plan on having huge files and performance is important to you, I suggest you use a binary format instead, like `MsgPack`.
 
 ## Con specification
-* Numbers: +123
-* Simple enums: `option: Choice`
+TODO: fill in
 
 ### Sum types
-Consider this Rust example:
+Consider this Rust enum:
 
 ```rs
-enum Choice {
-    A,
-    B(i32),
-    C(i32),
-    D(i32, i32),
-    E{a: i32, b: i32}
+enum Color {
+    Black,
+    Gray(u8),
+    Hsl(u8, u8, u8),
+    Rgb { r: u8, g: u8, b: u8 },
 }
 ```
 
-JSON has no one standard for this, and all the popular alternatives have their own drawbacks.
+JSON has no one standard for how to encode the different alternatives, and the different alternatives (external tagging, internal tagging, adjaceny tagging, …) all have their own shortcomings.
 
 In Con, enum variants are written as `Variant(data)`.
 
 So different values for the above choice would be written as:
 
-* `A` (equivalent to `A()`)
-* `B(42)`
-* `C(42)`
-* `D(42, "hello")
-* `E({a: 1, b: 2})`
+* `Black` (equivalent to `Black()`)
+* `Gray(128)`
+* `Hsl(0, 100, 200)`
+* `Rgb({r: 255, g: 0, b: 0})`
 
 Note that all parenthesis (outside of quotes) MUST be proceeded by an identifier.
 
-We could be tempted to allow `E{a: 1, b: 2}`, but that would be inconsistent. Worse, it would be ambiguous when parsing: is it one enum variant, or an enum variant followed by an object? `E, {a: 1, b: 2}` (remember: commas are optional in Con).
-
-When decoding, we will forgivingly allow writing `"A"` instead of `A`.
-
-That means we can still omit commas
+We could be tempted to allow `Rgb{r: 255, g: 0, b: 0}`, but that would be inconsistent. Worse, it would be ambiguous when parsing: is it one enum variant, or an enum variant followed by a map? (remember: commas are optional in Con).

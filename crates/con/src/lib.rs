@@ -5,33 +5,16 @@
 #![cfg_attr(feature = "document-features", doc = document_features::document_features!())]
 
 mod ast_from_value;
-pub mod error;
-pub mod format;
-pub mod parse;
-pub mod span;
-pub mod token;
-pub mod token_tree;
 mod value;
 mod value_from_ast;
 
 #[cfg(feature = "serde")]
 mod serde;
 
-#[cfg(feature = "serde")]
-pub use self::serde::{SerializationError, from_str, to_string, to_value};
-
-use crate::token_tree::TokenTree;
-
-pub use crate::{
-    error::{Error, Result},
-    format::FormatOptions,
-    value::{Map, Number, Value},
+pub use {
+    crate::value::{Map, Number, Value},
+    con_syntax::{Error, FormatOptions, Result, reformat},
 };
 
-/// Parses a Con file and re-indents and formats it in a pretty way.
-///
-/// ## Errors
-/// Returns an error if the source is not valid Con syntax.
-pub fn reformat(source: &str, options: &FormatOptions) -> Result<String> {
-    TokenTree::parse_str(source).map(|value| value.format(options))
-}
+#[cfg(feature = "serde")]
+pub use self::serde::{SerializationError, from_str, to_string, to_value};

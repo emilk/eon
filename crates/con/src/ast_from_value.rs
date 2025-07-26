@@ -1,23 +1,11 @@
 //! The formatter uses the [`CommentedValue`] type,
 //! so in order to print a [`Value`], we need a way to convert it to [`CommentedValue`].
 
-use crate::{
-    Value,
-    token_tree::{
-        CommentedChoice, CommentedKeyValue, CommentedList, CommentedMap, TokenTree, TreeValue,
-    },
-};
+use crate::Value;
 
-impl<'s> From<TreeValue<'s>> for TokenTree<'s> {
-    fn from(value: TreeValue<'s>) -> Self {
-        TokenTree {
-            span: Default::default(), // TODO
-            prefix_comments: vec![],
-            value,
-            suffix_comment: None,
-        }
-    }
-}
+use con_syntax::{
+    CommentedChoice, CommentedKeyValue, CommentedList, CommentedMap, TokenTree, TreeValue,
+};
 
 impl From<Value> for TokenTree<'static> {
     fn from(value: Value) -> Self {

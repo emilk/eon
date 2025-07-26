@@ -5,11 +5,9 @@ use serde::{
     de::{self, Error as _, Visitor},
 };
 
-use crate::{
-    Number,
-    span::Span,
-    token_tree::{CommentedKeyValue, TokenTree, TreeValue},
-};
+use crate::Number;
+
+use con_syntax::{CommentedKeyValue, Span, TokenTree, TreeValue};
 
 // TODO: include spans and rich error messages
 #[derive(Debug, Clone)]
@@ -26,10 +24,10 @@ impl DeserError {
         }
     }
 
-    pub fn into_error(self, source: &str) -> crate::Error {
+    pub fn into_error(self, con_source: &str) -> crate::Error {
         let Self { msg, span } = self;
         if let Some(span) = span {
-            crate::Error::new_at(source, span, msg)
+            crate::Error::new_at(con_source, span, msg)
         } else {
             crate::Error::custom(msg)
         }

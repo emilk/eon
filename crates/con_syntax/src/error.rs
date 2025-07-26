@@ -23,15 +23,15 @@ pub enum Error {
 }
 
 impl Error {
-    pub fn new(source: &str, report: ErrorReport) -> Self {
+    pub fn new(con_source: &str, report: ErrorReport) -> Self {
         Self::AtSource {
-            source: ariadne::Source::from(source.to_owned()),
+            source: ariadne::Source::from(con_source.to_owned()),
             report: std::rc::Rc::new(report),
         }
     }
 
-    pub fn new_at(source: &str, span: Span, message: impl Into<String>) -> Self {
-        Self::new(source, error_report_at(span, message))
+    pub fn new_at(con_source: &str, span: Span, message: impl Into<String>) -> Self {
+        Self::new(con_source, error_report_at(span, message))
     }
 
     pub fn custom(message: impl Into<String>) -> Self {

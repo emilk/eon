@@ -101,10 +101,6 @@ impl<'s> PeekableIter<'s> {
         }
     }
 
-    pub fn source(&self) -> &'s str {
-        self.source
-    }
-
     pub fn error(&self, report: ErrorReport) -> Error {
         Error::new(self.source, report)
     }
@@ -132,13 +128,6 @@ impl<'s> PeekableIter<'s> {
     pub fn span_of_previous(&self) -> Span {
         self.last_span
     }
-
-    pub fn span_of_end(&self) -> Span {
-        Span {
-            start: self.last_span.end,
-            end: self.source.len(),
-        }
-    }
 }
 
 impl<'s> Iterator for PeekableIter<'s> {
@@ -163,25 +152,18 @@ impl<'s> TokenTree<'s> {
     }
 }
 
-impl crate::Value {
-    /// Parse a full Con file.
-    pub fn parse_str(source: &str) -> Result<Self> {
-        TokenTree::parse_str(source).and_then(|v| v.try_into_value(source))
-    }
-}
-
 /// Parse a full Con file.
-fn parse_top_str(source: &str) -> Result<TokenTree<'_>> {
+fn parse_top_str(con_source: &str) -> Result<TokenTree<'_>> {
     // Usually a Con file contains a bunch of `key: value` pairs, without any
     // surrounding braces, so we optimize for that case:
-    let mut tokens_a = PeekableIter::new(source);
+    let mut tokens_a = PeekableIter::new(con_source);
     match parse_map_contents(&mut tokens_a) {
         Ok(map) => {
             check_for_trailing_tokens(&mut tokens_a)?;
             let value = TokenTree {
                 span: Span {
                     start: 0,
-                    end: source.len(),
+                    end: con_source.len(),
                 },
                 prefix_comments: vec![],
                 value: TreeValue::Map(map),
@@ -191,7 +173,7 @@ fn parse_top_str(source: &str) -> Result<TokenTree<'_>> {
         }
         Err(err_a) => {
             // Maybe the use did wrap the file in {}, or maybe it is not an map?
-            let mut tokens_b = PeekableIter::new(source);
+            let mut tokens_b = PeekableIter::new(con_source);
 
             match parse_commented_value(&mut tokens_b) {
                 Ok(value) => {
@@ -291,9 +273,10 @@ fn parse_map_contents<'s>(tokens: &mut PeekableIter<'s>) -> Result<CommentedMap<
 
         let mut value = parse_commented_value(tokens)?;
 
-        if tokens.peek().is_some_and(|peeked| {
-            matches!(peeked.kind, Ok(TokenKind::Comma | TokenKind::Semicolon))
-        }) {
+        if tokens
+            .peek()
+            .is_some_and(|peeked| matches!(peeked.kind, Ok(TokenKind::Comma)))
+        {
             // Consume optional comma
             tokens.next();
             value.suffix_comment = parse_suffix_comment(tokens)?;

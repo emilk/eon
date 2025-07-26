@@ -1,10 +1,7 @@
 //! Serialize a [`TokenTree`] to a Con string.
 
-use crate::{
-    Value,
-    token_tree::{
-        CommentedChoice, CommentedKeyValue, CommentedList, CommentedMap, TokenTree, TreeValue,
-    },
+use crate::token_tree::{
+    CommentedChoice, CommentedKeyValue, CommentedList, CommentedMap, TokenTree, TreeValue,
 };
 
 #[derive(Clone, Debug)]
@@ -76,13 +73,6 @@ impl TokenTree<'_> {
 
         f.indented_commented_value(self);
         f.finish()
-    }
-}
-
-impl Value {
-    /// Pretty-print a [`Value`] to a string.
-    pub fn format(&self, options: &FormatOptions) -> String {
-        TokenTree::from(self.clone()).format(options)
     }
 }
 

@@ -35,20 +35,12 @@ pub enum TokenKind {
     #[token(":")]
     Colon,
 
-    /// `=`
-    #[token("=")]
-    Equals,
-
     /// `,`
     #[token(",")]
     Comma,
 
-    /// `;`  - optional alternative to `,` within maps
-    #[token(";")]
-    Semicolon,
-
     /// Can be an map key, or "false", "true", "null"
-    #[regex("[a-zA-Z_][a-zA-Z0-9_]*")]
+    #[regex("[a-zA-Z_][a-zA-Z0-9_\\-]*")]
     Identifier,
 
     /// Anything that starts with a sign (+/-), a digit (0-9), or a period (decimal separator).
@@ -75,9 +67,7 @@ impl std::fmt::Display for TokenKind {
             Self::OpenParen => write!(f, "open parenthesis '('"),
             Self::CloseParen => write!(f, "close parenthesis ')'"),
             Self::Colon => write!(f, "colon ':'"),
-            Self::Equals => write!(f, "equals '='"),
             Self::Comma => write!(f, "comma ','"),
-            Self::Semicolon => write!(f, "semicolon ';'"),
             Self::Identifier => write!(f, "identifier"),
             Self::Number => write!(f, "number"),
             Self::DoubleQuotedString => write!(f, r#""double quoted" string"#),

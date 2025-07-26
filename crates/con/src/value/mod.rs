@@ -1,7 +1,7 @@
 mod map;
 mod number;
 
-use crate::token_tree::TokenTree;
+use con_syntax::{FormatOptions, Result, TokenTree};
 
 pub use self::{map::Map, number::Number};
 
@@ -44,6 +44,16 @@ pub struct Choice {
 }
 
 impl Value {
+    /// Pretty-print a [`Value`] to a string.
+    pub fn format(&self, options: &FormatOptions) -> String {
+        TokenTree::from(self.clone()).format(options)
+    }
+
+    /// Parse a full Con file.
+    pub fn parse_str(con_source: &str) -> Result<Self> {
+        TokenTree::parse_str(con_source).and_then(|v| Self::try_from_token_tree(con_source, &v)) // TODO: from_str
+    }
+
     /// Return the bool value iff this is a [`Value::Bool`].
     pub fn as_bool(&self) -> Option<bool> {
         if let Self::Bool(b) = self {
@@ -72,8 +82,8 @@ impl std::fmt::Display for Value {
 impl std::str::FromStr for Value {
     type Err = crate::Error;
 
-    fn from_str(source: &str) -> Result<Self, Self::Err> {
-        TokenTree::parse_str(source).and_then(|value| value.try_into_value(source))
+    fn from_str(con_source: &str) -> Result<Self, Self::Err> {
+        TokenTree::parse_str(con_source).and_then(|tt| Self::try_from_token_tree(con_source, &tt))
     }
 }
 

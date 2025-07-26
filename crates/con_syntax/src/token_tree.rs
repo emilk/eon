@@ -107,3 +107,14 @@ impl TreeValue<'_> {
         matches!(self, Self::Number(_))
     }
 }
+
+impl<'s> From<TreeValue<'s>> for TokenTree<'s> {
+    fn from(value: TreeValue<'s>) -> Self {
+        TokenTree {
+            span: Default::default(), // TODO
+            prefix_comments: vec![],
+            value,
+            suffix_comment: None,
+        }
+    }
+}

@@ -9,6 +9,6 @@ boolean: true
 null: null
 list: ["item1", 1337]
 map: {
-    key1: 'a string containing "quotes" and a newline: \n'
-    key2: 42
+	key1: 'a string containing "quotes" and a newline: \n'
+	key2: 42
 }

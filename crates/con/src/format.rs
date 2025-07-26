@@ -9,7 +9,7 @@ use crate::{
 
 #[derive(Clone, Debug)]
 pub struct FormatOptions {
-    /// `"    "`
+    /// `"\t"`
     pub indentation: String,
 
     /// `"\n"`
@@ -28,12 +28,31 @@ pub struct FormatOptions {
 impl Default for FormatOptions {
     fn default() -> Self {
         Self {
-            indentation: "    ".to_owned(),
+            indentation: "\t".to_owned(), // A tab character allows users to configure their preferred indentation size in their editor
             newline: "\n".to_owned(),
             space_before_suffix_comment: " ".to_owned(),
             key_value_separator: ": ".to_owned(),
             always_include_outer_braces: false,
         }
+    }
+}
+
+impl FormatOptions {
+    /// Create a new [`FormatOptions`] with the default values.
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    /// Set the indentation string.
+    pub fn with_indentation(mut self, indentation: String) -> Self {
+        self.indentation = indentation;
+        self
+    }
+
+    /// Set the newline string.
+    pub fn with_newline(mut self, newline: String) -> Self {
+        self.newline = newline;
+        self
     }
 }
 
@@ -237,35 +256,64 @@ impl<'o> Formatter<'o> {
             return;
         }
 
-        // TODO: single-line short-form for single value, e.g. `choice(value)`
-        // TODO: put {} braces on next to () for variants containing a single map
+        if should_format_choice_on_one_line(choice) {
+            self.out.push_str(name);
+            self.out.push('(');
+            for (i, value) in values.iter().enumerate() {
+                self.value(&value.value);
+                if i + 1 < values.len() {
+                    self.out.push_str(", "); // We use commas for single-line choices, just for extra readability
+                }
+            }
+            self.out.push(')');
+        } else {
+            // TODO: put {} braces on next to () for variants containing a single map
 
-        self.out.push_str(name);
-        self.out.push('(');
-        self.indent += 1;
-        self.out.push('\n');
-        for value in values {
-            self.indented_commented_value(value);
-            self.out.push('\n'); // TODO: only if the values have prefix comments
+            self.out.push_str(name);
+            self.out.push('(');
+            self.indent += 1;
+            self.out.push('\n');
+            for value in values {
+                self.indented_commented_value(value);
+                self.out.push('\n'); // TODO: only if the values have prefix comments
+            }
+            self.indented_comments(closing_comments);
+            self.indent -= 1;
+            self.add_indent();
+            self.out.push(')');
         }
-        self.indented_comments(closing_comments);
-        self.indent -= 1;
-        self.add_indent();
-        self.out.push(')');
     }
 }
 
 fn should_format_list_on_one_line(list: &CommentedList<'_>) -> bool {
-    if list.values.len() <= 4 && list.values.iter().all(|tt| tt.value.is_number()) {
+    let CommentedList {
+        values,
+        closing_comments,
+    } = list;
+    closing_comments.is_empty() && should_format_values_on_one_line(values)
+}
+
+fn should_format_choice_on_one_line(choice: &CommentedChoice<'_>) -> bool {
+    let CommentedChoice {
+        name_span: _,
+        name: _,
+        values,
+        closing_comments,
+    } = choice;
+    closing_comments.is_empty() && should_format_values_on_one_line(values)
+}
+
+fn should_format_values_on_one_line(values: &[TokenTree<'_>]) -> bool {
+    if values.len() <= 4 && values.iter().all(|tt| tt.value.is_number()) {
         return true; // e.g. [1 2 3 4]
     }
 
-    if list.values.len() > 4 {
+    if values.len() > 4 {
         return false;
     }
 
     let mut estimated_width = 0;
-    for value in &list.values {
+    for value in values {
         if !is_simple(value) {
             return false;
         }

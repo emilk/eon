@@ -10,26 +10,20 @@ some: "Some"
 none: null
 floats: [1.1, -inf, +inf]
 nested_object: {
-    f: 3.2
-    i: 7
-    s: "Nested"
+	f: 3.2
+	i: 7
+	s: "Nested"
 }
 colors: [
-    Black
-    Gray(
-        128
-    )
-    Hsl(
-        0
-        100
-        200
-    )
-    Rgb(
-        {
-            r: 255
-            g: 0
-            b: 0
-        }
-    )
+	Black
+	Gray(128)
+	Hsl(0, 100, 200)
+	Rgb(
+		{
+			r: 255
+			g: 0
+			b: 0
+		}
+	)
 ]
 tuple: [100, "Tuple"]

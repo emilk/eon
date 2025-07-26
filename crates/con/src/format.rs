@@ -266,9 +266,30 @@ impl<'o> Formatter<'o> {
                 }
             }
             self.out.push(')');
-        } else {
-            // TODO: put {} braces on next to () for variants containing a single map
+        } else if closing_comments.is_empty()
+            && values.len() == 1
+            && matches!(values[0].value, TreeValue::Map(_))
+        {
+            let TreeValue::Map(map) = &values[0].value else {
+                unreachable!() // TODO(emilk): replace with if-let chains
+            };
 
+            if map.key_values.is_empty() && map.closing_comments.is_empty() {
+                self.out.push_str(name);
+                self.out.push_str("({ })");
+            } else {
+                // A single map choice, like `ChoiceName({ key: value, … })`.
+                // Here we avoid double-indenting for nicer/more compact output.
+                self.out.push_str(name);
+                self.out.push_str("({");
+                self.indent += 1;
+                self.out.push('\n');
+                self.map_content(map);
+                self.indent -= 1;
+                self.add_indent();
+                self.out.push_str("})");
+            }
+        } else {
             self.out.push_str(name);
             self.out.push('(');
             self.indent += 1;

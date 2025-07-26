@@ -8,7 +8,7 @@ fn test_format() {
             ("integer".to_owned(), Value::Number(Number::from(42))),
             ("float".to_owned(), Value::Number(Number::from(1.3))),
             ("boolean".to_owned(), Value::Bool(true)),
-            ("null".to_owned(), Value::Null),
+            ("nothing".to_owned(), Value::Null),
             (
                 "list".to_owned(),
                 Value::List(vec![

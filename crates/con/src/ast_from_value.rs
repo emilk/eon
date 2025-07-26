@@ -1,11 +1,11 @@
 //! The formatter uses the [`CommentedValue`] type,
 //! so in order to print a [`Value`], we need a way to convert it to [`CommentedValue`].
 
-use crate::Value;
+use crate::{Value, value::Choice};
 
 use con_syntax::{
     CommentedChoice, CommentedKeyValue, CommentedList, CommentedMap, TokenTree, TreeValue,
-    needs_quotes,
+    escape_and_quote, key_needs_quotes,
 };
 
 impl From<Value> for TokenTree<'static> {
@@ -29,7 +29,7 @@ impl From<Value> for TreeValue<'static> {
             Value::Map(map) => {
                 let all_keys_are_identifiers = map.iter().all(|(key, _)| {
                     if let Value::String(key) = key {
-                        !needs_quotes(key)
+                        !key_needs_quotes(key)
                     } else {
                         false
                     }
@@ -58,52 +58,12 @@ impl From<Value> for TreeValue<'static> {
                     closing_comments: Default::default(),
                 })
             }
-            Value::Choice(choice) => TreeValue::Choice(CommentedChoice {
+            Value::Choice(Choice { name, values }) => TreeValue::Choice(CommentedChoice {
                 name_span: Default::default(), // TODO
-                name: choice.name.into(),
-                values: choice.values.into_iter().map(Into::into).collect(),
+                quoted_name: escape_and_quote(&name).into(),
+                values: values.into_iter().map(Into::into).collect(),
                 closing_comments: Default::default(),
             }),
         }
     }
-}
-
-fn escape_and_quote(raw: &str) -> String {
-    #![expect(clippy::unwrap_used)] // Can't fail - the Debug format always produces a string with quotes.
-
-    let escaped = format!("{raw:?}");
-
-    if raw.contains('"') && !raw.contains('\'') {
-        // Use single-quotes instead of double-quotes.
-        let unquoted = escaped
-            .strip_prefix('"')
-            .unwrap()
-            .strip_suffix('"')
-            .unwrap(); // Remove quotes
-        let unquoted = unquoted.replace("\\\"", "\""); // No need to escape double-quotes
-        format!("'{unquoted}'") // Use single-quotes
-    } else {
-        escaped
-    }
-}
-
-#[test]
-fn test_escape() {
-    assert_eq!(escape_and_quote("normal"), r#""normal""#);
-    assert_eq!(
-        escape_and_quote(r#"a string with 'single-quotes'"#),
-        r#""a string with 'single-quotes'""#
-    );
-    assert_eq!(
-        escape_and_quote(r#"a string with "double-quotes""#),
-        r#"'a string with "double-quotes"'"#
-    );
-    assert_eq!(
-        escape_and_quote(r#"a string with 'single-quotes' and "double-quotes""#),
-        r#""a string with 'single-quotes' and \"double-quotes\"""#
-    );
-    assert_eq!(
-        escape_and_quote("a string with newline \n"),
-        r#""a string with newline \n""#
-    );
 }

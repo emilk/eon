@@ -5,7 +5,7 @@
 
 use crate::{Error, Result, Value};
 
-use con_syntax::{Span, TokenTree, TreeValue};
+use con_syntax::{CommentedChoice, Span, TokenTree, TreeValue, unescape_and_unquote};
 
 impl Value {
     pub fn try_from_token_tree(con_source: &str, tt: &TokenTree<'_>) -> Result<Self> {
@@ -37,14 +37,15 @@ impl Value {
                         format!("Failed to parse number: {err}. The string: {string:?}"),
                     )
                 }),
-            TreeValue::QuotedString(escaped) => match snailquote::unescape(escaped) {
-                Ok(unescaped) => Ok(Self::String(unescaped)),
-                Err(err) => Err(Error::new_at(
-                    con_source,
-                    span,
-                    format!("Failed to unescape string: {err}. The string: {escaped}"),
-                )),
-            },
+            TreeValue::QuotedString(escaped) => unescape_and_unquote(escaped)
+                .map(Self::String)
+                .map_err(|err| {
+                    Error::new_at(
+                        con_source,
+                        span,
+                        format!("Failed to unescape string: {err}. The string: {escaped}"),
+                    )
+                }),
             TreeValue::List(commented_list) => Ok(Self::List(
                 commented_list
                     .values
@@ -75,9 +76,20 @@ impl Value {
                     .collect::<Result<_>>()?,
             )),
             TreeValue::Choice(commented_choice) => {
-                let name = commented_choice.name.to_string();
-                let values = commented_choice
-                    .values
+                let CommentedChoice {
+                    name_span,
+                    quoted_name,
+                    values,
+                    closing_comments: _,
+                } = commented_choice;
+                let name = unescape_and_unquote(quoted_name).map_err(|err| {
+                    Error::new_at(
+                        con_source,
+                        *name_span,
+                        format!("Failed to unescape string: {err}. The string: {quoted_name}"),
+                    )
+                })?;
+                let values = values
                     .iter()
                     .map(|commented_value| Self::try_from_token_tree(con_source, commented_value))
                     .collect::<Result<_>>()?;

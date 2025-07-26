@@ -129,7 +129,6 @@ dependencies = [
  "indexmap",
  "insta",
  "serde",
- "snailquote",
 ]
 
 [[package]]
@@ -139,6 +138,7 @@ dependencies = [
  "ariadne",
  "document-features",
  "logos",
+ "snailquote",
 ]
 
 [[package]]

@@ -6,7 +6,7 @@ string: "a string"
 integer: 42
 float: 1.3
 boolean: true
-null: null
+nothing: null
 list: ["item1", 1337]
 map: {
 	key1: 'a string containing "quotes" and a newline: \n'

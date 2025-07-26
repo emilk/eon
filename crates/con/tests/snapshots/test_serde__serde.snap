@@ -15,10 +15,10 @@ nested_object: {
 	s: "Nested"
 }
 colors: [
-	Black
-	Gray(128)
-	Hsl(0, 100, 200)
-	Rgb({
+	"Black"
+	"Gray"(128)
+	"Hsl"(0, 100, 200)
+	"Rgb"({
 		r: 255
 		g: 0
 		b: 0

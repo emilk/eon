@@ -63,3 +63,25 @@ fn test_serde() {
     let roundtripped: Top = con::from_str(&string).unwrap();
     assert_eq!(top, roundtripped);
 }
+
+#[test]
+fn test_string_to_bool() {
+    let bool_map: BTreeMap<String, bool> =
+        BTreeMap::from([("true".to_owned(), true), ("false".to_owned(), false)]);
+    let result = con::to_string(&bool_map, &con::FormatOptions::default());
+    insta::assert_snapshot!(result.unwrap(), @r#"
+    "false": false
+    "true": true
+    "#);
+}
+
+#[test]
+fn test_bool_to_string() {
+    let bool_map: BTreeMap<bool, String> =
+        BTreeMap::from([(true, "true".to_owned()), (false, "false".to_owned())]);
+    let result = con::to_string(&bool_map, &con::FormatOptions::default());
+    insta::assert_snapshot!(result.unwrap(), @r#"
+    false: "false"
+    true: "true"
+    "#);
+}

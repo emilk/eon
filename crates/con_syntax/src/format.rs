@@ -236,18 +236,18 @@ impl<'o> Formatter<'o> {
     fn choice(&mut self, choice: &CommentedChoice<'_>) {
         let CommentedChoice {
             name_span: _,
-            name,
+            quoted_name,
             values,
             closing_comments,
         } = choice;
 
         if values.is_empty() && closing_comments.is_empty() {
-            self.out.push_str(name); // Omit parentheses if no values
+            self.out.push_str(quoted_name); // Omit parentheses if no values
             return;
         }
 
         if should_format_choice_on_one_line(choice) {
-            self.out.push_str(name);
+            self.out.push_str(quoted_name);
             self.out.push('(');
             for (i, value) in values.iter().enumerate() {
                 self.value(&value.value);
@@ -265,12 +265,12 @@ impl<'o> Formatter<'o> {
             };
 
             if map.key_values.is_empty() && map.closing_comments.is_empty() {
-                self.out.push_str(name);
+                self.out.push_str(quoted_name);
                 self.out.push_str("({ })");
             } else {
-                // A single map choice, like `ChoiceName({ key: value, … })`.
+                // A single map choice, like `"ChoiceName"({ key: value, … })`.
                 // Here we avoid double-indenting for nicer/more compact output.
-                self.out.push_str(name);
+                self.out.push_str(quoted_name);
                 self.out.push_str("({");
                 self.indent += 1;
                 self.out.push('\n');
@@ -280,7 +280,7 @@ impl<'o> Formatter<'o> {
                 self.out.push_str("})");
             }
         } else {
-            self.out.push_str(name);
+            self.out.push_str(quoted_name);
             self.out.push('(');
             self.indent += 1;
             self.out.push('\n');
@@ -307,7 +307,7 @@ fn should_format_list_on_one_line(list: &CommentedList<'_>) -> bool {
 fn should_format_choice_on_one_line(choice: &CommentedChoice<'_>) -> bool {
     let CommentedChoice {
         name_span: _,
-        name: _,
+        quoted_name: _,
         values,
         closing_comments,
     } = choice;
@@ -363,7 +363,7 @@ fn is_simple(value: &TokenTree<'_>) -> bool {
             TreeValue::Choice(choice) => {
                 let CommentedChoice {
                     name_span: _,
-                    name: _,
+                    quoted_name: _,
                     values,
                     closing_comments,
                 } = choice;

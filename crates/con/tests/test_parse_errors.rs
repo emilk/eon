@@ -6,6 +6,7 @@ use std::str::FromStr as _;
 
 #[test]
 fn test_parse_errors() {
+    // TODO: improve the span of this error
     insta::assert_snapshot!(con::Value::from_str("key: value").unwrap_err(), @r"
     Error:
        ╭─[ <unknown>:1:4 ]
@@ -16,13 +17,18 @@ fn test_parse_errors() {
     ───╯
     ");
 
-    insta::assert_snapshot!(con::Value::from_str("kebab-case: 'value'").unwrap_err(), @r"
+    // TODO: improve this error message
+    insta::assert_snapshot!(con::Value::from_str(
+        r"
+snake_case: 'ok',
+kebab-case: 'forbidden'
+").unwrap_err(), @r"
     Error:
-       ╭─[ <unknown>:1:6 ]
+       ╭─[ <unknown>:3:6 ]
        │
-     1 │ kebab-case: 'value'
+     3 │ kebab-case: 'forbidden'
        │      ──┬──
-       │        ╰──── Expected end of file here
+       │        ╰──── Expected colon ':' but found number
     ───╯
     ");
 }

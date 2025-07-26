@@ -174,10 +174,33 @@ fn parse_top_str(con_source: &str) -> Result<TokenTree<'_>> {
             // Maybe the use did wrap the file in {}, or maybe it is not an map?
             let mut tokens_b = PeekableIter::new(con_source);
 
-            match parse_commented_value(&mut tokens_b) {
-                Ok(value) => {
+            match parse_list_contents(&mut tokens_b) {
+                Ok(list) => {
                     check_for_trailing_tokens(&mut tokens_b)?;
-                    Ok(value)
+
+                    let CommentedList {
+                        values,
+                        closing_comments,
+                    } = list;
+
+                    if values.len() == 1 {
+                        // A file containing a single value, e.g. `42` or `{…}`,
+                        Ok(values.into_iter().next().expect("Can't fail"))
+                    } else {
+                        // A file containing many values, e.g. `1, 2, 3` or `{…}, {…}`,
+                        Ok(TokenTree {
+                            span: Span {
+                                start: 0,
+                                end: con_source.len(),
+                            },
+                            prefix_comments: Default::default(),
+                            value: TreeValue::List(CommentedList {
+                                values,
+                                closing_comments,
+                            }),
+                            suffix_comment: Default::default(),
+                        })
+                    }
                 }
                 Err(err_b) => {
                     // Return the error of the path that processed the most tokens, i.e. got further:
@@ -310,9 +333,11 @@ fn parse_commented_value<'s>(tokens: &mut PeekableIter<'s>) -> Result<TokenTree<
             consume_token(tokens, TokenKind::CloseBrace)?;
             TreeValue::Map(map)
         }
-        TokenKind::Identifier => {
-            // This could be a free-floating identifier (like "null"),
-            // or the opening of a choice/variant, like `Rgb(…)`:
+        TokenKind::Identifier => TreeValue::Identifier(token.slice.into()),
+        TokenKind::Number => TreeValue::Number(token.slice.into()),
+        TokenKind::DoubleQuotedString | TokenKind::SingleQuotedString => {
+            // This could be a free-floating string
+            // or the opening of a choice/variant, like `"Rgb"(…)`:
 
             if tokens
                 .peek()
@@ -329,17 +354,14 @@ fn parse_commented_value<'s>(tokens: &mut PeekableIter<'s>) -> Result<TokenTree<
 
                 TreeValue::Choice(CommentedChoice {
                     name_span: token.span,
-                    name: token.slice.into(),
+                    quoted_name: token.slice.into(),
                     values,
                     closing_comments,
                 })
             } else {
-                TreeValue::Identifier(token.slice.into())
+                // Just a string, not a choice/variant
+                TreeValue::QuotedString(token.slice.into())
             }
-        }
-        TokenKind::Number => TreeValue::Number(token.slice.into()),
-        TokenKind::DoubleQuotedString | TokenKind::SingleQuotedString => {
-            TreeValue::QuotedString(token.slice.into())
         }
         _ => {
             return Err(tokens.error_at(

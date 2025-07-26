@@ -32,13 +32,9 @@ serde = ["dep:serde"]
 [dependencies]
 con_syntax.workspace = true
 
-indexmap.workspace = true
-
-serde = { workspace = true, optional = true }
-
-## Enable this when generating docs.
 document-features = { workspace = true, optional = true }
-snailquote.workspace = true
+indexmap.workspace = true
+serde = { workspace = true, optional = true }
 
 
 [dev-dependencies]

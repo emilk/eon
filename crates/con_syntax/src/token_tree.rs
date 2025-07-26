@@ -63,14 +63,14 @@ pub struct CommentedList<'s> {
     pub closing_comments: Vec<Comment<'s>>,
 }
 
-/// A sum-type choice, like `Rgb(255, 0, 0)`.
+/// A sum-type choice, like `"Rgb"(255, 0, 0)`.
 #[derive(Debug)]
 pub struct CommentedChoice<'s> {
     /// Span of just the name
     pub name_span: Span,
 
-    /// The name of the choice, like `Rgb`.
-    pub name: Cow<'s, str>,
+    /// The quoted name of the choice, like `"Rgb"`.
+    pub quoted_name: Cow<'s, str>,
 
     /// The contents of the choice, like `255, 0, 0`.
     pub values: Vec<TokenTree<'s>>,

@@ -28,7 +28,6 @@ default = []
 
 [dependencies]
 ariadne.workspace = true
-logos.workspace = true
-
-## Enable this when generating docs.
 document-features = { workspace = true, optional = true }
+logos.workspace = true
+snailquote.workspace = true

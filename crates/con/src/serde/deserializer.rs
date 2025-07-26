@@ -7,7 +7,7 @@ use serde::{
 
 use crate::Number;
 
-use con_syntax::{CommentedKeyValue, Span, TokenTree, TreeValue};
+use con_syntax::{CommentedKeyValue, Span, TokenTree, TreeValue, unescape_and_unquote};
 
 // TODO: include spans and rich error messages
 #[derive(Debug, Clone)]
@@ -110,7 +110,7 @@ impl<'de> de::Deserializer<'de> for TokenTreeDeserializer<'de> {
                 Err(err) => Err(DeserError::new(span, err)),
             },
 
-            TreeValue::QuotedString(quoted) => snailquote::unescape(quoted)
+            TreeValue::QuotedString(quoted) => unescape_and_unquote(quoted)
                 .map_err(|err| {
                     DeserError::new(
                         span,
@@ -159,33 +159,44 @@ impl<'de> de::Deserializer<'de> for TokenTreeDeserializer<'de> {
     where
         V: Visitor<'de>,
     {
-        let name;
+        let quoted_name;
         let values;
 
         match &self.value.value {
-            TreeValue::Identifier(identifier) => {
-                name = identifier;
+            TreeValue::QuotedString(quoted) => {
+                quoted_name = quoted;
                 values = &[][..];
             }
             TreeValue::Choice(choice) => {
-                name = &choice.name;
+                quoted_name = &choice.quoted_name;
                 values = choice.values.as_slice();
             }
-            //  TreeValue::QuotedString(quoed) => { } // TODO: forgiving
             _ => {
                 return Err(DeserError::new(
                     self.value.span,
-                    format!("Expected a variant name here; one of: {variant_names:?}"),
+                    format!(
+                        "Expected a variant name here; one of: {variant_names:?}. Got: {:?}",
+                        self.value.value
+                    ),
                 ));
             }
         }
 
-        if !variant_names.contains(&name.as_ref()) {
+        let unquoted_name = unescape_and_unquote(quoted_name).map_err(|err| {
+            DeserError::new(
+                self.value.span,
+                format!("Failed to unescape quoted name: {quoted_name:?}: {err}"),
+            )
+        })?;
+
+        let name = variant_names.iter().find(|&&name| name == unquoted_name);
+
+        let Some(name) = name else {
             return Err(DeserError::new(
                 self.value.span,
-                format!("Expected one of: {variant_names:?}"),
+                format!("Expected one of: {variant_names:?}, got: {quoted_name}"),
             ));
-        }
+        };
 
         visitor.visit_enum(EnumAccessor {
             name_span: self.value.span,

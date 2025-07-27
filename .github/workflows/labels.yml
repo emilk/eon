@@ -2,7 +2,7 @@
 
 # https://github.com/marketplace/actions/require-labels
 # Check for existence of labels
-# See all our labels at https://github.com/rerun-io/rerun/issues/labels
+# See all our labels at https://github.com/emilk/con/issues/labels
 
 name: PR Labels
 

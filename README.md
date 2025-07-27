@@ -6,7 +6,9 @@ This repository contains the definition of _Con_, a simple config format designe
 
 Con uses the `.con` file ending.
 
-This repository also contains a Rust crate for using Con with `serde`, and a binary for formatting Con files.
+Con is aimed to be a replacement for Toml and Yaml.
+
+This repository also contains a Rust crate `con` for using Con with `serde`, and a `confmt` binary for formatting Con files.
 
 ## Overview
 ```yaml
@@ -55,25 +57,39 @@ TOML is a hierarchical format, but unlike almost every other programming languag
 It's just so ugly, and filled with foot-guns. Go away.
 
 ## Performance
-The Con language and library are designed for human-readable, human-sized config files.
+The Con language (and library) are designed for config files that humans edit by hand.
 
 There is nothing in the Con spec that would not make it as fast (or as slow, depending on your perspective) as JSON, but the library has not been optimized for performance (no crazy SIMD stuff etc).
 
-If you plan on having huge files and performance is important to you, I suggest you use a binary format instead, like `MsgPack`.
+I would not recommend using Con as a data transfer format. For that, use a binary format (like MsgPack or protobuffs), or JSON (which has optimized parser/formatters for every programming language).
 
 ## Con specification
-### Supported types
-Con files are always encoded as UTF-8.
+A Con document is always encoded as UTF-8.
 
-A Con value is one of
+A document can be one of:
+* A single value, e.g. `{foo: 42, bar: 32}` or `1337`
+* The contents of a Map, e.g. `foo: 42, bar: 32` (this is syntactic suger so you don't have to wrap the document in `{}`)
+* The contents of a List, e.g. `32 46 12` (useful for a stream of values, e.g. like [ndjson](https://docs.mulesoft.com/dataweave/latest/dataweave-formats-ndjson))
+
+Commas are optional in Con, so `[1,2,3]` is the same as `[1 2 3]`.
+By convention, commas are included then multiple values are on the same line, but omitted for multi-line maps and lists.
+
+Whitespace is not significant (other than as a token separator).
+
+By convention, we indent everything wrapped in `[]`, `{}`, `()`.
+
+Comments are written with `// `.
+
+### Supported types
+A Con value is one of:
 
 #### `null`
 A special `null` value.
 
-#### Booleans
+#### Boolean
 `true` or `false`.
 
-#### Numbers
+#### Number
 Numbers in Con can have an optional sign (`+` or `-`) followed by either:
 - a decimal (`42`)
 - a hexadecimal (`0xbeef`, case insensitive)
@@ -90,7 +106,7 @@ and useful for text that contain `"`.
 - `'single quoted'`
 - Escape special characters: `"\n \t \" \u{211D}"`
 
-#### Lists
+#### List
 Lists are written as `[ … ]`, with _optional_ commas between values.
 Usually the commas are omitted for lists that span multiple lines,
 and included for lists that are on a single line.
@@ -204,7 +220,7 @@ true: "confusing"      // Confusing, but OK. Uses a boolean as key (not a string
 ```
 
 
-### Sum types (enum variants)
+### Variants
 Let's first consider a simple `enum`, like one you would find in `C`:
 
 ```c

@@ -5,7 +5,7 @@ use serde::{
     ser::{self, Error as _},
 };
 
-use crate::{Map, Value, serde::to_value, value::Choice};
+use crate::{Map, Value, serde::to_value, value::Variant};
 
 #[derive(Debug, Clone)]
 pub struct SerializationError {
@@ -163,7 +163,7 @@ impl ser::Serializer for &'_ Serializer {
         _variant_index: u32,
         variant_name: &'static str,
     ) -> Result<Value> {
-        Ok(Value::Choice(Choice {
+        Ok(Value::Variant(Variant {
             name: variant_name.to_owned(),
             values: vec![],
         }))
@@ -190,7 +190,7 @@ impl ser::Serializer for &'_ Serializer {
     where
         T: ?Sized + Serialize,
     {
-        Ok(Value::Choice(Choice {
+        Ok(Value::Variant(Variant {
             name: variant_name.to_owned(),
             values: vec![value.serialize(self)?],
         }))
@@ -377,7 +377,7 @@ impl ser::SerializeTupleVariant for TupleVariantSerializer {
             variant_name,
             values,
         } = self;
-        Ok(Value::Choice(Choice {
+        Ok(Value::Variant(Variant {
             name: variant_name.to_owned(),
             values,
         }))
@@ -471,7 +471,7 @@ impl ser::SerializeStruct for MapSerializer {
 
 // -----------------------------------------------------------------------------------------------
 
-/// For enum choices containing a struct, e.g. `enum EnumName { VariantName { key: Value, … }, … }`.
+/// For enum variants containing a struct, e.g. `enum EnumName { VariantName { key: Value, … }, … }`.
 pub struct StructVariantSerializer {
     name: &'static str,
     map: Map,
@@ -510,7 +510,7 @@ impl ser::SerializeStructVariant for StructVariantSerializer {
 
     #[inline]
     fn end(self) -> Result<Value> {
-        Ok(Value::Choice(Choice {
+        Ok(Value::Variant(Variant {
             name: self.name.to_owned(),
             values: vec![Value::Map(self.map)],
         }))

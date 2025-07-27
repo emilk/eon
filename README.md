@@ -26,7 +26,7 @@ Con is designed to be
 * **Clean**: forgoes unnecessary commas, quotes, and indentation
 * **Clear**: lists are enclosed in `[ ]`, maps in `{ }`
 * **Powerful**: supports sum types (e.g. Rust enums) and arbitrary map keys
-* **Unambigious**: no [Norway problem](https://www.bram.us/2022/01/11/yaml-the-norway-problem/)
+* **Unambiguous**: no [Norway problem](https://www.bram.us/2022/01/11/yaml-the-norway-problem/)
 
 Con is a strict superset of JSON, i.e. any JSON file is also valid Con.
 
@@ -73,7 +73,7 @@ A special `null` value.
 #### Numbers
 Numbers in Con can have an optional sign (`+` or `-`) followed by either:
 - a decimal (`42`)
-- a hexidecimal (`0xbeef`, case insensitive)
+- a hexadecimal (`0xbeef`, case insensitive)
 - a binary (`0b0101`)
 - a float (`3.14`, `6.022e23` etc)
 - `nan`: [IEEE 754 `NaN`](https://en.wikipedia.org/wiki/NaN)
@@ -89,7 +89,7 @@ and useful for text that contain `"`.
 
 #### Lists
 Lists are written as `[ … ]`, with _optional_ commas between values.
-Usually the commas are ommited for lists that span multiple lines,
+Usually the commas are omitted for lists that span multiple lines,
 and included for lists that are on a single line.
 
 ```yaml
@@ -116,7 +116,7 @@ A list can contain any Con value (including other lists).
 
 #### Map
 Maps are written as `{ key: value, … }`, again with optional commas between key-value pairs.
-Usually the commas are ommited for maps that span multiple lines,
+Usually the commas are omitted for maps that span multiple lines,
 and included for maps that are on a single line.
 
 Maps are used to represent either a record type (like a `struct`) or a table type (e.g. a hash map).
@@ -165,7 +165,7 @@ complex_map: {
 }
 ```
 
-You are allowed to ommit the quotes around map keys (NOT values!) when the keys are _identifiers_.
+You are allowed to omit the quotes around map keys (NOT values!) when the keys are _identifiers_.
 
 An identifier is defined in Con as any string matching the regex `[a-zA-Z_][a-zA-Z0-9_]*`.
 This definition matches most programming languages (e.g. what is allowed as a variable name in C).
@@ -201,7 +201,7 @@ true: "confusing"      // Confusing, but OK. Uses a boolean as key (not a string
 ```
 
 
-### Sum types
+### Sum types (enum variants)
 Let's first consider a simple `enum`, like one you would find in `C`:
 
 ```c
@@ -212,7 +212,7 @@ enum Side {
 }
 ```
 
-The variants are encoded just like string in Con, e.g.
+The variants are encoded as strings in Con, e.g.
 
 ```yaml
 side: "Middle"
@@ -231,9 +231,11 @@ enum Color {
 }
 ```
 
+Here a simple string will not sufficr, as some of the enum variants contain data.
+
 There are several competing techniques of encoding this in JSON (external tagging, internal tagging, adjaceny tagging, …) all with their own shortcomings.
 
-In Con, enum variants are instead written as `"Variant"(data)`.
+In Con, enum variants are written as `"Variant"(data)`.
 
 So different values for the above choice would be written as:
 

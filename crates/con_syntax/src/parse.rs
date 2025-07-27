@@ -4,7 +4,7 @@ use crate::{
     error::{Error, Result},
     span::Span,
     token_kind::TokenKind,
-    token_tree::{TokenChoice, TokenKeyValue, TokenList, TokenMap, TokenTree, TokenValue},
+    token_tree::{TokenKeyValue, TokenList, TokenMap, TokenTree, TokenValue, TokenVariant},
 };
 
 #[derive(Clone, Copy, Debug)]
@@ -335,7 +335,7 @@ fn parse_token_tree<'s>(tokens: &mut PeekableIter<'s>) -> Result<TokenTree<'s>> 
         TokenKind::Number => TokenValue::Number(token.slice.into()),
         TokenKind::DoubleQuotedString | TokenKind::SingleQuotedString => {
             // This could be a free-floating string
-            // or the opening of a choice/variant, like `"Rgb"(…)`:
+            // or the opening of a variant, like `"Rgb"(…)`:
 
             if tokens
                 .peek()
@@ -350,14 +350,14 @@ fn parse_token_tree<'s>(tokens: &mut PeekableIter<'s>) -> Result<TokenTree<'s>> 
 
                 consume_token(tokens, TokenKind::CloseParen)?;
 
-                TokenValue::Choice(TokenChoice {
+                TokenValue::Variant(TokenVariant {
                     name_span: Some(token.span),
                     quoted_name: token.slice.into(),
                     values,
                     closing_comments,
                 })
             } else {
-                // Just a string, not a choice/variant
+                // Just a string, not a variant
                 TokenValue::QuotedString(token.slice.into())
             }
         }

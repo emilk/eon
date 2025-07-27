@@ -126,7 +126,7 @@ impl<'de> de::Deserializer<'de> for TokenTreeDeserializer<'de> {
                 kvs: &map.key_values,
             }),
 
-            TokenValue::Choice(_) => Err(DeserError::new(span, "Did not expect a choice here")),
+            TokenValue::Variant(_) => Err(DeserError::new(span, "Did not expect a variant here")),
         };
 
         if let Err(err) = &mut result {
@@ -166,9 +166,9 @@ impl<'de> de::Deserializer<'de> for TokenTreeDeserializer<'de> {
                 quoted_name = quoted;
                 values = &[][..];
             }
-            TokenValue::Choice(choice) => {
-                quoted_name = &choice.quoted_name;
-                values = choice.values.as_slice();
+            TokenValue::Variant(variant) => {
+                quoted_name = &variant.quoted_name;
+                values = variant.values.as_slice();
             }
             _ => {
                 return Err(DeserError::new(

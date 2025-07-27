@@ -12,7 +12,7 @@ mod value_from_token_tree;
 mod serde;
 
 pub use {
-    crate::value::{Choice, Map, Number, Value},
+    crate::value::{Map, Number, Value, Variant},
     con_syntax::{Error, FormatOptions, Result, reformat},
 };
 

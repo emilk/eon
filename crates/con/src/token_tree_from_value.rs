@@ -2,10 +2,10 @@
 //! so in order to format a [`Value`] as we need a way to convert it to [`TokenValue`].
 //! That's the purpose of this module.
 
-use crate::{Value, value::Choice};
+use crate::{Value, value::Variant};
 
 use con_syntax::{
-    TokenChoice, TokenKeyValue, TokenList, TokenMap, TokenTree, TokenValue, escape_and_quote,
+    TokenKeyValue, TokenList, TokenMap, TokenTree, TokenValue, TokenVariant, escape_and_quote,
     key_needs_quotes,
 };
 
@@ -59,7 +59,7 @@ impl From<Value> for TokenValue<'static> {
                     closing_comments: Default::default(),
                 })
             }
-            Value::Choice(Choice { name, values }) => TokenValue::Choice(TokenChoice {
+            Value::Variant(Variant { name, values }) => TokenValue::Variant(TokenVariant {
                 name_span: None,
                 quoted_name: escape_and_quote(&name).into(),
                 values: values.into_iter().map(Into::into).collect(),

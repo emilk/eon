@@ -1,6 +1,6 @@
 //! Serialize a [`TokenTree`] to a Con string.
 
-use crate::token_tree::{TokenChoice, TokenKeyValue, TokenList, TokenMap, TokenTree, TokenValue};
+use crate::token_tree::{TokenKeyValue, TokenList, TokenMap, TokenTree, TokenValue, TokenVariant};
 
 #[derive(Clone, Debug)]
 pub struct FormatOptions {
@@ -142,8 +142,8 @@ impl<'o> Formatter<'o> {
             TokenValue::Map(map) => {
                 self.map(map);
             }
-            TokenValue::Choice(choice) => {
-                self.choice(choice);
+            TokenValue::Variant(variant) => {
+                self.variant(variant);
             }
         }
     }
@@ -231,26 +231,26 @@ impl<'o> Formatter<'o> {
         }
     }
 
-    fn choice(&mut self, choice: &TokenChoice<'_>) {
-        let TokenChoice {
+    fn variant(&mut self, variant: &TokenVariant<'_>) {
+        let TokenVariant {
             name_span: _,
             quoted_name,
             values,
             closing_comments,
-        } = choice;
+        } = variant;
 
         if values.is_empty() && closing_comments.is_empty() {
             self.out.push_str(quoted_name); // Omit parentheses if no values
             return;
         }
 
-        if should_format_choice_on_one_line(choice) {
+        if should_format_variant_on_one_line(variant) {
             self.out.push_str(quoted_name);
             self.out.push('(');
             for (i, value) in values.iter().enumerate() {
                 self.value(&value.value);
                 if i + 1 < values.len() {
-                    self.out.push_str(", "); // We use commas for single-line choices, just for extra readability
+                    self.out.push_str(", "); // We use commas for single-line variants, just for extra readability
                 }
             }
             self.out.push(')');
@@ -266,7 +266,7 @@ impl<'o> Formatter<'o> {
                 self.out.push_str(quoted_name);
                 self.out.push_str("({ })");
             } else {
-                // A single map choice, like `"ChoiceName"({ key: value, … })`.
+                // A single map variant, like `"VariantName"({ key: value, … })`.
                 // Here we avoid double-indenting for nicer/more compact output.
                 self.out.push_str(quoted_name);
                 self.out.push_str("({");
@@ -302,13 +302,13 @@ fn should_format_list_on_one_line(list: &TokenList<'_>) -> bool {
     closing_comments.is_empty() && should_format_values_on_one_line(values)
 }
 
-fn should_format_choice_on_one_line(choice: &TokenChoice<'_>) -> bool {
-    let TokenChoice {
+fn should_format_variant_on_one_line(variant: &TokenVariant<'_>) -> bool {
+    let TokenVariant {
         name_span: _,
         quoted_name: _,
         values,
         closing_comments,
-    } = choice;
+    } = variant;
     closing_comments.is_empty() && should_format_values_on_one_line(values)
 }
 
@@ -358,13 +358,13 @@ fn is_simple(value: &TokenTree<'_>) -> bool {
                 key_values.is_empty() && closing_comments.is_empty()
             }
 
-            TokenValue::Choice(choice) => {
-                let TokenChoice {
+            TokenValue::Variant(variant) => {
+                let TokenVariant {
                     name_span: _,
                     quoted_name: _,
                     values,
                     closing_comments,
-                } = choice;
+                } = variant;
                 values.is_empty() && closing_comments.is_empty()
             }
         }

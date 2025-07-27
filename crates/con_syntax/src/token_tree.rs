@@ -68,16 +68,16 @@ pub struct TokenList<'s> {
     pub closing_comments: Vec<Comment<'s>>,
 }
 
-/// A sum-type choice, like `"Rgb"(255, 0, 0)`.
+/// A sum-type (enum) variant
 #[derive(Debug)]
-pub struct TokenChoice<'s> {
+pub struct TokenVariant<'s> {
     /// Span of just the name
     pub name_span: Option<Span>,
 
-    /// The quoted name of the choice, like `"Rgb"`.
+    /// The quoted name of the variant, like `"Rgb"`.
     pub quoted_name: Cow<'s, str>,
 
-    /// The contents of the choice, like `255, 0, 0`.
+    /// The contents of the variant, like `255, 0, 0`.
     pub values: Vec<TokenTree<'s>>,
 
     /// Any comments after the last value, before the closing `]`.
@@ -103,8 +103,8 @@ pub enum TokenValue<'s> {
     /// An map, like `{ key: value }`.
     Map(TokenMap<'s>),
 
-    /// A sum-type choice, like `Rgb(…)`
-    Choice(TokenChoice<'s>),
+    /// A sum-type (enum) variant
+    Variant(TokenVariant<'s>),
 }
 
 impl TokenValue<'_> {

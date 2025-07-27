@@ -7,7 +7,7 @@ use std::str::FromStr as _;
 
 use crate::{Error, Result, Value};
 
-use con_syntax::{Span, TokenChoice, TokenKeyValue, TokenTree, TokenValue, unescape_and_unquote};
+use con_syntax::{Span, TokenKeyValue, TokenTree, TokenValue, TokenVariant, unescape_and_unquote};
 
 impl Value {
     pub fn try_from_token_tree(con_source: &str, tt: &TokenTree<'_>) -> Result<Self> {
@@ -60,7 +60,7 @@ impl Value {
                     .map(|TokenKeyValue { key, value }| {
                         let key = match &key.value {
                             TokenValue::Identifier(key) => key.to_string(),
-                            // TODO: handle string keys, and Choice keys.
+                            // TODO: handle string keys, and Variant keys.
                             _ => {
                                 return Err(Error::new(
                                     con_source,
@@ -74,13 +74,13 @@ impl Value {
                     })
                     .collect::<Result<_>>()?,
             )),
-            TokenValue::Choice(choice) => {
-                let TokenChoice {
+            TokenValue::Variant(variant) => {
+                let TokenVariant {
                     name_span,
                     quoted_name,
                     values,
                     closing_comments: _,
-                } = choice;
+                } = variant;
                 let name = unescape_and_unquote(quoted_name).map_err(|err| {
                     Error::new(
                         con_source,
@@ -92,7 +92,7 @@ impl Value {
                     .iter()
                     .map(|token_tree| Self::try_from_token_tree(con_source, token_tree))
                     .collect::<Result<_>>()?;
-                Ok(Self::Choice(crate::value::Choice { name, values }))
+                Ok(Self::Variant(crate::value::Variant { name, values }))
             }
         }
     }

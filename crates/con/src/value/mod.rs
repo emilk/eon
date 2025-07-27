@@ -31,17 +31,17 @@ pub enum Value {
     /// Maps strings to values, i.e. like a `struct`.
     Map(Map),
 
-    /// A sum-type (enum) choice, like `"Rgb"(255, 0, 0)` or `"Maybe"`.
-    Choice(Choice),
+    /// A sum-type (enum) variant, like `"Rgb"(255, 0, 0)` or `"Maybe"`.
+    Variant(Variant),
 }
 
-/// A sum-type (enum) choice, like `"Rgb"(255, 0, 0)` or `"Maybe"`.
+/// A sum-type (enum) variant, like `"Rgb"(255, 0, 0)` or `"Maybe"`.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct Choice {
-    /// The name of the choice, like `Rgb`.
+pub struct Variant {
+    /// The name of the variant, like `Rgb`.
     pub name: String,
 
-    /// The contents of the choice. May be empty.
+    /// The contents of the variant. May be empty.
     pub values: Vec<Value>,
 }
 

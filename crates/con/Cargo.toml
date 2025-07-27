@@ -1,14 +1,14 @@
 [package]
 authors.workspace = true
-categories = []                                                      # TODO: fill in
-description = ""                                                     # TODO: fill in
+categories.workspace = true
+description = "Use the Con config format with serde"
 edition.workspace = true
 homepage.workspace = true
 include = ["LICENSE-APACHE", "LICENSE-MIT", "**/*.rs", "Cargo.toml"]
-keywords = []                                                        # TODO: fill in
+keywords.workspace = true
 license.workspace = true
 name = "con"
-publish = false
+publish = true
 readme = "README.md"
 repository.workspace = true
 rust-version.workspace = true

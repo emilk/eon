@@ -1,14 +1,14 @@
 [package]
 authors.workspace = true
-categories = []                                                                                 # TODO: fill in
+categories.workspace = true
 description = "A binary for formatting .con config files."
 edition.workspace = true
 homepage.workspace = true
 include = ["LICENSE-APACHE", "LICENSE-MIT", "**/*.rs", "Cargo.toml"]
-keywords = []                                                                                   # TODO: fill in
+keywords.workspace = true
 license.workspace = true
 name = "confmt"
-publish = false
+publish = true
 readme = "README.md"
 repository.workspace = true
 rust-version.workspace = true

@@ -8,9 +8,11 @@ members = [
 
 [workspace.package]
 authors = ["emil.ernerfeldt@gmail.com"]
+categories = ["configuration"]
 edition = "2024"
 homepage = "https://github.com/emilk/con"
 include = ["LICENSE-APACHE", "LICENSE-MIT", "**/*.rs", "Cargo.toml"]
+keywords = ["con", "configuration", "config", "json", "yaml", "toml"]
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/emilk/con"
 rust-version = "1.85"

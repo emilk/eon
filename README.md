@@ -1,4 +1,6 @@
 # Con - The simple and friendly config format
+> [!WARNING] ⚠️ As of July 2025, the Con library and Spec is still under heavy development.
+
 This repository contains the definition of _Con_, a simple config format designed for human editing.
 
 Con uses the `.con` file ending.

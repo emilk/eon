@@ -18,7 +18,7 @@ pub use crate::{
     span::Span,
     strings::{escape_and_quote, key_needs_quotes, unescape_and_unquote},
     token_tree::{
-        CommentedChoice, CommentedKeyValue, CommentedList, CommentedMap, TokenTree, TreeValue,
+        TokenChoice, TokenKeyValue, TokenList, TokenMap, TokenTree, TokenValue,
     },
 };
 

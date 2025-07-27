@@ -9,7 +9,7 @@ use serde::{
 
 use crate::Number;
 
-use con_syntax::{CommentedKeyValue, Span, TokenTree, TreeValue, unescape_and_unquote};
+use con_syntax::{Span, TokenKeyValue, TokenTree, TokenValue, unescape_and_unquote};
 
 #[derive(Debug, Clone)]
 pub struct DeserError {
@@ -82,7 +82,7 @@ impl<'de> de::Deserializer<'de> for TokenTreeDeserializer<'de> {
         let span = self.value.span;
 
         let mut result = match &self.value.value {
-            TreeValue::Identifier(identifier) => match identifier.as_ref() {
+            TokenValue::Identifier(identifier) => match identifier.as_ref() {
                 "null" => visitor.visit_unit(),
                 "true" => visitor.visit_bool(true),
                 "false" => visitor.visit_bool(false),
@@ -92,7 +92,7 @@ impl<'de> de::Deserializer<'de> for TokenTreeDeserializer<'de> {
                 }
             },
 
-            TreeValue::Number(num_str) => match Number::from_str(num_str) {
+            TokenValue::Number(num_str) => match Number::from_str(num_str) {
                 Ok(number) => {
                     if let Some(n) = number.as_u64() {
                         visitor.visit_u64(n)
@@ -111,7 +111,7 @@ impl<'de> de::Deserializer<'de> for TokenTreeDeserializer<'de> {
                 Err(err) => Err(DeserError::new(span, err)),
             },
 
-            TreeValue::QuotedString(quoted) => unescape_and_unquote(quoted)
+            TokenValue::QuotedString(quoted) => unescape_and_unquote(quoted)
                 .map_err(|err| {
                     DeserError::new(
                         span,
@@ -120,13 +120,13 @@ impl<'de> de::Deserializer<'de> for TokenTreeDeserializer<'de> {
                 })
                 .and_then(|unescaped| visitor.visit_string(unescaped)),
 
-            TreeValue::List(list) => visitor.visit_seq(ListAccessor(&list.values)),
+            TokenValue::List(list) => visitor.visit_seq(ListAccessor(&list.values)),
 
-            TreeValue::Map(map) => visitor.visit_map(MapAccessor {
+            TokenValue::Map(map) => visitor.visit_map(MapAccessor {
                 kvs: &map.key_values,
             }),
 
-            TreeValue::Choice(_) => Err(DeserError::new(span, "Did not expect a choice here")),
+            TokenValue::Choice(_) => Err(DeserError::new(span, "Did not expect a choice here")),
         };
 
         if let Err(err) = &mut result {
@@ -140,7 +140,7 @@ impl<'de> de::Deserializer<'de> for TokenTreeDeserializer<'de> {
     where
         V: Visitor<'de>,
     {
-        if let TreeValue::Identifier(identifier) = &self.value.value {
+        if let TokenValue::Identifier(identifier) = &self.value.value {
             if identifier == "null" {
                 return visitor.visit_none();
             }
@@ -162,11 +162,11 @@ impl<'de> de::Deserializer<'de> for TokenTreeDeserializer<'de> {
         let values;
 
         match &self.value.value {
-            TreeValue::QuotedString(quoted) => {
+            TokenValue::QuotedString(quoted) => {
                 quoted_name = quoted;
                 values = &[][..];
             }
-            TreeValue::Choice(choice) => {
+            TokenValue::Choice(choice) => {
                 quoted_name = &choice.quoted_name;
                 values = choice.values.as_slice();
             }
@@ -235,7 +235,7 @@ impl<'de> de::SeqAccess<'de> for ListAccessor<'de> {
 }
 
 struct MapAccessor<'de> {
-    kvs: &'de [CommentedKeyValue<'de>],
+    kvs: &'de [TokenKeyValue<'de>],
 }
 
 impl<'de> de::MapAccess<'de> for MapAccessor<'de> {

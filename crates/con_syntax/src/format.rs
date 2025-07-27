@@ -1,8 +1,6 @@
 //! Serialize a [`TokenTree`] to a Con string.
 
-use crate::token_tree::{
-    CommentedChoice, CommentedKeyValue, CommentedList, CommentedMap, TokenTree, TreeValue,
-};
+use crate::token_tree::{TokenChoice, TokenKeyValue, TokenList, TokenMap, TokenTree, TokenValue};
 
 #[derive(Clone, Debug)]
 pub struct FormatOptions {
@@ -54,12 +52,12 @@ impl FormatOptions {
 }
 
 impl TokenTree<'_> {
-    /// Pretty-print a [`CommentedValue`] to a string.
+    /// Format as a Con string.
     pub fn format(&self, options: &FormatOptions) -> String {
         let mut f = Formatter::new(options);
 
         if !f.options.always_include_outer_braces {
-            if let TreeValue::Map(map) = &self.value {
+            if let TokenValue::Map(map) = &self.value {
                 f.indented_comments(&self.prefix_comments);
                 f.map_content(map);
                 if let Some(suffix_comment) = self.suffix_comment {
@@ -71,7 +69,7 @@ impl TokenTree<'_> {
             }
         }
 
-        f.indented_commented_value(self);
+        f.indented_value(self);
         f.finish()
     }
 }
@@ -114,7 +112,7 @@ impl<'o> Formatter<'o> {
         }
     }
 
-    fn indented_commented_value(&mut self, value: &TokenTree<'_>) {
+    fn indented_value(&mut self, value: &TokenTree<'_>) {
         let TokenTree {
             prefix_comments,
             value,
@@ -131,27 +129,27 @@ impl<'o> Formatter<'o> {
         }
     }
 
-    fn value(&mut self, value: &TreeValue<'_>) {
+    fn value(&mut self, value: &TokenValue<'_>) {
         match value {
-            TreeValue::Identifier(slice)
-            | TreeValue::Number(slice)
-            | TreeValue::QuotedString(slice) => {
+            TokenValue::Identifier(slice)
+            | TokenValue::Number(slice)
+            | TokenValue::QuotedString(slice) => {
                 self.out.push_str(slice);
             }
-            TreeValue::List(list) => {
+            TokenValue::List(list) => {
                 self.list(list);
             }
-            TreeValue::Map(map) => {
+            TokenValue::Map(map) => {
                 self.map(map);
             }
-            TreeValue::Choice(choice) => {
+            TokenValue::Choice(choice) => {
                 self.choice(choice);
             }
         }
     }
 
-    fn list(&mut self, list: &CommentedList<'_>) {
-        let CommentedList {
+    fn list(&mut self, list: &TokenList<'_>) {
+        let TokenList {
             values,
             closing_comments,
         } = list;
@@ -175,7 +173,7 @@ impl<'o> Formatter<'o> {
             self.indent += 1;
             self.out.push('\n');
             for value in values {
-                self.indented_commented_value(value);
+                self.indented_value(value);
                 self.out.push('\n'); // TODO: only if the values have prefix comments
             }
             self.indented_comments(closing_comments);
@@ -185,8 +183,8 @@ impl<'o> Formatter<'o> {
         }
     }
 
-    fn map(&mut self, map: &CommentedMap<'_>) {
-        let CommentedMap {
+    fn map(&mut self, map: &TokenMap<'_>) {
+        let TokenMap {
             key_values,
             closing_comments,
         } = map;
@@ -205,8 +203,8 @@ impl<'o> Formatter<'o> {
         self.out.push('}');
     }
 
-    fn map_content(&mut self, map: &CommentedMap<'_>) {
-        let CommentedMap {
+    fn map_content(&mut self, map: &TokenMap<'_>) {
+        let TokenMap {
             key_values,
             closing_comments,
         } = map;
@@ -218,8 +216,8 @@ impl<'o> Formatter<'o> {
         self.indented_comments(closing_comments);
     }
 
-    fn indented_key_value(&mut self, key_value: &CommentedKeyValue<'_>) {
-        let CommentedKeyValue { key, value } = key_value;
+    fn indented_key_value(&mut self, key_value: &TokenKeyValue<'_>) {
+        let TokenKeyValue { key, value } = key_value;
         self.indented_comments(&key.prefix_comments);
         self.indented_comments(&value.prefix_comments);
         self.add_indent();
@@ -233,8 +231,8 @@ impl<'o> Formatter<'o> {
         }
     }
 
-    fn choice(&mut self, choice: &CommentedChoice<'_>) {
-        let CommentedChoice {
+    fn choice(&mut self, choice: &TokenChoice<'_>) {
+        let TokenChoice {
             name_span: _,
             quoted_name,
             values,
@@ -258,9 +256,9 @@ impl<'o> Formatter<'o> {
             self.out.push(')');
         } else if closing_comments.is_empty()
             && values.len() == 1
-            && matches!(values[0].value, TreeValue::Map(_))
+            && matches!(values[0].value, TokenValue::Map(_))
         {
-            let TreeValue::Map(map) = &values[0].value else {
+            let TokenValue::Map(map) = &values[0].value else {
                 unreachable!() // TODO(emilk): replace with if-let chains
             };
 
@@ -285,7 +283,7 @@ impl<'o> Formatter<'o> {
             self.indent += 1;
             self.out.push('\n');
             for value in values {
-                self.indented_commented_value(value);
+                self.indented_value(value);
                 self.out.push('\n'); // TODO: only if the values have prefix comments
             }
             self.indented_comments(closing_comments);
@@ -296,16 +294,16 @@ impl<'o> Formatter<'o> {
     }
 }
 
-fn should_format_list_on_one_line(list: &CommentedList<'_>) -> bool {
-    let CommentedList {
+fn should_format_list_on_one_line(list: &TokenList<'_>) -> bool {
+    let TokenList {
         values,
         closing_comments,
     } = list;
     closing_comments.is_empty() && should_format_values_on_one_line(values)
 }
 
-fn should_format_choice_on_one_line(choice: &CommentedChoice<'_>) -> bool {
-    let CommentedChoice {
+fn should_format_choice_on_one_line(choice: &TokenChoice<'_>) -> bool {
+    let TokenChoice {
         name_span: _,
         quoted_name: _,
         values,
@@ -328,7 +326,7 @@ fn should_format_values_on_one_line(values: &[TokenTree<'_>]) -> bool {
         if !is_simple(value) {
             return false;
         }
-        if let TreeValue::QuotedString(string) = &value.value {
+        if let TokenValue::QuotedString(string) = &value.value {
             estimated_width += string.len();
         } else {
             estimated_width += 5;
@@ -342,26 +340,26 @@ fn should_format_values_on_one_line(values: &[TokenTree<'_>]) -> bool {
 fn is_simple(value: &TokenTree<'_>) -> bool {
     if value.prefix_comments.is_empty() && value.suffix_comment.is_none() {
         match &value.value {
-            TreeValue::Identifier(_) | TreeValue::Number(_) | TreeValue::QuotedString(_) => true,
+            TokenValue::Identifier(_) | TokenValue::Number(_) | TokenValue::QuotedString(_) => true,
 
-            TreeValue::List(list) => {
-                let CommentedList {
+            TokenValue::List(list) => {
+                let TokenList {
                     values,
                     closing_comments,
                 } = list;
                 values.is_empty() && closing_comments.is_empty()
             }
 
-            TreeValue::Map(map) => {
-                let CommentedMap {
+            TokenValue::Map(map) => {
+                let TokenMap {
                     key_values,
                     closing_comments,
                 } = map;
                 key_values.is_empty() && closing_comments.is_empty()
             }
 
-            TreeValue::Choice(choice) => {
-                let CommentedChoice {
+            TokenValue::Choice(choice) => {
+                let TokenChoice {
                     name_span: _,
                     quoted_name: _,
                     values,

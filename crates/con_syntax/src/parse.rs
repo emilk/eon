@@ -4,9 +4,7 @@ use crate::{
     error::{Error, Result},
     span::Span,
     token_kind::TokenKind,
-    token_tree::{
-        CommentedChoice, CommentedKeyValue, CommentedList, CommentedMap, TokenTree, TreeValue,
-    },
+    token_tree::{TokenChoice, TokenKeyValue, TokenList, TokenMap, TokenTree, TokenValue},
 };
 
 #[derive(Clone, Copy, Debug)]
@@ -165,7 +163,7 @@ fn parse_top_str(con_source: &str) -> Result<TokenTree<'_>> {
                     end: con_source.len(),
                 }),
                 prefix_comments: vec![],
-                value: TreeValue::Map(map),
+                value: TokenValue::Map(map),
                 suffix_comment: None,
             };
             Ok(value)
@@ -178,7 +176,7 @@ fn parse_top_str(con_source: &str) -> Result<TokenTree<'_>> {
                 Ok(list) => {
                     check_for_trailing_tokens(&mut tokens_b)?;
 
-                    let CommentedList {
+                    let TokenList {
                         values,
                         closing_comments,
                     } = list;
@@ -194,7 +192,7 @@ fn parse_top_str(con_source: &str) -> Result<TokenTree<'_>> {
                                 end: con_source.len(),
                             }),
                             prefix_comments: Default::default(),
-                            value: TreeValue::List(CommentedList {
+                            value: TokenValue::List(TokenList {
                                 values,
                                 closing_comments,
                             }),
@@ -225,7 +223,7 @@ fn check_for_trailing_tokens(tokens: &mut PeekableIter<'_>) -> Result {
 }
 
 /// Parse the inside of a list, without consuming either the opening or closing brackets.
-fn parse_list_contents<'s>(tokens: &mut PeekableIter<'s>) -> Result<CommentedList<'s>> {
+fn parse_list_contents<'s>(tokens: &mut PeekableIter<'s>) -> Result<TokenList<'s>> {
     let mut values = vec![];
 
     loop {
@@ -237,13 +235,13 @@ fn parse_list_contents<'s>(tokens: &mut PeekableIter<'s>) -> Result<CommentedLis
                 Ok(TokenKind::CloseBrace | TokenKind::CloseList | TokenKind::CloseParen)
             )
         }) {
-            return Ok(CommentedList {
+            return Ok(TokenList {
                 values,
                 closing_comments: prefix_comments,
             });
         }
 
-        let mut value = parse_commented_value(tokens)?;
+        let mut value = parse_token_tree(tokens)?;
 
         {
             let mut prefix_comments = prefix_comments;
@@ -265,7 +263,7 @@ fn parse_list_contents<'s>(tokens: &mut PeekableIter<'s>) -> Result<CommentedLis
 }
 
 /// Parse the inside of an map, without consuming either the opening or closing brackets.
-fn parse_map_contents<'s>(tokens: &mut PeekableIter<'s>) -> Result<CommentedMap<'s>> {
+fn parse_map_contents<'s>(tokens: &mut PeekableIter<'s>) -> Result<TokenMap<'s>> {
     let mut key_values = vec![];
 
     loop {
@@ -277,13 +275,13 @@ fn parse_map_contents<'s>(tokens: &mut PeekableIter<'s>) -> Result<CommentedMap<
                 Ok(TokenKind::CloseBrace | TokenKind::CloseList | TokenKind::CloseParen)
             )
         }) {
-            return Ok(CommentedMap {
+            return Ok(TokenMap {
                 key_values,
                 closing_comments: prefix_comments,
             });
         }
 
-        let mut key = parse_commented_value(tokens)?;
+        let mut key = parse_token_tree(tokens)?;
         debug_assert!(
             key.prefix_comments.is_empty(),
             "We should have already consumed these"
@@ -293,7 +291,7 @@ fn parse_map_contents<'s>(tokens: &mut PeekableIter<'s>) -> Result<CommentedMap<
 
         consume_token(tokens, TokenKind::Colon)?;
 
-        let mut value = parse_commented_value(tokens)?;
+        let mut value = parse_token_tree(tokens)?;
 
         if tokens
             .peek()
@@ -304,12 +302,12 @@ fn parse_map_contents<'s>(tokens: &mut PeekableIter<'s>) -> Result<CommentedMap<
             value.suffix_comment = parse_suffix_comment(tokens)?;
         }
 
-        key_values.push(CommentedKeyValue { key, value });
+        key_values.push(TokenKeyValue { key, value });
     }
 }
 
 /// Parse a value, including prefix and suffix comments.
-fn parse_commented_value<'s>(tokens: &mut PeekableIter<'s>) -> Result<TokenTree<'s>> {
+fn parse_token_tree<'s>(tokens: &mut PeekableIter<'s>) -> Result<TokenTree<'s>> {
     let start_span = tokens.span_of_next();
     let prefix_comments = parse_comments(tokens);
 
@@ -326,15 +324,15 @@ fn parse_commented_value<'s>(tokens: &mut PeekableIter<'s>) -> Result<TokenTree<
         TokenKind::OpenList => {
             let list = parse_list_contents(tokens)?;
             consume_token(tokens, TokenKind::CloseList)?;
-            TreeValue::List(list)
+            TokenValue::List(list)
         }
         TokenKind::OpenBrace => {
             let map = parse_map_contents(tokens)?;
             consume_token(tokens, TokenKind::CloseBrace)?;
-            TreeValue::Map(map)
+            TokenValue::Map(map)
         }
-        TokenKind::Identifier => TreeValue::Identifier(token.slice.into()),
-        TokenKind::Number => TreeValue::Number(token.slice.into()),
+        TokenKind::Identifier => TokenValue::Identifier(token.slice.into()),
+        TokenKind::Number => TokenValue::Number(token.slice.into()),
         TokenKind::DoubleQuotedString | TokenKind::SingleQuotedString => {
             // This could be a free-floating string
             // or the opening of a choice/variant, like `"Rgb"(…)`:
@@ -345,14 +343,14 @@ fn parse_commented_value<'s>(tokens: &mut PeekableIter<'s>) -> Result<TokenTree<
             {
                 tokens.next(); // Consume the open parenthesis
 
-                let CommentedList {
+                let TokenList {
                     values,
                     closing_comments,
                 } = parse_list_contents(tokens)?;
 
                 consume_token(tokens, TokenKind::CloseParen)?;
 
-                TreeValue::Choice(CommentedChoice {
+                TokenValue::Choice(TokenChoice {
                     name_span: Some(token.span),
                     quoted_name: token.slice.into(),
                     values,
@@ -360,7 +358,7 @@ fn parse_commented_value<'s>(tokens: &mut PeekableIter<'s>) -> Result<TokenTree<
                 })
             } else {
                 // Just a string, not a choice/variant
-                TreeValue::QuotedString(token.slice.into())
+                TokenValue::QuotedString(token.slice.into())
             }
         }
         _ => {
@@ -476,7 +474,7 @@ mod tests {
         assert!(prefix_comments.is_empty());
         assert_eq!(suffix_comment, None);
 
-        if let TreeValue::Map(CommentedMap {
+        if let TokenValue::Map(TokenMap {
             key_values,
             closing_comments,
         }) = value
@@ -484,9 +482,9 @@ mod tests {
             assert_eq!(key_values.len(), 2);
 
             {
-                let CommentedKeyValue { key, value } = &key_values[0];
+                let TokenKeyValue { key, value } = &key_values[0];
 
-                if let TreeValue::Identifier(key) = &key.value {
+                if let TokenValue::Identifier(key) = &key.value {
                     assert_eq!(key, "key1");
                 } else {
                     panic!("Expected an identifier for key1, got {key:?}");
@@ -495,7 +493,7 @@ mod tests {
                     key.prefix_comments,
                     &["// Prefix comment A.", "// Prefix comment B."]
                 );
-                if let TreeValue::Number(value) = &value.value {
+                if let TokenValue::Number(value) = &value.value {
                     assert_eq!(value, "42");
                 } else {
                     panic!("Expected a number for key1, got {key:?}");
@@ -504,15 +502,15 @@ mod tests {
             }
 
             {
-                let CommentedKeyValue { key, value } = &key_values[1];
+                let TokenKeyValue { key, value } = &key_values[1];
 
-                if let TreeValue::Identifier(key) = &key.value {
+                if let TokenValue::Identifier(key) = &key.value {
                     assert_eq!(key, "key2");
                 } else {
                     panic!("Expected an identifier for key1, got {key:?}");
                 }
                 assert_eq!(key.prefix_comments, &["// Prefix comment C."]);
-                if let TreeValue::QuotedString(value) = &value.value {
+                if let TokenValue::QuotedString(value) = &value.value {
                     assert_eq!(value, r#""string""#);
                 } else {
                     panic!("Expected a String for key2, got {key:?}");

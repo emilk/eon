@@ -8,7 +8,7 @@ pub use self::{map::Map, number::Number};
 /// Represents any Con value.
 ///
 /// This does NOT include comments.
-/// For that, use [`crate::ast::CommentedValue`].
+/// For that, use [`crate::ast::TokenValue`].
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum Value {
     /// Special `null` value

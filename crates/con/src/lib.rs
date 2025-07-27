@@ -4,17 +4,22 @@
 //! ## Feature flags
 #![cfg_attr(feature = "document-features", doc = document_features::document_features!())]
 
-mod ast_from_value;
+mod token_tree_from_value;
 mod value;
-mod value_from_ast;
+mod value_from_token_tree;
 
 #[cfg(feature = "serde")]
 mod serde;
 
 pub use {
-    crate::value::{Map, Number, Value},
+    crate::value::{Choice, Map, Number, Value},
     con_syntax::{Error, FormatOptions, Result, reformat},
 };
+
+/// Exported external crates used by.
+pub mod external {
+    pub use con_syntax;
+}
 
 #[cfg(feature = "serde")]
 pub use self::serde::{SerializationError, from_str, to_string, to_value};

@@ -13,9 +13,14 @@ use crate::span::Span;
 pub type Comment<'s> = &'s str;
 
 /// A tree of tokens, representing the structure of the Con source code, including comments.
+///
+/// This is actually something between a Concrete Syntax Tree (CST) and an Abstract Syntax Tree (AST),
+/// in that it preserves comments, but discards whitespace and some optional tokens (like commas after list items),
+/// though those can be inferred from the [`Span`] of the tokens, together with the original
+/// Con file
 #[derive(Debug)]
 pub struct TokenTree<'s> {
-    /// The span of this token tree in the source code.
+    /// The span of this token tree in the source code, if known.
     pub span: Option<Span>,
 
     /// Comments on proceeding lines.
@@ -28,7 +33,7 @@ pub struct TokenTree<'s> {
     pub prefix_comments: Vec<Comment<'s>>,
 
     /// The actual value.
-    pub value: TreeValue<'s>,
+    pub value: TokenValue<'s>,
 
     /// Comment after the value on the same line.
     ///
@@ -37,7 +42,7 @@ pub struct TokenTree<'s> {
 }
 
 #[derive(Debug)]
-pub struct CommentedKeyValue<'s> {
+pub struct TokenKeyValue<'s> {
     /// The key of the key-value pair.
     pub key: TokenTree<'s>,
 
@@ -47,8 +52,8 @@ pub struct CommentedKeyValue<'s> {
 
 /// An object, like `{ key: value, … }`.
 #[derive(Debug)]
-pub struct CommentedMap<'s> {
-    pub key_values: Vec<CommentedKeyValue<'s>>,
+pub struct TokenMap<'s> {
+    pub key_values: Vec<TokenKeyValue<'s>>,
 
     /// Any comments after the last `key: value` pair, before the closing `}`.
     pub closing_comments: Vec<Comment<'s>>,
@@ -56,7 +61,7 @@ pub struct CommentedMap<'s> {
 
 /// A list, like `[ a, b, c, … ]`.
 #[derive(Debug)]
-pub struct CommentedList<'s> {
+pub struct TokenList<'s> {
     pub values: Vec<TokenTree<'s>>,
 
     /// Any comments after the last value, before the closing `]`.
@@ -65,7 +70,7 @@ pub struct CommentedList<'s> {
 
 /// A sum-type choice, like `"Rgb"(255, 0, 0)`.
 #[derive(Debug)]
-pub struct CommentedChoice<'s> {
+pub struct TokenChoice<'s> {
     /// Span of just the name
     pub name_span: Option<Span>,
 
@@ -80,7 +85,7 @@ pub struct CommentedChoice<'s> {
 }
 
 #[derive(Debug)]
-pub enum TreeValue<'s> {
+pub enum TokenValue<'s> {
     /// `null`, `true`, or `false`, or the key of an map (when quotes aren't needed).
     Identifier(Cow<'s, str>),
 
@@ -93,23 +98,23 @@ pub enum TreeValue<'s> {
     QuotedString(Cow<'s, str>),
 
     /// A list, like `[ a, b, c, … ]`.
-    List(CommentedList<'s>),
+    List(TokenList<'s>),
 
     /// An map, like `{ key: value }`.
-    Map(CommentedMap<'s>),
+    Map(TokenMap<'s>),
 
     /// A sum-type choice, like `Rgb(…)`
-    Choice(CommentedChoice<'s>),
+    Choice(TokenChoice<'s>),
 }
 
-impl TreeValue<'_> {
+impl TokenValue<'_> {
     pub fn is_number(&self) -> bool {
         matches!(self, Self::Number(_))
     }
 }
 
-impl<'s> From<TreeValue<'s>> for TokenTree<'s> {
-    fn from(value: TreeValue<'s>) -> Self {
+impl<'s> From<TokenValue<'s>> for TokenTree<'s> {
+    fn from(value: TokenValue<'s>) -> Self {
         TokenTree {
             span: None,
             prefix_comments: vec![],

@@ -32,8 +32,8 @@ pub fn from_str<T>(con_source: &str) -> Result<T, crate::Error>
 where
     T: serde::de::DeserializeOwned,
 {
-    con_syntax::TokenTree::parse_str(con_source).and_then(|commented_value| {
-        let deser = self::deserializer::TokenTreeDeserializer::new(&commented_value);
+    con_syntax::TokenTree::parse_str(con_source).and_then(|token_tree| {
+        let deser = self::deserializer::TokenTreeDeserializer::new(&token_tree);
         T::deserialize(deser).map_err(|err| err.into_error(con_source))
     })
 }

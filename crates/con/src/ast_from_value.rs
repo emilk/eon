@@ -59,7 +59,7 @@ impl From<Value> for TreeValue<'static> {
                 })
             }
             Value::Choice(Choice { name, values }) => TreeValue::Choice(CommentedChoice {
-                name_span: Default::default(), // TODO
+                name_span: None,
                 quoted_name: escape_and_quote(&name).into(),
                 values: values.into_iter().map(Into::into).collect(),
                 closing_comments: Default::default(),

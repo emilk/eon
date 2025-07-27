@@ -1,6 +1,5 @@
 mod deserialize_value;
 mod deserializer;
-mod serialize_value;
 mod serializer;
 
 use serde::Serialize;

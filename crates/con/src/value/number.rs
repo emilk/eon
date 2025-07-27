@@ -57,9 +57,10 @@ impl Hash for Number {
     }
 }
 
-impl Number {
-    // TODO: parse/FromStr
-    pub(crate) fn try_parse(mut string: &str) -> Result<Self, String> {
+impl std::str::FromStr for Number {
+    type Err = String;
+
+    fn from_str(mut string: &str) -> Result<Self, Self::Err> {
         match string {
             "+NaN" => {
                 return Ok(Self(NumberImpl::F32(f32::NAN)));
@@ -115,7 +116,9 @@ impl Number {
             Ok(Self(unsigned))
         }
     }
+}
 
+impl Number {
     /// Returns None if the negation cannot be represented
     pub fn try_negate(&self) -> Option<Self> {
         match self.0 {

@@ -1,5 +1,7 @@
 // See https://serde.rs/impl-deserializer.html
 
+use std::str::FromStr as _;
+
 use serde::{
     Deserializer as _,
     de::{self, Error as _, Visitor},
@@ -9,7 +11,6 @@ use crate::Number;
 
 use con_syntax::{CommentedKeyValue, Span, TokenTree, TreeValue, unescape_and_unquote};
 
-// TODO: include spans and rich error messages
 #[derive(Debug, Clone)]
 pub struct DeserError {
     pub msg: String,
@@ -91,7 +92,7 @@ impl<'de> de::Deserializer<'de> for TokenTreeDeserializer<'de> {
                 }
             },
 
-            TreeValue::Number(num_str) => match Number::try_parse(num_str) {
+            TreeValue::Number(num_str) => match Number::from_str(num_str) {
                 Ok(number) => {
                     if let Some(n) = number.as_u64() {
                         visitor.visit_u64(n)

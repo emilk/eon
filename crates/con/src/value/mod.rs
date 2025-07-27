@@ -46,14 +46,11 @@ pub struct Choice {
 }
 
 impl Value {
-    /// Pretty-print a [`Value`] to a string.
+    /// Pretty-print a [`Value`] to a Con string.
+    ///
+    /// You can parse the result with [`Value::from_str`].
     pub fn format(&self, options: &FormatOptions) -> String {
         TokenTree::from(self.clone()).format(options)
-    }
-
-    /// Parse a full Con file.
-    pub fn parse_str(con_source: &str) -> Result<Self> {
-        TokenTree::parse_str(con_source).and_then(|v| Self::try_from_token_tree(con_source, &v)) // TODO: from_str
     }
 
     /// Return the bool value iff this is a [`Value::Bool`].

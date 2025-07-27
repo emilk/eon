@@ -3,6 +3,8 @@
 //! This is not always what we want, though,
 //! so this module strips the comments.
 
+use std::str::FromStr as _;
+
 use crate::{Error, Result, Value};
 
 use con_syntax::{CommentedChoice, Span, TokenTree, TreeValue, unescape_and_unquote};
@@ -28,15 +30,17 @@ impl Value {
                     "Unknown keyword. Expected 'null', 'true', or 'false'.",
                 )),
             },
-            TreeValue::Number(string) => crate::Number::try_parse(string)
-                .map(Self::Number)
-                .map_err(|err| {
-                    Error::new(
-                        con_source,
-                        span,
-                        format!("Failed to parse number: {err}. The string: {string:?}"),
-                    )
-                }),
+            TreeValue::Number(string) => {
+                crate::Number::from_str(string)
+                    .map(Self::Number)
+                    .map_err(|err| {
+                        Error::new(
+                            con_source,
+                            span,
+                            format!("Failed to parse number: {err}. The string: {string:?}"),
+                        )
+                    })
+            }
             TreeValue::QuotedString(escaped) => unescape_and_unquote(escaped)
                 .map(Self::String)
                 .map_err(|err| {

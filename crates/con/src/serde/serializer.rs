@@ -236,8 +236,11 @@ impl ser::Serializer for &'_ Serializer {
     }
 
     #[inline]
-    fn serialize_struct(self, _name: &'static str, len: usize) -> Result<Self::SerializeStruct> {
-        // TODO: include name?
+    fn serialize_struct(
+        self,
+        _struct_name: &'static str,
+        len: usize,
+    ) -> Result<Self::SerializeStruct> {
         Ok(MapSerializer::with_capacity(len))
     }
 

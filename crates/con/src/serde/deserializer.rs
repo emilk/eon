@@ -17,10 +17,10 @@ pub struct DeserError {
 }
 
 impl DeserError {
-    pub fn new(span: Span, msg: impl Into<String>) -> Self {
+    pub fn new(span: Option<Span>, msg: impl Into<String>) -> Self {
         Self {
             msg: msg.into(),
-            span: Some(span),
+            span,
         }
     }
 
@@ -129,9 +129,7 @@ impl<'de> de::Deserializer<'de> for TokenTreeDeserializer<'de> {
         };
 
         if let Err(err) = &mut result {
-            if err.span.is_none() {
-                err.span = Some(self.value.span);
-            }
+            err.span = err.span.or(self.value.span);
         }
 
         result
@@ -272,7 +270,7 @@ impl<'de> de::MapAccess<'de> for MapAccessor<'de> {
 }
 
 struct EnumAccessor<'de> {
-    name_span: Span,
+    name_span: Option<Span>,
     name: &'de str,
     values: &'de [TokenTree<'de>],
 }

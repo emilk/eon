@@ -14,7 +14,7 @@ impl Value {
 
     pub fn try_from_tree_value(
         con_source: &str,
-        span: Span,
+        span: Option<Span>,
         value: &TreeValue<'_>,
     ) -> Result<Self> {
         match value {
@@ -22,7 +22,7 @@ impl Value {
                 "null" | "nil" => Ok(Self::Null),
                 "true" => Ok(Self::Bool(true)),
                 "false" => Ok(Self::Bool(false)),
-                _ => Err(Error::new_at(
+                _ => Err(Error::new(
                     con_source,
                     span,
                     "Unknown keyword. Expected 'null', 'true', or 'false'.",
@@ -31,7 +31,7 @@ impl Value {
             TreeValue::Number(string) => crate::Number::try_parse(string)
                 .map(Self::Number)
                 .map_err(|err| {
-                    Error::new_at(
+                    Error::new(
                         con_source,
                         span,
                         format!("Failed to parse number: {err}. The string: {string:?}"),
@@ -40,7 +40,7 @@ impl Value {
             TreeValue::QuotedString(escaped) => unescape_and_unquote(escaped)
                 .map(Self::String)
                 .map_err(|err| {
-                    Error::new_at(
+                    Error::new(
                         con_source,
                         span,
                         format!("Failed to unescape string: {err}. The string: {escaped}"),
@@ -61,7 +61,7 @@ impl Value {
                         let key = match &commented_key_value.key.value {
                             TreeValue::Identifier(key) => key.to_string(),
                             _ => {
-                                return Err(Error::new_at(
+                                return Err(Error::new(
                                     con_source,
                                     span,
                                     "Expected an identifier for the map key.",
@@ -83,7 +83,7 @@ impl Value {
                     closing_comments: _,
                 } = commented_choice;
                 let name = unescape_and_unquote(quoted_name).map_err(|err| {
-                    Error::new_at(
+                    Error::new(
                         con_source,
                         *name_span,
                         format!("Failed to unescape string: {err}. The string: {quoted_name}"),

@@ -160,10 +160,10 @@ fn parse_top_str(con_source: &str) -> Result<TokenTree<'_>> {
         Ok(map) => {
             check_for_trailing_tokens(&mut tokens_a)?;
             let value = TokenTree {
-                span: Span {
+                span: Some(Span {
                     start: 0,
                     end: con_source.len(),
-                },
+                }),
                 prefix_comments: vec![],
                 value: TreeValue::Map(map),
                 suffix_comment: None,
@@ -189,10 +189,10 @@ fn parse_top_str(con_source: &str) -> Result<TokenTree<'_>> {
                     } else {
                         // A file containing many values, e.g. `1, 2, 3` or `{…}, {…}`,
                         Ok(TokenTree {
-                            span: Span {
+                            span: Some(Span {
                                 start: 0,
                                 end: con_source.len(),
-                            },
+                            }),
                             prefix_comments: Default::default(),
                             value: TreeValue::List(CommentedList {
                                 values,
@@ -353,7 +353,7 @@ fn parse_commented_value<'s>(tokens: &mut PeekableIter<'s>) -> Result<TokenTree<
                 consume_token(tokens, TokenKind::CloseParen)?;
 
                 TreeValue::Choice(CommentedChoice {
-                    name_span: token.span,
+                    name_span: Some(token.span),
                     quoted_name: token.slice.into(),
                     values,
                     closing_comments,
@@ -374,7 +374,7 @@ fn parse_commented_value<'s>(tokens: &mut PeekableIter<'s>) -> Result<TokenTree<
     let suffix_comment = parse_suffix_comment(tokens)?;
 
     Ok(TokenTree {
-        span: start_span | tokens.span_of_previous(),
+        span: Some(start_span | tokens.span_of_previous()),
         prefix_comments,
         value,
         suffix_comment,

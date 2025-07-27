@@ -23,6 +23,14 @@ impl Error {
         }
     }
 
+    pub fn new(con_source: &str, span: Option<Span>, message: impl Into<String>) -> Self {
+        if let Some(span) = span {
+            Self::new_at(con_source, span, message)
+        } else {
+            Self::custom(message)
+        }
+    }
+
     pub fn custom(message: impl Into<String>) -> Self {
         Self::Custom {
             msg: message.into(),

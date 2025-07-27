@@ -16,7 +16,7 @@ pub type Comment<'s> = &'s str;
 #[derive(Debug)]
 pub struct TokenTree<'s> {
     /// The span of this token tree in the source code.
-    pub span: Span,
+    pub span: Option<Span>,
 
     /// Comments on proceeding lines.
     ///
@@ -67,7 +67,7 @@ pub struct CommentedList<'s> {
 #[derive(Debug)]
 pub struct CommentedChoice<'s> {
     /// Span of just the name
-    pub name_span: Span,
+    pub name_span: Option<Span>,
 
     /// The quoted name of the choice, like `"Rgb"`.
     pub quoted_name: Cow<'s, str>,
@@ -111,7 +111,7 @@ impl TreeValue<'_> {
 impl<'s> From<TreeValue<'s>> for TokenTree<'s> {
     fn from(value: TreeValue<'s>) -> Self {
         TokenTree {
-            span: Default::default(), // TODO
+            span: None,
             prefix_comments: vec![],
             value,
             suffix_comment: None,

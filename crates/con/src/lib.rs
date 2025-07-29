@@ -19,6 +19,7 @@ pub use {
 /// Exported external crates used by.
 pub mod external {
     pub use con_syntax;
+    pub use vec1;
 }
 
 #[cfg(feature = "serde")]

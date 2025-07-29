@@ -2,6 +2,7 @@ mod map;
 mod number;
 
 use con_syntax::{FormatOptions, Result, TokenTree};
+use vec1::Vec1;
 
 pub use self::{map::Map, number::Number};
 
@@ -23,6 +24,9 @@ pub enum Value {
     /// A string value, like `"Hello, world!"`
     ///
     /// Also commonly used as the key in a [`Map`].
+    ///
+    /// Strings are also used for simple sum-type (enum) variants values, e.g. `"Maybe"`.
+    /// See [`Self::Variant`] for more complex sum-type (enum) variants.
     String(String),
 
     /// A list of values.
@@ -31,21 +35,42 @@ pub enum Value {
     /// Maps strings to values, i.e. like a `struct`.
     Map(Map),
 
-    /// A sum-type (enum) variant, like `"Rgb"(255, 0, 0)` or `"Maybe"`.
+    /// A sum-type (enum) variant containing some data, like `"Rgb"(255, 0, 0)`.
+    ///
+    /// For simple enum types (e.g. `enum Maybe { Yes, No }`),
+    /// the variants will be represented as [`Self::String`] instead.
     Variant(Variant),
 }
 
-/// A sum-type (enum) variant, like `"Rgb"(255, 0, 0)` or `"Maybe"`.
+/// A sum-type (enum) variant containing some data, like `"Rgb"(255, 0, 0)`.
+///
+/// For simple enum types (e.g. `enum Maybe { Yes, No }`),
+/// the variants will be represented as [`Value::String`] instead.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Variant {
     /// The name of the variant, like `Rgb`.
     pub name: String,
 
-    /// The contents of the variant. May be empty.
-    pub values: Vec<Value>,
+    /// The contents of the variant.
+    ///
+    /// Note that this cannot be empty.
+    /// A variant with no contents is represented as a [`Value::String`].
+    pub values: Vec1<Value>,
 }
 
 impl Value {
+    /// Construct a variant of an enum (sum-type) with a name and optional values.
+    ///
+    /// If the values is empty, this will return a [`Value::String`],
+    /// otherwise it will return a [`Value::Variant`].
+    pub fn new_variant(name: String, values: Vec<Self>) -> Self {
+        if let Ok(values) = vec1::Vec1::try_from_vec(values) {
+            Self::Variant(Variant { name, values })
+        } else {
+            Self::String(name)
+        }
+    }
+
     /// Pretty-print a [`Value`] to a Con string.
     ///
     /// You can parse the result with [`Value::from_str`].
@@ -93,6 +118,41 @@ impl From<bool> for Value {
     }
 }
 
+impl From<Number> for Value {
+    #[inline]
+    fn from(value: Number) -> Self {
+        Self::Number(value)
+    }
+}
+
+impl From<String> for Value {
+    #[inline]
+    fn from(value: String) -> Self {
+        Self::String(value)
+    }
+}
+
+impl From<Vec<Self>> for Value {
+    #[inline]
+    fn from(value: Vec<Self>) -> Self {
+        Self::List(value)
+    }
+}
+
+impl From<Map> for Value {
+    #[inline]
+    fn from(value: Map) -> Self {
+        Self::Map(value)
+    }
+}
+
+impl From<Variant> for Value {
+    #[inline]
+    fn from(value: Variant) -> Self {
+        Self::Variant(value)
+    }
+}
+
 macro_rules! impl_value_from_number {
     ($t:ty) => {
         impl From<$t> for Value {
@@ -116,20 +176,6 @@ impl_value_from_number!(u64);
 impl_value_from_number!(u128);
 impl_value_from_number!(f32);
 impl_value_from_number!(f64);
-
-impl From<Number> for Value {
-    #[inline]
-    fn from(value: Number) -> Self {
-        Self::Number(value)
-    }
-}
-
-impl From<String> for Value {
-    #[inline]
-    fn from(value: String) -> Self {
-        Self::String(value)
-    }
-}
 
 impl From<char> for Value {
     #[inline]

@@ -4,8 +4,8 @@
 * [x] Serde
 * [x] general maps (keys of any type)
 * [x] formatter binary
+* [x] Figure out how the difference between a string and a zero-value variant should be encoded in `Value`
 * [ ] Remove all TODOs
-* [ ] Figure out how the difference between a string and a zero-value variant should be encoded in `Value`
 * [ ] Numbers
     * [ ] Allow `_` in numbers
     * [ ] Test perfect round-tripping of floats

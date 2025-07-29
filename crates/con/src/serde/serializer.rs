@@ -7,6 +7,8 @@ use serde::{
 
 use crate::{Map, Value, serde::to_value, value::Variant};
 
+use vec1::vec1;
+
 #[derive(Debug, Clone)]
 pub struct SerializationError {
     msg: String,
@@ -163,10 +165,7 @@ impl ser::Serializer for &'_ Serializer {
         _variant_index: u32,
         variant_name: &'static str,
     ) -> Result<Value> {
-        Ok(Value::Variant(Variant {
-            name: variant_name.to_owned(),
-            values: vec![],
-        }))
+        Ok(Value::new_variant(variant_name.to_owned(), vec![]))
     }
 
     // Treat newtype structs as insignificant wrappers around the data they contain.
@@ -192,7 +191,7 @@ impl ser::Serializer for &'_ Serializer {
     {
         Ok(Value::Variant(Variant {
             name: variant_name.to_owned(),
-            values: vec![value.serialize(self)?],
+            values: vec1![value.serialize(self)?],
         }))
     }
 
@@ -377,10 +376,7 @@ impl ser::SerializeTupleVariant for TupleVariantSerializer {
             variant_name,
             values,
         } = self;
-        Ok(Value::Variant(Variant {
-            name: variant_name.to_owned(),
-            values,
-        }))
+        Ok(Value::new_variant(variant_name.to_owned(), values))
     }
 }
 
@@ -512,7 +508,7 @@ impl ser::SerializeStructVariant for StructVariantSerializer {
     fn end(self) -> Result<Value> {
         Ok(Value::Variant(Variant {
             name: self.name.to_owned(),
-            values: vec![Value::Map(self.map)],
+            values: vec1![Value::Map(self.map)],
         }))
     }
 }

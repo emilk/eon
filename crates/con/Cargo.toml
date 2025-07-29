@@ -35,6 +35,7 @@ con_syntax.workspace = true
 document-features = { workspace = true, optional = true }
 indexmap.workspace = true
 serde = { workspace = true, optional = true }
+vec1.workspace = true
 
 
 [dev-dependencies]

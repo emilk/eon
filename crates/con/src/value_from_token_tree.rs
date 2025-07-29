@@ -85,7 +85,7 @@ impl Value {
                     .iter()
                     .map(|token_tree| Self::try_from_token_tree(con_source, token_tree))
                     .collect::<Result<_>>()?;
-                Ok(Self::Variant(crate::value::Variant { name, values }))
+                Ok(Self::new_variant(name, values))
             }
         }
     }

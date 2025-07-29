@@ -7,9 +7,9 @@
 * [x] Figure out how the difference between a string and a zero-value variant should be encoded in `Value`
 * [ ] Remove all TODOs
 * [ ] Numbers
-    * [ ] Allow `_` in numbers
+    * [x] Allow `_` in numbers
+    * [x] Test hexal and binary numbers
     * [ ] Test perfect round-tripping of floats
-    * [ ] Text hexal and binary numbers
     * [ ] Hex floats?
 * [ ] Write a spec
     * [ ] newline-separated as part of spec (parse multiple values in same file)

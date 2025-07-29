@@ -98,6 +98,8 @@ Numbers in Con can have an optional sign (`+` or `-`) followed by either:
 - `nan`: [IEEE 754 `NaN`](https://en.wikipedia.org/wiki/NaN)
 - `inf`: infinity
 
+Numbers can use `_` anywhere in them as a visual separator, e.g. `123_456` or `0xdead_beef`.
+
 #### Text
 Strings are usually `"double-quoted"`, but `'single-quoted'` is allowed,
 and useful for text that contain `"`.

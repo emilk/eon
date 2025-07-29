@@ -61,6 +61,11 @@ impl std::str::FromStr for Number {
     type Err = String;
 
     fn from_str(mut string: &str) -> Result<Self, Self::Err> {
+        if string.contains('_') {
+            // We allow _ as thousands separators:
+            return Self::from_str(string.replace('_', "").as_str());
+        }
+
         match string {
             "+NaN" => {
                 return Ok(Self(NumberImpl::F32(f32::NAN)));
@@ -343,6 +348,36 @@ impl std::fmt::Display for Number {
                     n.fmt(f) // TODO: always include a decimal point?
                 }
             }
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::str::FromStr as _;
+
+    use crate::Value;
+
+    #[test]
+    fn test_parse_number() {
+        let integers = [
+            ("0", 0),
+            ("-0", 0),
+            ("-1", -1),
+            ("+1", 1),
+            ("123_456_789", 123_456_789),
+            ("0xe", 0xe),
+            ("0x1f", 0x1f),
+            ("0b101010", 0b101010),
+            ("-0b101010", -0b101010),
+            ("+0b101010", 0b101010),
+        ];
+
+        for (string, expected) in integers {
+            eprintln!("Parsing integer: {string:?}");
+            let value = Value::from_str(string).expect("Failed to parse number");
+            let number = value.as_number().expect("Expected a number");
+            assert_eq!(number.as_i128(), Some(expected));
         }
     }
 }

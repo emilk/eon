@@ -44,7 +44,7 @@ pub enum TokenKind {
     Identifier,
 
     /// Anything that starts with a sign (+/-), a digit (0-9), or a period (decimal separator).
-    #[regex("[+\\-0-9\\.][0-9a-zA-Z\\.+\\-]*")]
+    #[regex("[+\\-0-9\\.][0-9a-zA-Z\\.+\\-_]*")]
     Number,
 
     /// `"this"`
@@ -84,6 +84,7 @@ fn test_parse_tokens() {
     "double"
     [ { },]
     42
+    123_456
     +inf
     +1.e3-42
     0xdeadbeef
@@ -101,6 +102,7 @@ fn test_parse_tokens() {
         (TokenKind::Comma, ","),
         (TokenKind::CloseList, "]"),
         (TokenKind::Number, "42"),
+        (TokenKind::Number, "123_456"),
         (TokenKind::Number, "+inf"),
         (TokenKind::Number, "+1.e3-42"),
         (TokenKind::Number, "0xdeadbeef"),

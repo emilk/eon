@@ -294,7 +294,6 @@ fn parse_map_contents<'s>(tokens: &mut PeekableIter<'s>) -> Result<TokenMap<'s>>
             "We should have already consumed these"
         );
         key.prefix_comments = prefix_comments;
-        // TODO: handle suffix comments on the key?
 
         consume_token(tokens, TokenKind::Colon)?;
 

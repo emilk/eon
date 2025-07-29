@@ -169,26 +169,35 @@ impl<'o> Formatter<'o> {
             }
             self.out.push(']');
         } else {
-            let add_blank_lines = values.iter().any(|v| !v.prefix_comments.is_empty());
-
             self.out.push('[');
             self.indent += 1;
             self.out.push('\n');
-            for (i, value) in values.iter().enumerate() {
-                self.indented_value(value);
-                self.out.push('\n');
-                if add_blank_lines && i + 1 < values.len() {
-                    self.out.push('\n');
-                }
-            }
-            if add_blank_lines && !closing_comments.is_empty() {
-                self.out.push('\n');
-            }
-            self.indented_comments(closing_comments);
+            self.list_content(list);
             self.indent -= 1;
             self.add_indent();
             self.out.push(']');
         }
+    }
+
+    fn list_content(&mut self, list: &TokenList<'_>) {
+        let TokenList {
+            values,
+            closing_comments,
+        } = list;
+
+        let add_blank_lines = values.iter().any(|v| !v.prefix_comments.is_empty());
+
+        for (i, value) in values.iter().enumerate() {
+            self.indented_value(value);
+            self.out.push('\n');
+            if add_blank_lines && i + 1 < values.len() {
+                self.out.push('\n');
+            }
+        }
+        if add_blank_lines && !closing_comments.is_empty() {
+            self.out.push('\n');
+        }
+        self.indented_comments(closing_comments);
     }
 
     fn map(&mut self, map: &TokenMap<'_>) {
@@ -291,6 +300,29 @@ impl<'o> Formatter<'o> {
                 self.indent -= 1;
                 self.add_indent();
                 self.out.push_str("})");
+            }
+        } else if closing_comments.is_empty()
+            && values.len() == 1
+            && matches!(values[0].value, TokenValue::List(_))
+        {
+            let TokenValue::List(list) = &values[0].value else {
+                unreachable!() // TODO(emilk): replace with if-let chains
+            };
+
+            if list.values.is_empty() && list.closing_comments.is_empty() {
+                self.out.push_str(quoted_name);
+                self.out.push_str("([ ])");
+            } else {
+                // A single list variant, like `"VariantName"({ key: value, … })`.
+                // Here we avoid double-indenting for nicer/more compact output.
+                self.out.push_str(quoted_name);
+                self.out.push_str("([");
+                self.indent += 1;
+                self.out.push('\n');
+                self.list_content(list);
+                self.indent -= 1;
+                self.add_indent();
+                self.out.push_str("])");
             }
         } else {
             let add_blank_lines = values.iter().any(|v| !v.prefix_comments.is_empty());

@@ -16,7 +16,7 @@ fn test_parse_errors() {
     ───╯
     "#);
 
-    // TODO: improve this error message
+    // TODO(emilk): improve this error message
     insta::assert_snapshot!(con::Value::from_str(
         r"
 snake_case: 'ok',

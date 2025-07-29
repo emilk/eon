@@ -20,12 +20,29 @@ fn test_reformat_1() {
             empty_list: []
             short_list: [1, 2, 3]
 
-            // TODO: add more test cases here
+            variants: [
+                "zero_variant"()
+                "one_variant"(true)
+                "three_variant"(1, 2, 3)
+                "map_variant"({
+                    "key": "value",
+                    "another_key": 42,
+                })
+                "list_variant"([
+                    "doc",
+                    "grumpy",
+                    "happy",
+                    "sleepy",
+                    "sneezy",
+                    "bashful",
+                    "dopey",
+                ])
+            ]
         }
     "#;
 
     let formatted = con::reformat(input, &Default::default()).unwrap();
-    insta::assert_snapshot!(formatted, @r"
+    insta::assert_snapshot!(formatted, @r#"
     // This comment is outside the outermost map.
     // This comment proceeds the first key-value pair.
     key: true // Suffix comment
@@ -40,8 +57,25 @@ fn test_reformat_1() {
 
     short_list: [1, 2, 3]
 
-    // TODO: add more test cases here
-    ");
+    variants: [
+    	"zero_variant"
+    	"one_variant"(true)
+    	"three_variant"(1, 2, 3)
+    	"map_variant"({
+    		"key": "value"
+    		"another_key": 42
+    	})
+    	"list_variant"([
+    		"doc"
+    		"grumpy"
+    		"happy"
+    		"sleepy"
+    		"sneezy"
+    		"bashful"
+    		"dopey"
+    	])
+    ]
+    "#);
 }
 
 #[test]

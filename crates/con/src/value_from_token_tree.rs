@@ -59,15 +59,8 @@ impl Value {
                     .iter()
                     .map(|TokenKeyValue { key, value }| {
                         let key = match &key.value {
-                            TokenValue::Identifier(key) => key.to_string(),
-                            // TODO: handle string keys, and Variant keys.
-                            _ => {
-                                return Err(Error::new(
-                                    con_source,
-                                    span,
-                                    "Expected an identifier for the map key.",
-                                ));
-                            }
+                            TokenValue::Identifier(key) => Self::String(key.to_string()),
+                            _ => Self::try_from_token_tree(con_source, key)?,
                         };
                         let value = Self::try_from_token_tree(con_source, value)?;
                         Ok((key, value))

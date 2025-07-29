@@ -125,6 +125,13 @@ impl<'s> PeekableIter<'s> {
     pub fn span_of_previous(&self) -> Span {
         self.last_span
     }
+
+    pub fn end_span(&self) -> Span {
+        Span {
+            start: self.source.len(),
+            end: self.source.len(),
+        }
+    }
 }
 
 impl<'s> Iterator for PeekableIter<'s> {
@@ -308,17 +315,18 @@ fn parse_map_contents<'s>(tokens: &mut PeekableIter<'s>) -> Result<TokenMap<'s>>
 
 /// Parse a value, including prefix and suffix comments.
 fn parse_token_tree<'s>(tokens: &mut PeekableIter<'s>) -> Result<TokenTree<'s>> {
-    let start_span = tokens.span_of_next();
     let prefix_comments = parse_comments(tokens);
 
     let Some(result) = tokens.next() else {
         return Err(tokens.error_at(
-            tokens.span_of_previous(),
+            tokens.end_span(),
             "Unexpected end of input: expected a value",
         ));
     };
 
     let token = result.ok()?;
+
+    let start_span = tokens.span_of_next();
 
     let value = match token.kind {
         TokenKind::OpenList => {
@@ -369,10 +377,12 @@ fn parse_token_tree<'s>(tokens: &mut PeekableIter<'s>) -> Result<TokenTree<'s>> 
         }
     };
 
+    let span = start_span | tokens.span_of_previous();
+
     let suffix_comment = parse_suffix_comment(tokens)?;
 
     Ok(TokenTree {
-        span: Some(start_span | tokens.span_of_previous()),
+        span: Some(span),
         prefix_comments,
         value,
         suffix_comment,

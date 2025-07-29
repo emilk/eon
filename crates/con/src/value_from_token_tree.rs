@@ -20,14 +20,14 @@ impl Value {
         value: &TokenValue<'_>,
     ) -> Result<Self> {
         match value {
-            TokenValue::Identifier(identifier) => match identifier.to_ascii_lowercase().as_str() {
+            TokenValue::Identifier(identifier) => match identifier.as_ref() {
                 "null" | "nil" => Ok(Self::Null),
                 "true" => Ok(Self::Bool(true)),
                 "false" => Ok(Self::Bool(false)),
                 _ => Err(Error::new(
                     con_source,
                     span,
-                    "Unknown keyword. Expected 'null', 'true', or 'false'.",
+                    format!("Unknown keyword {identifier:?}. Expected 'null', 'true', or 'false'."),
                 )),
             },
             TokenValue::Number(string) => crate::Number::from_str(string)

@@ -1,19 +1,31 @@
 /// The byte range of something in the source code.
-#[derive(Clone, Copy, Debug, Default)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub struct Span {
     pub start: usize,
     pub end: usize,
 }
 
+impl Span {
+    #[inline]
+    pub fn len(&self) -> usize {
+        self.end - self.start
+    }
+}
+
 impl ariadne::Span for Span {
     type SourceId = ();
 
+    #[inline]
     fn source(&self) -> &Self::SourceId {
         &()
     }
+
+    #[inline]
     fn start(&self) -> usize {
         self.start
     }
+
+    #[inline]
     fn end(&self) -> usize {
         self.end
     }

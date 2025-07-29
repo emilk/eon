@@ -6,16 +6,15 @@ use std::str::FromStr as _;
 
 #[test]
 fn test_parse_errors() {
-    // TODO: improve the span of this error
-    insta::assert_snapshot!(con::Value::from_str("key: value").unwrap_err(), @r"
+    insta::assert_snapshot!(con::Value::from_str("key: value").unwrap_err(), @r#"
     Error:
-       ╭─[ <unknown>:1:4 ]
+       ╭─[ <unknown>:1:6 ]
        │
      1 │ key: value
-       │    ───┬───
-       │       ╰───── Unknown keyword. Expected 'null', 'true', or 'false'.
+       │      ──┬──
+       │        ╰──── Unknown keyword "value". Expected 'null', 'true', or 'false'.
     ───╯
-    ");
+    "#);
 
     // TODO: improve this error message
     insta::assert_snapshot!(con::Value::from_str(

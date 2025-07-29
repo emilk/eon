@@ -8,11 +8,11 @@ members = [
 
 [workspace.package]
 authors = ["emil.ernerfeldt@gmail.com"]
-categories = ["configuration"]
+categories = ["config"]
 edition = "2024"
 homepage = "https://github.com/emilk/con"
 include = ["LICENSE-APACHE", "LICENSE-MIT", "**/*.rs", "Cargo.toml"]
-keywords = ["con", "configuration", "config", "json", "yaml", "toml"]
+keywords = ["con", "config", "format", "yaml", "toml"]
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/emilk/con"
 rust-version = "1.85"
@@ -20,7 +20,7 @@ version = "0.0.1"
 
 
 [workspace.dependencies]
-con_syntax = { path = "crates/con_syntax" }
+con_syntax = { path = "crates/con_syntax", version = "0.0.1" }
 
 ariadne = "0.5.1"
 clap = "4.5.41"

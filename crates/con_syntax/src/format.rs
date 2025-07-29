@@ -60,11 +60,7 @@ impl TokenTree<'_> {
             if let TokenValue::Map(map) = &self.value {
                 f.indented_comments(&self.prefix_comments);
                 f.map_content(map);
-                if let Some(suffix_comment) = self.suffix_comment {
-                    f.out.push(' ');
-                    f.out.push_str(suffix_comment);
-                    f.out.push_str(&f.options.newline);
-                }
+                f.suffix_comment(&self.suffix_comment);
                 return f.finish();
             }
         }
@@ -122,10 +118,14 @@ impl<'o> Formatter<'o> {
         self.indented_comments(prefix_comments);
         self.add_indent();
         self.value(value);
-        if let Some(suffix) = suffix_comment {
+        self.suffix_comment(suffix_comment);
+    }
+
+    #[expect(clippy::ref_option_ref)]
+    fn suffix_comment(&mut self, suffix_comment: &Option<&str>) {
+        if let Some(suffix_comment) = suffix_comment {
             self.out.push(' ');
-            self.out.push_str(suffix);
-            self.out.push('\n');
+            self.out.push_str(suffix_comment);
         }
     }
 
@@ -169,12 +169,20 @@ impl<'o> Formatter<'o> {
             }
             self.out.push(']');
         } else {
+            let add_blank_lines = values.iter().any(|v| !v.prefix_comments.is_empty());
+
             self.out.push('[');
             self.indent += 1;
             self.out.push('\n');
-            for value in values {
+            for (i, value) in values.iter().enumerate() {
                 self.indented_value(value);
-                self.out.push('\n'); // TODO: only if the values have prefix comments
+                self.out.push('\n');
+                if add_blank_lines && i + 1 < values.len() {
+                    self.out.push('\n');
+                }
+            }
+            if add_blank_lines && !closing_comments.is_empty() {
+                self.out.push('\n');
             }
             self.indented_comments(closing_comments);
             self.indent -= 1;
@@ -209,9 +217,20 @@ impl<'o> Formatter<'o> {
             closing_comments,
         } = map;
 
-        for key_value in key_values {
+        let add_blank_lines = key_values
+            .iter()
+            .any(|kv| !kv.key.prefix_comments.is_empty());
+
+        for (i, key_value) in key_values.iter().enumerate() {
             self.indented_key_value(key_value);
-            self.out.push('\n'); // TODO: only if the keys have prefix comments
+            self.out.push('\n');
+            if add_blank_lines && i + 1 < key_values.len() {
+                self.out.push('\n');
+            }
+        }
+
+        if add_blank_lines && !closing_comments.is_empty() {
+            self.out.push('\n');
         }
         self.indented_comments(closing_comments);
     }
@@ -224,11 +243,7 @@ impl<'o> Formatter<'o> {
         self.value(&key.value); // TODO: handle optional quotes around keys
         self.out.push_str(&self.options.key_value_separator);
         self.value(&value.value);
-        if let Some(suffix) = value.suffix_comment {
-            self.out.push(' ');
-            self.out.push_str(suffix);
-            self.out.push('\n');
-        }
+        self.suffix_comment(&value.suffix_comment);
     }
 
     fn variant(&mut self, variant: &TokenVariant<'_>) {
@@ -278,13 +293,21 @@ impl<'o> Formatter<'o> {
                 self.out.push_str("})");
             }
         } else {
+            let add_blank_lines = values.iter().any(|v| !v.prefix_comments.is_empty());
+
             self.out.push_str(quoted_name);
             self.out.push('(');
             self.indent += 1;
             self.out.push('\n');
-            for value in values {
+            for (i, value) in values.iter().enumerate() {
                 self.indented_value(value);
-                self.out.push('\n'); // TODO: only if the values have prefix comments
+                self.out.push('\n');
+                if add_blank_lines && i + 1 < values.len() {
+                    self.out.push('\n');
+                }
+            }
+            if add_blank_lines && !closing_comments.is_empty() {
+                self.out.push('\n');
             }
             self.indented_comments(closing_comments);
             self.indent -= 1;
@@ -313,6 +336,10 @@ fn should_format_variant_on_one_line(variant: &TokenVariant<'_>) -> bool {
 }
 
 fn should_format_values_on_one_line(values: &[TokenTree<'_>]) -> bool {
+    if !values.iter().all(is_simple) {
+        return false;
+    }
+
     if values.len() <= 4 && values.iter().all(|tt| tt.value.is_number()) {
         return true; // e.g. [1 2 3 4]
     }
@@ -323,9 +350,6 @@ fn should_format_values_on_one_line(values: &[TokenTree<'_>]) -> bool {
 
     let mut estimated_width = 0;
     for value in values {
-        if !is_simple(value) {
-            return false;
-        }
         if let TokenValue::QuotedString(string) = &value.value {
             estimated_width += string.len();
         } else {

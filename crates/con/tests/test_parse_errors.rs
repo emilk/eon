@@ -1,6 +1,6 @@
 // Update snapshot tests by running:
 //
-// INSTA_FORCE_UPDATE=1 cargo t --all-features || cargo insta review
+// `cargo insta test --all-features --accept`
 
 use std::str::FromStr as _;
 

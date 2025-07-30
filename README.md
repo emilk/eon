@@ -1,19 +1,19 @@
-# Con - The simple and friendly config format
+# Eon - The simple and friendly config format
 > [!WARNING]
-> ⚠️ As of July 2025, the Con library and Spec is still under heavy development.
+> ⚠️ As of July 2025, the Eon library and Spec is still under heavy development.
 
-This repository contains the definition of _Con_, a simple config format designed for human editing.
+This repository contains the definition of _Eon_, a simple config format designed for human editing.
 
-Con uses the `.con` file ending.
+Eon uses the `.eon` file ending.
 
-Con is aimed to be a replacement for [Toml](https://toml.io/en/) and Yaml.
+Eon is aimed to be a replacement for [Toml](https://toml.io/en/) and Yaml.
 
-This repository also contains a Rust crate `con` for using Con with `serde`, and a `confmt` binary for formatting Con files.
+This repository also contains a Rust crate `eon` for using Eon with `serde`, and a `eonfmt` binary for formatting Eon files.
 
 ## Overview
 ```yaml
 // Comment
-string: "Hello Con!"
+string: "Hello Eon!"
 list: [1 2 3]
 object: {
     boolean: true
@@ -21,12 +21,12 @@ object: {
 }
 map: {
     1: "map keys don't need to be strings"
-    2: "they can be any Con value"
+    2: "they can be any Eon value"
 }
 special_floats: [+inf, -inf, +nan]
 ```
 
-Con is designed to be
+Eon is designed to be
 * **Familiar**: strongly resembles JSON
 * **Clean**: forgoes unnecessary commas, quotes, and indentation
 * **Clear**: lists are enclosed in `[ ]`, maps in `{ }`
@@ -46,7 +46,7 @@ It also has a bunch of unnecessary commas between values.
 RON has the same problem.
 
 ### Why not [RON](https://github.com/ron-rs/ron)?
-The goal of RON is to perfectly map the Rust datatypes, which is cool, but it means it leans more towards being verobse and complex while Con wants to be lean and simple.
+The goal of RON is to perfectly map the Rust datatypes, which is cool, but it means it leans more towards being verobse and complex while Eon wants to be lean and simple.
 
 ### Why not [Toml](https://toml.io/en/)?
 Toml is a hierarchical format, but unlike almost every other programming language known, it does not use any indentation to visually aid the reader, leading to very confusing hierarchies.
@@ -58,21 +58,21 @@ It also means Toml is a bad candidate whenever you have deeply nested structures
 Yaml is over-complicated, as well as inconsistent. [It is known](https://ruudvanasseldonk.com/2023/01/11/the-yaml-document-from-hell).
 
 ## Performance
-The Con language (and library) are designed for config files that humans edit by hand.
+The Eon language (and library) are designed for config files that humans edit by hand.
 
-There is nothing in the Con spec that would not make it as fast (or as slow, depending on your perspective) as JSON, but the library has not been optimized for performance (no crazy SIMD stuff etc).
+There is nothing in the Eon spec that would not make it as fast (or as slow, depending on your perspective) as JSON, but the library has not been optimized for performance (no crazy SIMD stuff etc).
 
-I would not recommend using Con as a data transfer format. For that, use a binary format (like MsgPack or protobuffs), or JSON (which has optimized parser/formatters for every programming language).
+I would not recommend using Eon as a data transfer format. For that, use a binary format (like MsgPack or protobuffs), or JSON (which has optimized parser/formatters for every programming language).
 
-## Con specification
-A Con document is always encoded as UTF-8.
+## Eon specification
+A Eon document is always encoded as UTF-8.
 
 A document can be one of:
 * A single value, e.g. `{foo: 42, bar: 32}` or `1337`
 * The contents of a Map, e.g. `foo: 42, bar: 32` (this is syntactic suger so you don't have to wrap the document in `{}`)
 * The contents of a List, e.g. `32 46 12` (useful for a stream of values, e.g. like [ndjson](https://docs.mulesoft.com/dataweave/latest/dataweave-formats-ndjson))
 
-Commas are optional in Con, so `[1,2,3]` is the same as `[1 2 3]`.
+Commas are optional in Eon, so `[1,2,3]` is the same as `[1 2 3]`.
 By convention, commas are included then multiple values are on the same line, but omitted for multi-line maps and lists.
 
 Whitespace is not significant (other than as a token separator).
@@ -82,7 +82,7 @@ By convention, we indent everything wrapped in `[]`, `{}`, `()`.
 Comments are written with `// `.
 
 ### Supported types
-A Con value is one of:
+A Eon value is one of:
 
 #### `null`
 A special `null` value.
@@ -91,7 +91,7 @@ A special `null` value.
 `true` or `false`.
 
 #### Number
-Numbers in Con can have an optional sign (`+` or `-`) followed by either:
+Numbers in Eon can have an optional sign (`+` or `-`) followed by either:
 - a decimal (`42`)
 - a hexadecimal (`0xbeef`, case insensitive)
 - a binary (`0b0101`)
@@ -99,7 +99,7 @@ Numbers in Con can have an optional sign (`+` or `-`) followed by either:
 
 Numbers can use `_` anywhere in them as a visual separator, e.g. `123_456` or `0xdead_beef`.
 
-Con also support the special values:
+Eon also support the special values:
 - `+nan`: [IEEE 754 `NaN`](https://en.wikipedia.org/wiki/NaN)
 - `+inf`: positive infinity
 - `-inf`: negative infinity
@@ -139,7 +139,7 @@ also_fine: [
 very_terse: [1 2 3]
 ```
 
-A list can contain any Con value (including other lists).
+A list can contain any Eon value (including other lists).
 
 #### Map
 Maps are written as `{ key: value, … }`, again with optional commas between key-value pairs.
@@ -149,7 +149,7 @@ and included for maps that are on a single line.
 Maps are used to represent either a record type (like a `struct`) or a table type (e.g. a hash map).
 
 For instance, say you have a hash map for looking up country code based on the name of the country.
-This can be serialized to Con as:
+This can be serialized to Eon as:
 
 ```C
 country_codes: {
@@ -165,7 +165,7 @@ country_codes: {
 }
 ```
 
-Both keys and values of a Con map can be any Con value.
+Both keys and values of a Eon map can be any Eon value.
 This is significantly different from e.g. JSON, where keys can only be strings.
 So, a reverse map (from code to country name) can we written as:
 
@@ -194,7 +194,7 @@ complex_map: {
 
 You are allowed to omit the quotes around map keys (NOT values!) when the keys are _identifiers_.
 
-An identifier is defined in Con as any string matching the regex `[a-zA-Z_][a-zA-Z0-9_]*`.
+An identifier is defined in Eon as any string matching the regex `[a-zA-Z_][a-zA-Z0-9_]*`.
 This definition matches most programming languages (e.g. what is allowed as a variable name in C).
 
 This means these two are equivalent:
@@ -239,13 +239,13 @@ enum Side {
 }
 ```
 
-The variants are encoded as strings in Con, e.g.
+The variants are encoded as strings in Eon, e.g.
 
 ```yaml
 side: "Middle"
 ```
 
-In other words, there is no difference between a string and an enum variant, as far as Con is concerned.
+In other words, there is no difference between a string and an enum variant, as far as Eon is concerned.
 
 Now consider this more complicated Rust `enum`:
 
@@ -262,7 +262,7 @@ Here a simple string will not sufficr, as some of the enum variants contain data
 
 There are several competing techniques of encoding this in JSON (external tagging, internal tagging, adjaceny tagging, …) all with their own shortcomings.
 
-In Con, enum variants are written as `"Variant"(data)`.
+In Eon, enum variants are written as `"Variant"(data)`.
 
 So different values for the above choice would be written as:
 
@@ -274,7 +274,7 @@ So different values for the above choice would be written as:
 #### Digression: why this syntax for sum types?
 
 Why the quotes, and not just `Black`, `Gray(128)`, etc?
-Consider this hypothetical Con file:
+Consider this hypothetical Eon file:
 
 ```yaml
 color: Black
@@ -282,8 +282,8 @@ name: Emil
 ```
 
 Is `name` really a multiple-choice enum? Maybe. Maybe not.
-But the Con parser doesn't know, so must accept it.
+But the Eon parser doesn't know, so must accept it.
 And this will leave the door open to weirdness where _some_ strings need quotes and not others (and we'll end up similar to YAML).
 So instead we explicitly forbid the above, and always require quotes for strings (…except for map keys).
 
-We could also tempted to also allow `"Rgb"{r: 255, g: 0, b: 0}`, but that would be ambiguous when parsing: is it one enum variant, or a string followed by a map? (remember: commas are optional in Con).
+We could also tempted to also allow `"Rgb"{r: 255, g: 0, b: 0}`, but that would be ambiguous when parsing: is it one enum variant, or a string followed by a map? (remember: commas are optional in Eon).

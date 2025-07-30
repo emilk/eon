@@ -24,7 +24,7 @@ from git import Repo  # pip install GitPython
 from tqdm import tqdm
 
 OWNER = "emilk"
-REPO = "con"
+REPO = "eon"
 INCLUDE_LABELS = False  # It adds quite a bit of visual noise
 
 

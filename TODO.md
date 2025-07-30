@@ -7,7 +7,7 @@
 * [x] Figure out how the difference between a string and a zero-value variant should be encoded in `Value`
 * [x] Protect against stack overflow in recursive-decent parser
 * [ ] Generate comparison with https://docs.rs/ron/
-* [ ] Test against evil JSON files to make sure Con is robust
+* [ ] Test against evil JSON files to make sure Eon is robust
 * [ ] Remove all TODOs
 * [ ] Numbers
     * [x] Allow `_` in numbers

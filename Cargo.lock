@@ -121,37 +121,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b05b61dc5112cbb17e4b6cd61790d9845d13888356391624cbe7e41efeac1e75"
 
 [[package]]
-name = "con"
-version = "0.0.1"
-dependencies = [
- "con_syntax",
- "document-features",
- "indexmap",
- "insta",
- "serde",
- "vec1",
-]
-
-[[package]]
-name = "con_syntax"
-version = "0.0.1"
-dependencies = [
- "ariadne",
- "document-features",
- "logos",
- "snailquote",
-]
-
-[[package]]
-name = "confmt"
-version = "0.0.1"
-dependencies = [
- "clap",
- "con_syntax",
- "ignore",
-]
-
-[[package]]
 name = "console"
 version = "0.15.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -202,6 +171,37 @@ name = "encode_unicode"
 version = "1.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "34aa73646ffb006b8f5147f3dc182bd4bcb190227ce861fc4a4844bf8e3cb2c0"
+
+[[package]]
+name = "eon"
+version = "0.0.1"
+dependencies = [
+ "document-features",
+ "eon_syntax",
+ "indexmap",
+ "insta",
+ "serde",
+ "vec1",
+]
+
+[[package]]
+name = "eon_syntax"
+version = "0.0.1"
+dependencies = [
+ "ariadne",
+ "document-features",
+ "logos",
+ "snailquote",
+]
+
+[[package]]
+name = "eonfmt"
+version = "0.0.1"
+dependencies = [
+ "clap",
+ "eon_syntax",
+ "ignore",
+]
 
 [[package]]
 name = "equivalent"

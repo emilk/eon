@@ -1,26 +1,26 @@
 [workspace]
 resolver = "2"
 members = [
-    "crates/con_syntax",
-    "crates/con",
-    "crates/confmt",
+    "crates/eon_syntax",
+    "crates/eon",
+    "crates/eonfmt",
 ]
 
 [workspace.package]
 authors = ["emil.ernerfeldt@gmail.com"]
 categories = ["config"]
 edition = "2024"
-homepage = "https://github.com/emilk/con"
+homepage = "https://github.com/emilk/eon"
 include = ["LICENSE-APACHE", "LICENSE-MIT", "**/*.rs", "Cargo.toml"]
-keywords = ["con", "config", "format", "yaml", "toml"]
+keywords = ["eon", "config", "format", "yaml", "toml"]
 license = "MIT OR Apache-2.0"
-repository = "https://github.com/emilk/con"
+repository = "https://github.com/emilk/eon"
 rust-version = "1.85"
 version = "0.0.1"
 
 
 [workspace.dependencies]
-con_syntax = { path = "crates/con_syntax", version = "0.0.1" }
+eon_syntax = { path = "crates/eon_syntax", version = "0.0.1" }
 
 ariadne = "0.5.1"
 clap = "4.5.41"

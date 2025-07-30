@@ -49,18 +49,22 @@ RON has the same problem.
 The goal of RON is to perfectly map the Rust datatypes, which is cool, but it means it leans more towards being verobse and complex while Eon wants to be lean and simple.
 
 ### Why not [Toml](https://toml.io/en/)?
-Toml is a hierarchical format, but unlike almost every other programming language known, it does not use any indentation to visually aid the reader, leading to very confusing hierarchies.
+Toml is a very nice and clean language.
+However, unlike almost every other programming language known, it does not use any indentation to aid the reader, leading to very confusing hierarchies.
 This means that when (visually) scanning a Toml document it's hard to figure out where one section starts and another ends.
 
 It also means Toml is a bad candidate whenever you have deeply nested structures.
 
+The `[[array.of.tables]]` syntax is also quite confusing to newcomers.
+
 ### Why not [YAML](https://yaml.org/)?
-Yaml is over-complicated, as well as inconsistent. [It is known](https://ruudvanasseldonk.com/2023/01/11/the-yaml-document-from-hell).
+Yaml is clean, but over-complicated, inconsistent, and filled with foot guns. [It is known](https://ruudvanasseldonk.com/2023/01/11/the-yaml-document-from-hell).
 
 ## Performance
 The Eon language (and library) are designed for config files that humans edit by hand.
 
 There is nothing in the Eon spec that would not make it as fast (or as slow, depending on your perspective) as JSON, but the library has not been optimized for performance (no crazy SIMD stuff etc).
+It parses a big 1MB file in under 10ms on an M3 MacBook.
 
 I would not recommend using Eon as a data transfer format. For that, use a binary format (like MsgPack or protobuffs), or JSON (which has optimized parser/formatters for every programming language).
 

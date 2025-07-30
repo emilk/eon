@@ -39,5 +39,10 @@ vec1.workspace = true
 
 
 [dev-dependencies]
+divan = "0.1.21"
 insta.workspace = true
 serde = { workspace = true, features = ["derive"] }
+
+[[bench]]
+name = "bench_parse"
+harness = false

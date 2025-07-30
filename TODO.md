@@ -12,11 +12,9 @@
 * [ ] Numbers
     * [x] Allow `_` in numbers
     * [x] Test hexal and binary numbers
+    * [x] What strings should we use for infinities
     * [ ] Test perfect round-tripping of floats
     * [ ] Hex floats?
-    * [ ] What strings should we use for infinities?
-        * [ ] use lowercase `nan` to be more similar to toml
-        * [ ] allow `inf` and `nan` without a sign?
 * [ ] Strings
     * [ ] Raw strings, for e.g. regex
     * [ ] Handle JSON-style unicode embeddings??
@@ -26,7 +24,12 @@
 * [ ] Publish crates
 * [ ] Warn about unused keys (i.e. mistyped keys that was never accessed during deserialization)
 
-## Future work
+## Additional tools
+* [ ] VSCode extension for
+    * [ ] Syntax highlighting
+    * [ ] Formatting
+
+## Extending the spec
 * [ ] Add special types?
     * [ ] ISO 8601 datetimes?
     * [ ] ISO 8601 durations?

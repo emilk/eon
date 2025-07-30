@@ -21,14 +21,29 @@ impl Value {
     ) -> Result<Self> {
         match value {
             TokenValue::Identifier(identifier) => match identifier.as_ref() {
-                "null" | "nil" => Ok(Self::Null),
+                "null" => Ok(Self::Null),
                 "true" => Ok(Self::Bool(true)),
                 "false" => Ok(Self::Bool(false)),
-                _ => Err(Error::new(
-                    con_source,
-                    span,
-                    format!("Unknown keyword {identifier:?}. Expected 'null', 'true', or 'false'."),
-                )),
+                _ => {
+                    let suggestion = match identifier.to_lowercase().as_str() {
+                        "inf" => Some("+inf or -inf"),
+                        "nan" => Some("+nan"),
+                        "false" => Some("false"),
+                        "true" => Some("true"),
+                        "nil" | "null" | "none" => Some("null"),
+                        _ => None,
+                    };
+
+                    let msg = if let Some(suggestion) = suggestion {
+                        format!("Unknown keyword {identifier:?}. Did you mean: {suggestion}?")
+                    } else {
+                        format!(
+                            "Unknown keyword {identifier:?}. Expected 'null', 'true', or 'false'."
+                        )
+                    };
+
+                    Err(Error::new(con_source, span, msg))
+                }
             },
             TokenValue::Number(string) => crate::Number::from_str(string)
                 .map(Self::Number)

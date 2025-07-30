@@ -67,7 +67,7 @@ impl std::str::FromStr for Number {
         }
 
         match string {
-            "+NaN" => {
+            "+nan" => {
                 return Ok(Self(NumberImpl::F32(f32::NAN)));
             }
             "-inf" => {
@@ -89,6 +89,10 @@ impl std::str::FromStr for Number {
             1
         };
 
+        if string.to_lowercase() == "nan" {
+            return Err("NaN must be written as '+nan'".to_owned());
+        }
+
         let unsigned = if let Some(binary) = string.strip_prefix("0b") {
             let number = u128::from_str_radix(binary, 2)
                 .map_err(|_err| "Failed to parse binary number. Expected '0b…'".to_owned())?;
@@ -108,9 +112,11 @@ impl std::str::FromStr for Number {
                 NumberImpl::F64(as_f64)
             }
         } else {
-            NumberImpl::U128(string.parse().map_err(|_err| {
-                "Failed to parse integer number. Expected a valid integer.".to_owned()
-            })?)
+            NumberImpl::U128(
+                string
+                    .parse()
+                    .map_err(|_err| "Not a valid number".to_owned())?,
+            )
         };
 
         if sign == -1 {
@@ -327,7 +333,7 @@ impl std::fmt::Display for Number {
 
             NumberImpl::F32(n) => {
                 if n.is_nan() {
-                    "+NaN".fmt(f)
+                    "+nan".fmt(f)
                 } else if *n == f32::NEG_INFINITY {
                     "-inf".fmt(f)
                 } else if *n == f32::INFINITY {
@@ -339,7 +345,7 @@ impl std::fmt::Display for Number {
 
             NumberImpl::F64(n) => {
                 if n.is_nan() {
-                    "+NaN".fmt(f)
+                    "+nan".fmt(f)
                 } else if *n == f64::NEG_INFINITY {
                     "-inf".fmt(f)
                 } else if *n == f64::INFINITY {

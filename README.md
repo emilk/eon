@@ -6,7 +6,7 @@ This repository contains the definition of _Con_, a simple config format designe
 
 Con uses the `.con` file ending.
 
-Con is aimed to be a replacement for Toml and Yaml.
+Con is aimed to be a replacement for [Toml](https://toml.io/en/) and Yaml.
 
 This repository also contains a Rust crate `con` for using Con with `serde`, and a `confmt` binary for formatting Con files.
 
@@ -23,7 +23,7 @@ map: {
     1: "map keys don't need to be strings"
     2: "they can be any Con value"
 }
-special_floats: [+inf, -inf, +NaN]
+special_floats: [+inf, -inf, +nan]
 ```
 
 Con is designed to be
@@ -33,28 +33,29 @@ Con is designed to be
 * **Powerful**: supports sum types (e.g. Rust enums) and arbitrary map keys
 * **Unambiguous**: no [Norway problem](https://www.bram.us/2022/01/11/yaml-the-norway-problem/)
 
-Con is a strict superset of JSON, i.e. any JSON file is also valid Con.
 
 ## Why another config format?
 I wanted a format designed for human eyes with
 * Indented hierarchy using `{ }` and `[ ]` (like JSON, C, Rust, …). Rules out YAML and TOML.
 * No top-level `{ }` wrapping the whole file. Rules out JSON5, RON, and others.
 
-
-### Why not JSON5?
+### Why not [JSON5](https://json5.org/)?
 JSON5 is _almost_ great, but requires wrapping the whole file in an extra `{ }` block, and indent that. That's too ugly for me.
 It also has a bunch of unnecessary commas between values.
 
 RON has the same problem.
 
-### Why not RON?
+### Why not [RON](https://github.com/ron-rs/ron)?
 The goal of RON is to perfectly map the Rust datatypes, which is cool, but it means it leans more towards being verobse and complex while Con wants to be lean and simple.
 
-### Why not TOML?
-TOML is a hierarchical format, but unlike almost every other programming language known, it does not use any indentation to visually aid the reader, leading to very confusing hierarchies.
+### Why not [Toml](https://toml.io/en/)?
+Toml is a hierarchical format, but unlike almost every other programming language known, it does not use any indentation to visually aid the reader, leading to very confusing hierarchies.
+This means that when (visually) scanning a Toml document it's hard to figure out where one section starts and another ends.
 
-### Why not YAML?
-It's just so ugly, and filled with foot-guns. Go away.
+It also means Toml is a bad candidate whenever you have deeply nested structures.
+
+### Why not [YAML](https://yaml.org/)?
+Yaml is over-complicated, as well as inconsistent. [It is known](https://ruudvanasseldonk.com/2023/01/11/the-yaml-document-from-hell).
 
 ## Performance
 The Con language (and library) are designed for config files that humans edit by hand.
@@ -95,10 +96,15 @@ Numbers in Con can have an optional sign (`+` or `-`) followed by either:
 - a hexadecimal (`0xbeef`, case insensitive)
 - a binary (`0b0101`)
 - a float (`3.14`, `6.022e23` etc)
-- `nan`: [IEEE 754 `NaN`](https://en.wikipedia.org/wiki/NaN)
-- `inf`: infinity
 
 Numbers can use `_` anywhere in them as a visual separator, e.g. `123_456` or `0xdead_beef`.
+
+Con also support the special values:
+- `+nan`: [IEEE 754 `NaN`](https://en.wikipedia.org/wiki/NaN)
+- `+inf`: positive infinity
+- `-inf`: negative infinity
+
+Note that these values MUST be prefixed with a sign.
 
 #### Text
 Strings are usually `"double-quoted"`, but `'single-quoted'` is allowed,

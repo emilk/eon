@@ -30,4 +30,3 @@ default = []
 ariadne.workspace = true
 document-features = { workspace = true, optional = true }
 logos.workspace = true
-snailquote.workspace = true

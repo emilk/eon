@@ -94,7 +94,11 @@ pub enum TokenValue<'s> {
 
     /// Includes the actual quotes of the string, both opening and closing.
     ///
-    /// Any special characters are escaped, e.g. `\n`, `\t`, `\"`, etc.
+    /// Can be on of:
+    /// - `"Basic string"`
+    /// - `'Literal string'`
+    /// - `"""Multiline basic string"""`
+    /// - `'''Multiline literal string'''`
     QuotedString(Cow<'s, str>),
 
     /// A list, like `[ a, b, c, … ]`.

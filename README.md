@@ -73,11 +73,11 @@ A Eon document is always encoded as UTF-8.
 
 A document can be one of:
 * A single value, e.g. `{foo: 42, bar: 32}` or `1337`
-* The contents of a Map, e.g. `foo: 42, bar: 32` (this is syntactic suger so you don't have to wrap the document in `{}`)
+* The contents of a Map, e.g. `foo: 42, bar: 32` (this is syntactic sugar so you don't have to wrap the document in `{}`)
 * The contents of a List, e.g. `32 46 12` (useful for a stream of values, e.g. like [ndjson](https://docs.mulesoft.com/dataweave/latest/dataweave-formats-ndjson))
 
 Commas are optional in Eon, so `[1,2,3]` is the same as `[1 2 3]`.
-By convention, commas are included then multiple values are on the same line, but omitted for multi-line maps and lists.
+By convention, commas are included when multiple values are on the same line, but omitted for multi-line maps and lists.
 
 Whitespace is not significant (other than as a token separator).
 
@@ -110,13 +110,56 @@ Eon also support the special values:
 
 Note that these values MUST be prefixed with a sign.
 
-#### Text
-Strings are usually `"double-quoted"`, but `'single-quoted'` is allowed,
-and useful for text that contain `"`.
+#### Strings
+Text in Eon comes in four flavors:
 
-- `"double quoted"`
-- `'single quoted'`
-- Escape special characters: `"\n \t \" \u{211D}"`
+##### `"Basic strings"`
+Basic strings uses double-quotes, and can contain escape sequences:
+
+```
+"I'm a string."
+"I contain \"quotes\"."
+"Newline:\nUnicode: \u{262E} (☮)"
+```
+
+
+#### `"""Multi-line basic strings"""`
+When you have long text it can be useful to have a string span multiple lines, using triple-quotes.
+
+Escape sequences still work, and a line ending with `\` removes the newline and any whitespace at the start of the next line.
+
+This means these two strings are equivalent:
+
+```
+str1: """\
+    It was the best of strings.
+    It was the worst of strings."""
+
+str2: "It was the best of strings.\n    It was the worst of strings"
+```
+
+
+#### `'Literal strings'`
+Literal strings uses single quotes, and no escaping is performed. What you see is exactly what you get:
+
+```
+windows_path: 'C:\System32\foo.dll'
+quotes: 'I use "quotes" in this string'
+regex: '[+\-0-9\.][0-9a-zA-Z\.+\-_]*'
+```
+
+There is no way to put a single quote inside of a literal strings, but you can in…
+
+#### `'''Multi-line literal strings'''`
+A multi-line literal string uses three single quotes. Within that, everything is taken verbatim, except the very first newline (if any) is ignored:
+
+quote_re: '''(["'])[^"']*$1'''
+python: '''
+# The above newline is ignored, but everything else is kept
+def main():
+    print('Hello world!')
+'''
+
 
 #### List
 Lists are written as `[ … ]`, with _optional_ commas between values.

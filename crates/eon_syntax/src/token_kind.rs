@@ -48,12 +48,25 @@ pub enum TokenKind {
     Number,
 
     /// `"this"`
+    ///
+    /// Processess escaped characters like `\"`, `\\`, `\n`, etc.
     #[regex(r#""([^"\\]|\\.)*""#)]
     DoubleQuotedString,
 
-    /// `'this'`
-    #[regex(r#"'([^'\\]|\\.)*'"#)]
+    /// Raw string `'like "this"'`
+    ///
+    /// Can contain any character except for single quotes.
+    /// Does not process escape sequences.
+    #[regex(r"'([^'])*'")]
     SingleQuotedString,
+
+    // Multiline basic string (triple double quotes) - processes escape sequences
+    #[regex(r#""""([^"]|"[^"]|""[^"])*""""#)]
+    MultilineBasicString,
+
+    // Multiline literal string (triple single quotes) - no escape processing
+    #[regex(r"'''([^']|'[^']|''[^'])*'''")]
+    MultilineLiteralString,
 }
 
 impl std::fmt::Display for TokenKind {
@@ -70,8 +83,10 @@ impl std::fmt::Display for TokenKind {
             Self::Comma => write!(f, "comma ','"),
             Self::Identifier => write!(f, "identifier"),
             Self::Number => write!(f, "number"),
-            Self::DoubleQuotedString => write!(f, r#""double quoted" string"#),
-            Self::SingleQuotedString => write!(f, r"'single quoted' string"),
+            Self::DoubleQuotedString => write!(f, r#""basic string""#),
+            Self::SingleQuotedString => write!(f, r"'literal string'"),
+            Self::MultilineBasicString => write!(f, r#"""multiline basic string"""#),
+            Self::MultilineLiteralString => write!(f, r#"'''multiline literal string'''"#),
         }
     }
 }
@@ -80,22 +95,30 @@ impl std::fmt::Display for TokenKind {
 fn test_parse_tokens() {
     let input = r#"
     // Comment
-    single: 'single'
-    "double"
+    key: value
     [ { },]
     42
     123_456
     +inf
     +1.e3-42
     0xdeadbeef
+    "basic \n \"string\""
+    'single quoted string'
+    """
+    multiline
+    basic \
+    string"""
+    '''
+multiline
+literal
+string'''
     "#;
 
     let expect = [
         (TokenKind::Comment, "// Comment"),
-        (TokenKind::Identifier, "single"),
+        (TokenKind::Identifier, "key"),
         (TokenKind::Colon, ":"),
-        (TokenKind::SingleQuotedString, "'single'"),
-        (TokenKind::DoubleQuotedString, "\"double\""),
+        (TokenKind::Identifier, "value"),
         (TokenKind::OpenList, "["),
         (TokenKind::OpenBrace, "{"),
         (TokenKind::CloseBrace, "}"),
@@ -106,6 +129,16 @@ fn test_parse_tokens() {
         (TokenKind::Number, "+inf"),
         (TokenKind::Number, "+1.e3-42"),
         (TokenKind::Number, "0xdeadbeef"),
+        (TokenKind::DoubleQuotedString, r#""basic \n \"string\"""#),
+        (TokenKind::SingleQuotedString, "'single quoted string'"),
+        (
+            TokenKind::MultilineBasicString,
+            "\"\"\"\n    multiline\n    basic \\\n    string\"\"\"",
+        ),
+        (
+            TokenKind::MultilineLiteralString,
+            "'''\nmultiline\nliteral\nstring'''",
+        ),
     ];
     let mut lexer = TokenKind::lexer(input);
 

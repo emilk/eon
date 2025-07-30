@@ -359,7 +359,10 @@ fn parse_token_tree<'s>(
         }
         TokenKind::Identifier => TokenValue::Identifier(token.slice.into()),
         TokenKind::Number => TokenValue::Number(token.slice.into()),
-        TokenKind::DoubleQuotedString | TokenKind::SingleQuotedString => {
+        TokenKind::DoubleQuotedString
+        | TokenKind::SingleQuotedString
+        | TokenKind::MultilineBasicString
+        | TokenKind::MultilineLiteralString => {
             // This could be a free-floating string
             // or the opening of a variant, like `"Rgb"(…)`:
 
@@ -387,7 +390,14 @@ fn parse_token_tree<'s>(
                 TokenValue::QuotedString(token.slice.into())
             }
         }
-        _ => {
+        TokenKind::Comment => unreachable!("We should have already consumed comments"),
+        TokenKind::CloseList => Err(tokens.error_at(token.span, "Unbalanced brackets"))?,
+        TokenKind::CloseBrace => Err(tokens.error_at(token.span, "Unbalanced braces"))?,
+        TokenKind::CloseParen => Err(tokens.error_at(token.span, "Unbalanced parentheses"))?,
+        TokenKind::OpenParen => {
+            Err(tokens.error_at(token.span, "Parentheses must be proceeded by a string"))?
+        }
+        TokenKind::Colon | TokenKind::Comma => {
             return Err(tokens.error_at(
                 token.span,
                 "Expected a value, like a map, list, number, or string",

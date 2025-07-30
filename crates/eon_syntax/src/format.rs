@@ -396,7 +396,9 @@ fn should_format_values_on_one_line(values: &[TokenTree<'_>]) -> bool {
 fn is_simple(value: &TokenTree<'_>) -> bool {
     if value.prefix_comments.is_empty() && value.suffix_comment.is_none() {
         match &value.value {
-            TokenValue::Identifier(_) | TokenValue::Number(_) | TokenValue::QuotedString(_) => true,
+            TokenValue::Identifier(_) | TokenValue::Number(_) => true,
+
+            TokenValue::QuotedString(string) => !string.contains('\n'),
 
             TokenValue::List(list) => {
                 let TokenList {

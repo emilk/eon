@@ -8,7 +8,7 @@ cargo install eonfmt
 ```
 
 ## Usage
-You can format indivudal files, or a whole folder recursively.
+You can format individual files, or a whole folder recursively.
 When given a folder, only `.eon` files will be formatted,
 and `.gitignore` will be respected.
 
@@ -18,7 +18,7 @@ eonfmt folder/
 eonfmt .
 ```
 
-You can also check wether or not files are formatted:
+You can also check whether or not files are formatted:
 
 ```
 # Error if there is an unformatted .eon file that is not in `.gitignore`.

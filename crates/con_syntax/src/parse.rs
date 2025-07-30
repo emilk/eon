@@ -1,4 +1,4 @@
-//! Convert tokens into a token tree.
+//! Convert tokens into a token tree using a recursive descent parser.
 
 use crate::{
     error::{Error, Result},
@@ -6,6 +6,9 @@ use crate::{
     token_kind::TokenKind,
     token_tree::{TokenKeyValue, TokenList, TokenMap, TokenTree, TokenValue, TokenVariant},
 };
+
+/// Protect against stack overflow in our recursive descent parser.
+const MAX_RECURSION_DEPTH: usize = 128;
 
 #[derive(Clone, Copy, Debug)]
 pub struct PlacedToken<'s> {
@@ -161,7 +164,7 @@ fn parse_top_str(con_source: &str) -> Result<TokenTree<'_>> {
     // Usually a Con file contains a bunch of `key: value` pairs, without any
     // surrounding braces, so we optimize for that case:
     let mut tokens_a = PeekableIter::new(con_source);
-    match parse_map_contents(&mut tokens_a) {
+    match parse_map_contents(&mut tokens_a, 0) {
         Ok(map) => {
             check_for_trailing_tokens(&mut tokens_a)?;
             let value = TokenTree {
@@ -179,7 +182,7 @@ fn parse_top_str(con_source: &str) -> Result<TokenTree<'_>> {
             // Maybe the use did wrap the file in {}, or maybe it is not an map?
             let mut tokens_b = PeekableIter::new(con_source);
 
-            match parse_list_contents(&mut tokens_b) {
+            match parse_list_contents(&mut tokens_b, 0) {
                 Ok(list) => {
                     check_for_trailing_tokens(&mut tokens_b)?;
 
@@ -230,7 +233,10 @@ fn check_for_trailing_tokens(tokens: &mut PeekableIter<'_>) -> Result {
 }
 
 /// Parse the inside of a list, without consuming either the opening or closing brackets.
-fn parse_list_contents<'s>(tokens: &mut PeekableIter<'s>) -> Result<TokenList<'s>> {
+fn parse_list_contents<'s>(
+    tokens: &mut PeekableIter<'s>,
+    recurse_depth: usize,
+) -> Result<TokenList<'s>> {
     let mut values = vec![];
 
     loop {
@@ -248,7 +254,7 @@ fn parse_list_contents<'s>(tokens: &mut PeekableIter<'s>) -> Result<TokenList<'s
             });
         }
 
-        let mut value = parse_token_tree(tokens)?;
+        let mut value = parse_token_tree(tokens, recurse_depth + 1)?;
 
         {
             let mut prefix_comments = prefix_comments;
@@ -270,7 +276,10 @@ fn parse_list_contents<'s>(tokens: &mut PeekableIter<'s>) -> Result<TokenList<'s
 }
 
 /// Parse the inside of an map, without consuming either the opening or closing brackets.
-fn parse_map_contents<'s>(tokens: &mut PeekableIter<'s>) -> Result<TokenMap<'s>> {
+fn parse_map_contents<'s>(
+    tokens: &mut PeekableIter<'s>,
+    recurse_depth: usize,
+) -> Result<TokenMap<'s>> {
     let mut key_values = vec![];
 
     loop {
@@ -288,7 +297,7 @@ fn parse_map_contents<'s>(tokens: &mut PeekableIter<'s>) -> Result<TokenMap<'s>>
             });
         }
 
-        let mut key = parse_token_tree(tokens)?;
+        let mut key = parse_token_tree(tokens, recurse_depth + 1)?;
         debug_assert!(
             key.prefix_comments.is_empty(),
             "We should have already consumed these"
@@ -297,7 +306,7 @@ fn parse_map_contents<'s>(tokens: &mut PeekableIter<'s>) -> Result<TokenMap<'s>>
 
         consume_token(tokens, TokenKind::Colon)?;
 
-        let mut value = parse_token_tree(tokens)?;
+        let mut value = parse_token_tree(tokens, recurse_depth + 1)?;
 
         if tokens
             .peek()
@@ -313,7 +322,17 @@ fn parse_map_contents<'s>(tokens: &mut PeekableIter<'s>) -> Result<TokenMap<'s>>
 }
 
 /// Parse a value, including prefix and suffix comments.
-fn parse_token_tree<'s>(tokens: &mut PeekableIter<'s>) -> Result<TokenTree<'s>> {
+fn parse_token_tree<'s>(
+    tokens: &mut PeekableIter<'s>,
+    recurse_depth: usize,
+) -> Result<TokenTree<'s>> {
+    if recurse_depth >= MAX_RECURSION_DEPTH {
+        return Err(tokens.error_at(
+            tokens.span_of_previous(),
+            "Maximum recursion depth exceeded while parsing document",
+        ));
+    }
+
     let prefix_comments = parse_comments(tokens);
 
     let Some(result) = tokens.next() else {
@@ -329,12 +348,12 @@ fn parse_token_tree<'s>(tokens: &mut PeekableIter<'s>) -> Result<TokenTree<'s>> 
 
     let value = match token.kind {
         TokenKind::OpenList => {
-            let list = parse_list_contents(tokens)?;
+            let list = parse_list_contents(tokens, recurse_depth + 1)?;
             consume_token(tokens, TokenKind::CloseList)?;
             TokenValue::List(list)
         }
         TokenKind::OpenBrace => {
-            let map = parse_map_contents(tokens)?;
+            let map = parse_map_contents(tokens, recurse_depth + 1)?;
             consume_token(tokens, TokenKind::CloseBrace)?;
             TokenValue::Map(map)
         }
@@ -353,7 +372,7 @@ fn parse_token_tree<'s>(tokens: &mut PeekableIter<'s>) -> Result<TokenTree<'s>> 
                 let TokenList {
                     values,
                     closing_comments,
-                } = parse_list_contents(tokens)?;
+                } = parse_list_contents(tokens, recurse_depth + 1)?;
 
                 consume_token(tokens, TokenKind::CloseParen)?;
 

@@ -7,6 +7,11 @@ pub struct Span {
 
 impl Span {
     #[inline]
+    pub fn is_empty(&self) -> bool {
+        self.start == self.end
+    }
+
+    #[inline]
     pub fn len(&self) -> usize {
         self.end - self.start
     }

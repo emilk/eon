@@ -21,7 +21,7 @@ pub use crate::{
     error::{Error, Result},
     format::FormatOptions,
     span::Span,
-    strings::{escape_and_quote, key_needs_quotes, unescape_and_unquote},
+    strings::{escape_and_quote, is_valid_identifier, unescape_and_unquote},
     token_tree::{TokenKeyValue, TokenList, TokenMap, TokenTree, TokenValue, TokenVariant},
 };
 

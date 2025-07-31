@@ -6,7 +6,7 @@ use crate::{Value, value::Variant};
 
 use eon_syntax::{
     TokenKeyValue, TokenList, TokenMap, TokenTree, TokenValue, TokenVariant, escape_and_quote,
-    key_needs_quotes,
+    is_valid_identifier,
 };
 
 impl From<Value> for TokenTree<'static> {
@@ -30,7 +30,7 @@ impl From<Value> for TokenValue<'static> {
             Value::Map(map) => {
                 let all_keys_are_identifiers = map.iter().all(|(key, _)| {
                     if let Value::String(key) = key {
-                        !key_needs_quotes(key)
+                        is_valid_identifier(key)
                     } else {
                         false
                     }

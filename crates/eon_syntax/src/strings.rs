@@ -1,28 +1,33 @@
 use crate::Result;
 
-/// Returns `true` if the string does NOT match `[a-zA-Z_][a-zA-Z0-9_]*`
-// TODO: invert this
-pub fn key_needs_quotes(string: &str) -> bool {
-    if matches!(string, "true" | "false" | "null") {
-        return true; // We need to quote these to avoid confusion with the special keyword values
+fn is_keyword(string: &str) -> bool {
+    matches!(string, "true" | "false" | "null")
+}
+
+/// Returns `true` if the string does matches `[a-zA-Z_][a-zA-Z0-9_]*`
+pub fn is_valid_identifier(string: &str) -> bool {
+    if is_keyword(string) {
+        return false; // We need to quote these to avoid confusion with the special keyword values
     }
 
     let mut chars = string.chars();
 
+    // Check first character:
     if chars
         .next()
         .is_none_or(|c| !c.is_ascii_alphabetic() && c != '_')
     {
-        return true;
+        return false;
     }
 
+    // Check the rest:
     for c in chars {
         if !c.is_ascii_alphanumeric() && c != '_' {
-            return true;
+            return false;
         }
     }
 
-    false
+    true
 }
 
 /// Format a string into Eon, adding quotes and escaping as needed.
@@ -182,6 +187,24 @@ where
     }
 
     Err("Unicode escape sequence must end with a closing brace '}'".to_owned())
+}
+
+#[test]
+fn test_is_valid_identifier() {
+    assert!(!is_valid_identifier(""));
+    assert!(is_valid_identifier("X"));
+    assert!(is_valid_identifier("valid_identifier"));
+    assert!(is_valid_identifier("valid123"));
+    assert!(is_valid_identifier("_valid"));
+    assert!(!is_valid_identifier("123invalid"));
+    assert!(!is_valid_identifier("invalid-identifier"));
+    assert!(!is_valid_identifier("true"));
+    assert!(!is_valid_identifier("false"));
+    assert!(!is_valid_identifier("null"));
+    assert!(!is_valid_identifier("invalid identifier"));
+    assert!(!is_valid_identifier("invalid@identifier"));
+    assert!(!is_valid_identifier("invalid!identifier"));
+    assert!(!is_valid_identifier("invalid#identifier"));
 }
 
 #[test]

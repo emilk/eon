@@ -7,18 +7,19 @@
 * [x] Figure out how the difference between a string and a zero-value variant should be encoded in `Value`
 * [x] Protect against stack overflow in recursive-decent parser
 * [x] Strings
+* [x] Make sure CI workss
+* [x] Produce error if the same key is repeated
+* [ ] Handle Windows newlines (strip all `\r` from input).
 * [ ] Generate comparison with https://docs.rs/ron/
-* [ ] Test against evil JSON files to make sure Eon is robust
 * [ ] Remove all TODOs
-* [ ] Make sure CI workss
+* [ ] Read and improve the docs for
+    * [ ] `eon`
+    * [ ] `eon_syntax`
 * [ ] Numbers
     * [x] Allow `_` in numbers
     * [x] Test hexal and binary numbers
     * [x] What strings should we use for infinities
     * [ ] Test perfect round-tripping of floats
-    * [ ] Hex floats?
-* [ ] Write a spec
-    * [ ] newline-separated as part of spec (parse multiple values in same file)
 * [ ] Publish crates
 * [ ] Warn about unused keys (i.e. mistyped keys that was never accessed during deserialization)
 
@@ -29,6 +30,9 @@
 
 ## Extending the spec
 * [ ] Add special types?
-    * [ ] ISO 8601 datetimes?
-    * [ ] ISO 8601 durations?
+    * [ ] ISO 8601
+        * [ ] datetimes
+        * [ ] local times
+        * [ ] Durations? But ISO 8601 durations are so ugly
     * [ ] UUID?
+* [ ] Hex floats?

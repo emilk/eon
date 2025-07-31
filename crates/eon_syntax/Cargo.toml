@@ -28,5 +28,4 @@ default = []
 
 [dependencies]
 ariadne.workspace = true
-document-features = { workspace = true, optional = true }
 logos.workspace = true

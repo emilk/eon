@@ -3,6 +3,7 @@ use crate::span::Span;
 /// Represent an error during parsing
 type ErrorReport = ariadne::Report<'static, Span>;
 
+/// An error that can occur during parsing of an Eon file.
 pub enum Error {
     Custom {
         msg: String,

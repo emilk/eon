@@ -1,7 +1,11 @@
-//! Serialize a [`TokenTree`] to a Eon string.
+//! Serialize a [`TokenTree`] to an Eon string.
 
 use crate::token_tree::{TokenKeyValue, TokenList, TokenMap, TokenTree, TokenValue, TokenVariant};
 
+/// How to format an Eon document.
+///
+/// If you mess up the options too much (e.g. set the indentation to something that is not whitespace)
+/// you might end up with a document that is not valid Eon syntax.
 #[derive(Clone, Debug)]
 pub struct FormatOptions {
     /// `"\t"`
@@ -23,7 +27,9 @@ pub struct FormatOptions {
 impl Default for FormatOptions {
     fn default() -> Self {
         Self {
-            indentation: "\t".to_owned(), // A tab character allows users to configure their preferred indentation size in their editor
+            // A tab character allows users to configure their preferred indentation size in their editor.
+            // It's the best default.
+            indentation: "\t".to_owned(),
             newline: "\n".to_owned(),
             space_before_suffix_comment: " ".to_owned(),
             key_value_separator: ": ".to_owned(),
@@ -52,7 +58,7 @@ impl FormatOptions {
 }
 
 impl TokenTree<'_> {
-    /// Format as a Eon string.
+    /// Format as an Eon string.
     pub fn format(&self, options: &FormatOptions) -> String {
         let mut f = Formatter::new(options);
 

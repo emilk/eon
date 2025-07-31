@@ -49,7 +49,7 @@ pub enum TokenKind {
 
     /// `"this"`
     ///
-    /// Processess escaped characters like `\"`, `\\`, `\n`, etc.
+    /// Processes escaped characters like `\"`, `\\`, `\n`, etc.
     #[regex(r#""([^"\\]|\\.)*""#)]
     DoubleQuotedString,
 

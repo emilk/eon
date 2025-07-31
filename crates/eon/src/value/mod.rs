@@ -1,14 +1,18 @@
 mod map;
 mod number;
+mod variant;
 
 use eon_syntax::{FormatOptions, Result, TokenTree};
-use vec1::Vec1;
 
-pub use self::{map::Map, number::Number};
+pub use self::{map::Map, number::Number, variant::Variant};
 
 /// Represents any Eon value.
 ///
-/// This does NOT include comments.
+/// Load an Eon document into a [`Value`] using [`Value::from_str`].
+/// Serialize a [`Value`] into an Eon string using [`Value::format`].
+///
+/// ## See also
+/// A [`Value`] does NOT include comments.
 /// For that, use [`crate::ast::TokenValue`].
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum Value {
@@ -42,22 +46,6 @@ pub enum Value {
     Variant(Variant),
 }
 
-/// A sum-type (enum) variant containing some data, like `"Rgb"(255, 0, 0)`.
-///
-/// For simple enum types (e.g. `enum Maybe { Yes, No }`),
-/// the variants will be represented as [`Value::String`] instead.
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct Variant {
-    /// The name of the variant, like `Rgb`.
-    pub name: String,
-
-    /// The contents of the variant.
-    ///
-    /// Note that this cannot be empty.
-    /// A variant with no contents is represented as a [`Value::String`].
-    pub values: Vec1<Value>,
-}
-
 impl Value {
     /// Construct a variant of an enum (sum-type) with a name and optional values.
     ///
@@ -71,7 +59,7 @@ impl Value {
         }
     }
 
-    /// Pretty-print a [`Value`] to a Eon string.
+    /// Pretty-print a [`Value`] to an Eon string.
     ///
     /// You can parse the result with [`Value::from_str`].
     pub fn format(&self, options: &FormatOptions) -> String {
@@ -187,8 +175,7 @@ impl From<char> for Value {
 impl From<&[u8]> for Value {
     #[inline]
     fn from(value: &[u8]) -> Self {
-        // TODO: something more efficient?
-        // Maybe a special byte-hex-encoding?
+        // TODO(emilk): encode byte arrays more efficiently? Maybe a special byte-hex-encoding, like `b"ab01…"`?
         Self::List(value.iter().map(|&b| Self::from(b)).collect())
     }
 }

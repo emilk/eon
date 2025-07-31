@@ -92,3 +92,16 @@ fn test_almost_correct() {
     ───╯
     "#);
 }
+
+#[test]
+fn test_repeated_key() {
+    insta::assert_snapshot!(Value::from_str("key: 1\nkey: 2").unwrap_err(), @r"
+    Error:
+       ╭─[ <unknown>:2:1 ]
+       │
+     2 │ key: 2
+       │ ─┬─
+       │  ╰─── Duplicate key in map
+    ───╯
+    ");
+}

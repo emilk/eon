@@ -1,8 +1,13 @@
 //! # Eon: the human-friendly configuration format
-//! TODO: fill this in
+//! To learn the Eon syntax, see <https://github.com/emilk/eon>.
 //!
-//! ## Feature flags
-#![cfg_attr(feature = "document-features", doc = document_features::document_features!())]
+//! This crate provides a parser and formatter for Eon.
+//! It is used to implement the [`eonfmt`](http://crates.io/crates/eonfmt) formatter tool,
+//! but also used by the [`eon`](http://crates.io/crates/eon) crate to parse and format Eon documents.
+//!
+//! You can use it to read and write Eon documents, with comments.
+//! This can be useful for e.g. reading "docstrings" from an `.eon` file,
+//! or for automate the editing an `.eon` file while preserving comments and formatting.
 
 mod error;
 mod format;
@@ -20,7 +25,7 @@ pub use crate::{
     token_tree::{TokenKeyValue, TokenList, TokenMap, TokenTree, TokenValue, TokenVariant},
 };
 
-/// Parses a Eon file and re-indents and formats it in a pretty way.
+/// Parses an Eon file and re-indents and formats it in a pretty way.
 ///
 /// ## Errors
 /// Returns an error if the source is not valid Eon syntax.

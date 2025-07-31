@@ -161,7 +161,7 @@ impl<'s> TokenTree<'s> {
 
 /// Parse a full Eon file.
 fn parse_top_str(eon_source: &str) -> Result<TokenTree<'_>> {
-    // Usually a Eon file contains a bunch of `key: value` pairs, without any
+    // Usually an Eon file contains a bunch of `key: value` pairs, without any
     // surrounding braces, so we optimize for that case:
     let mut tokens_a = PeekableIter::new(eon_source);
     match parse_map_contents(&mut tokens_a, 0) {

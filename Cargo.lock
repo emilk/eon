@@ -234,7 +234,6 @@ name = "eon_syntax"
 version = "0.0.1"
 dependencies = [
  "ariadne",
- "document-features",
  "logos",
 ]
 

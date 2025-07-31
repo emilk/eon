@@ -1,4 +1,4 @@
-//! This module describes the structure of a Eon document,
+//! This module describes the structure of an Eon document,
 //! including comments.
 //!
 //! The comments are preserved for the benefit of the formatter.

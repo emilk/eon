@@ -24,6 +24,9 @@ pub fn key_needs_quotes(string: &str) -> bool {
     false
 }
 
+/// Format a string into Eon, adding quotes and escaping as needed.
+///
+/// The exact type of quoting (single, double, multiline basic, or multiline literal) will be determined automatically based on the content of the string.
 // TODO: smartly choose between all four types of strings: double, single, multiline basic, and multiline literal.
 pub fn escape_and_quote(raw: &str) -> String {
     #![expect(clippy::unwrap_used)] // Can't fail - the Debug format always produces a string with quotes.
@@ -50,7 +53,7 @@ pub fn unescape_and_unquote(escaped: &str) -> Result<String, String> {
         // multiline literal string. No escape sequences, but strip the leading newline (if any):
         let Some(contents) = suffix.strip_suffix("'''") else {
             return Err(
-                "Tripple-quoted multiline literal string must end with three single quotes"
+                "Triple-quoted multiline literal string must end with three single quotes"
                     .to_owned(),
             );
         };

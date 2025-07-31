@@ -10,7 +10,7 @@ use crate::Value;
 /// Usually maps strings to values, but can map any value to any value.
 ///
 /// The iteration order is guaranteed to be the same as the insertion order.
-/// However, equality and the hash is independent of the insertion order.
+/// Equality and the hash is independent of the insertion order.
 #[derive(Default, Debug, Clone, Eq)]
 pub struct Map {
     map: indexmap::IndexMap<Value, Value>,
@@ -39,6 +39,9 @@ impl Map {
         }
     }
 
+    /// Insert a new key-value pair into the map.
+    ///
+    /// This will replace the value if the key already exists.
     #[inline]
     pub fn insert(&mut self, key: Value, value: Value) -> Option<Value> {
         let key_hash = hash_of(&key);

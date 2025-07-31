@@ -5,15 +5,21 @@
 
 use std::str::FromStr as _;
 
-use crate::{Error, Result, Value};
+use crate::{Error, Map, Result, Value};
 
 use eon_syntax::{Span, TokenKeyValue, TokenTree, TokenValue, TokenVariant, unescape_and_unquote};
 
 impl Value {
+    /// Try to parse a [`TokenTree`] into a [`Value`].
+    ///
+    /// You must provide the full Eon source string so that we can produce good error messages.
     pub fn try_from_token_tree(eon_source: &str, tt: &TokenTree<'_>) -> Result<Self> {
         Self::try_from_tree_value(eon_source, tt.span, &tt.value)
     }
 
+    /// Try to parse a [`TokenValue`] into a [`Value`].
+    ///
+    /// You must provide the full Eon source string so that we can produce good error messages.
     pub fn try_from_tree_value(
         eon_source: &str,
         span: Option<Span>,
@@ -69,19 +75,20 @@ impl Value {
                     .map(|value| Self::try_from_token_tree(eon_source, value))
                     .collect::<Result<_>>()?,
             )),
-            TokenValue::Map(maps) => Ok(Self::Map(
-                maps.key_values
-                    .iter()
-                    .map(|TokenKeyValue { key, value }| {
-                        let key = match &key.value {
-                            TokenValue::Identifier(key) => Self::String(key.to_string()),
-                            _ => Self::try_from_token_tree(eon_source, key)?,
-                        };
-                        let value = Self::try_from_token_tree(eon_source, value)?;
-                        Ok((key, value))
-                    })
-                    .collect::<Result<_>>()?,
-            )),
+            TokenValue::Map(tt_map) => {
+                let mut map = Map::with_capacity(tt_map.key_values.len());
+                for TokenKeyValue { key: key_tt, value } in &tt_map.key_values {
+                    let key = match &key_tt.value {
+                        TokenValue::Identifier(key) => Self::String(key.to_string()),
+                        _ => Self::try_from_token_tree(eon_source, key_tt)?,
+                    };
+                    let value = Self::try_from_token_tree(eon_source, value)?;
+                    if map.insert(key, value).is_some() {
+                        return Err(Error::new(eon_source, key_tt.span, "Duplicate key in map"));
+                    }
+                }
+                Ok(Self::Map(map))
+            }
             TokenValue::Variant(variant) => {
                 let TokenVariant {
                     name_span,

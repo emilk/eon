@@ -28,10 +28,18 @@ special_floats: [+inf, -inf, +nan]
 
 Eon is designed to be
 * **Familiar**: strongly resembles JSON
-* **Clean**: forgoes unnecessary commas, quotes, and indentation
+* **Clean**: forgoes unnecessary commas and quotes
 * **Clear**: lists are enclosed in `[ ]`, maps in `{ }`
 * **Powerful**: supports sum types (e.g. Rust enums) and arbitrary map keys
 * **Unambiguous**: no [Norway problem](https://www.bram.us/2022/01/11/yaml-the-norway-problem/)
+
+## Formatter
+You can format any Eon file using the `eonfmt` binary
+
+```
+cargo install eonfmt
+eonfmt *.eon
+```
 
 
 ## Why another config format?
@@ -64,15 +72,15 @@ Yaml is clean, but over-complicated, inconsistent, and filled with foot guns. [I
 The Eon language (and library) are designed for config files that humans edit by hand.
 
 There is nothing in the Eon spec that would not make it as fast (or as slow, depending on your perspective) as JSON, but the library has not been optimized for performance (no crazy SIMD stuff etc).
-It parses a big 1MB file in under 10ms on an M3 MacBook.
+It still parses a chunky 1MB file in under 10ms on an M3 MacBook.
 
 I would not recommend using Eon as a data transfer format. For that, use a binary format (like MsgPack or protobuffs), or JSON (which has optimized parser/formatters for every programming language).
 
 ## Eon specification
-A Eon document is always encoded as UTF-8.
+An Eon document is always encoded as UTF-8.
 
 A document can be one of:
-* A single value, e.g. `{foo: 42, bar: 32}` or `1337`
+* A single value, e.g. `42` or `{foo: 1337, bar: 32}`
 * The contents of a Map, e.g. `foo: 42, bar: 32` (this is syntactic sugar so you don't have to wrap the document in `{}`)
 * The contents of a List, e.g. `32 46 12` (useful for a stream of values, e.g. like [ndjson](https://docs.mulesoft.com/dataweave/latest/dataweave-formats-ndjson))
 
@@ -83,10 +91,10 @@ Whitespace is not significant (other than as a token separator).
 
 By convention, we indent everything wrapped in `[]`, `{}`, `()`.
 
-Comments are written with `// `.
+Comments are prefixed with `//`.
 
 ### Supported types
-A Eon value is one of:
+An Eon value is one of:
 
 #### `null`
 A special `null` value.
@@ -212,7 +220,7 @@ country_codes: {
 }
 ```
 
-Both keys and values of a Eon map can be any Eon value.
+Both keys and values of an Eon map can be any Eon value.
 This is significantly different from e.g. JSON, where keys can only be strings.
 So, a reverse map (from code to country name) can we written as:
 
@@ -276,7 +284,7 @@ true: "confusing"      // Confusing, but OK. Uses a boolean as key (not a string
 
 
 ### Variants
-Let's first consider a simple `enum`, like one you would find in `C`:
+Let's first consider a simple `enum`, like one you would find in C or Java:
 
 ```c
 enum Side {
@@ -305,7 +313,7 @@ enum Color {
 }
 ```
 
-Here a simple string will not sufficr, as some of the enum variants contain data.
+Here a simple string will not suffice, as some of the enum variants contain data.
 
 There are several competing techniques of encoding this in JSON (external tagging, internal tagging, adjaceny tagging, …) all with their own shortcomings.
 
@@ -329,8 +337,6 @@ name: Emil
 ```
 
 Is `name` really a multiple-choice enum? Maybe. Maybe not.
-But the Eon parser doesn't know, so must accept it.
+But the Eon parser wouldn't know, so must accept it.
 And this will leave the door open to weirdness where _some_ strings need quotes and not others (and we'll end up similar to YAML).
-So instead we explicitly forbid the above, and always require quotes for strings (…except for map keys).
-
-We could also tempted to also allow `"Rgb"{r: 255, g: 0, b: 0}`, but that would be ambiguous when parsing: is it one enum variant, or a string followed by a map? (remember: commas are optional in Eon).
+So instead we explicitly forbid the above, and always require quotes for strings (…except for map keys that are identifiers).

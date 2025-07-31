@@ -9,6 +9,7 @@ use crate::{Map, Value, serde::to_value, value::Variant};
 
 use vec1::vec1;
 
+/// An error during serde-serialization into Eon.
 #[derive(Debug, Clone)]
 pub struct SerializationError {
     msg: String,

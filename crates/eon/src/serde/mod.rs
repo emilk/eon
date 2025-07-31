@@ -19,7 +19,7 @@ where
     value.serialize(&serializer)
 }
 
-/// Serialize a value (using serde) into a Eon string.
+/// Serialize a value (using serde) into an Eon string.
 pub fn to_string<T>(value: &T, options: &FormatOptions) -> Result<String, SerializationError>
 where
     T: Serialize,
@@ -27,7 +27,7 @@ where
     to_value(value).map(|value| value.format(options))
 }
 
-/// Parse a Eon value from a string into a type `T` that implements [`serde::de::DeserializeOwned`].
+/// Parse an Eon value from a string into a type `T` that implements [`serde::de::DeserializeOwned`].
 pub fn from_str<T>(eon_source: &str) -> Result<T, crate::Error>
 where
     T: serde::de::DeserializeOwned,

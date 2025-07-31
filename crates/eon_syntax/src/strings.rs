@@ -49,6 +49,12 @@ pub fn escape_and_quote(raw: &str) -> String {
 
 /// Remove the quotes and unescape the string.
 pub fn unescape_and_unquote(escaped: &str) -> Result<String, String> {
+    if escaped.contains('\r') {
+        // Handle Windows newlines by stripping all `\r` characters,
+        // turning `\r\n` into `\n`.
+        return unescape_and_unquote(&escaped.replace('\r', ""));
+    }
+
     if let Some(suffix) = escaped.strip_prefix("'''") {
         // multiline literal string. No escape sequences, but strip the leading newline (if any):
         let Some(contents) = suffix.strip_suffix("'''") else {

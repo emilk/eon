@@ -1,7 +1,7 @@
 use logos::Logos;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Logos)]
-#[logos(skip r"[ \t\n\f]*")] // Ignore this regex pattern between tokens
+#[logos(skip r"[ \t\n\f\r]*")] // Ignore this regex pattern between tokens
 pub enum TokenKind {
     /// `// Some comment`
     #[regex("//[^\n]*")]

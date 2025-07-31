@@ -9,7 +9,7 @@
 * [x] Strings
 * [x] Make sure CI workss
 * [x] Produce error if the same key is repeated
-* [ ] Handle Windows newlines (strip all `\r` from input).
+* [x] Handle Windows newlines (strip all `\r` from input).
 * [ ] Generate comparison with https://docs.rs/ron/
 * [ ] Remove all TODOs
 * [ ] Read and improve the docs for

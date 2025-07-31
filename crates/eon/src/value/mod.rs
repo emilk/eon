@@ -8,12 +8,12 @@ pub use self::{map::Map, number::Number, variant::Variant};
 
 /// Represents any Eon value.
 ///
-/// Load an Eon document into a [`Value`] using [`Value::from_str`].
+/// Load an Eon document into a [`Value`] using [`Value::from_str`](std::str::FromStr::from_str).
 /// Serialize a [`Value`] into an Eon string using [`Value::format`].
 ///
 /// ## See also
 /// A [`Value`] does NOT include comments.
-/// For that, use [`crate::ast::TokenValue`].
+/// For that, use [`eon_syntax::TokenTree`].
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum Value {
     /// Special `null` value
@@ -61,7 +61,7 @@ impl Value {
 
     /// Pretty-print a [`Value`] to an Eon string.
     ///
-    /// You can parse the result with [`Value::from_str`].
+    /// You can parse the result with [`Value::from_str`](std::str::FromStr::from_str).
     pub fn format(&self, options: &FormatOptions) -> String {
         TokenTree::from(self.clone()).format(options)
     }

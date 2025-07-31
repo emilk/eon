@@ -321,6 +321,14 @@ impl<'de> de::VariantAccess<'de> for EnumAccessor<'de> {
         V: Visitor<'de>,
     {
         if len != self.values.len() {
+            if self.values.len() == 1 {
+                if let Some(list) = self.values[0].as_list() {
+                    if list.values.len() == len {
+                        // Allow `"TupleVariant"([1, 2, 3])` to be interpreted as `"TupleVariant"(1, 2, 3)`
+                        return visitor.visit_seq(ListAccessor(&list.values));
+                    }
+            }
+
             return Err(DeserError::new(
                 self.name_span,
                 format!(
@@ -331,9 +339,6 @@ impl<'de> de::VariantAccess<'de> for EnumAccessor<'de> {
                 ),
             ));
         }
-
-        // TODO: if we contain a single element, and that is a list of the correct length,
-        // then that should also be accepted.
 
         visitor.visit_seq(ListAccessor(self.values))
     }

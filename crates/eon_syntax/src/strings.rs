@@ -1,6 +1,7 @@
 use crate::Result;
 
 /// Returns `true` if the string does NOT match `[a-zA-Z_][a-zA-Z0-9_]*`
+// TODO: invert this
 pub fn key_needs_quotes(string: &str) -> bool {
     if matches!(string, "true" | "false" | "null") {
         return true; // We need to quote these to avoid confusion with the special keyword values

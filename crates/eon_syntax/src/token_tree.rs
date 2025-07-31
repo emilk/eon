@@ -41,6 +41,7 @@ pub struct TokenTree<'s> {
     pub suffix_comment: Option<Comment<'s>>,
 }
 
+/// The tokens for a key-value pair in a [`TokenMap`].
 #[derive(Debug)]
 pub struct TokenKeyValue<'s> {
     /// The key of the key-value pair.
@@ -84,6 +85,7 @@ pub struct TokenVariant<'s> {
     pub closing_comments: Vec<Comment<'s>>,
 }
 
+/// The different types of tokens (number, list, …).
 #[derive(Debug)]
 pub enum TokenValue<'s> {
     /// `null`, `true`, or `false`, or the key of an map (when quotes aren't needed).

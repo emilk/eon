@@ -8,20 +8,26 @@
 //! eon = { version = "*", features = ["serde"] }
 //! ```
 //!
-//! Deserialize any value that implements `serde::Deserialize` using
-//! [`eon::from_str`].
+//! Deserialize any value that implements `serde::Deserialize` using [`from_str`].
 //!
-//! Serialize any value that implements `serde::Serialize` into Eon using [`Self::to_string`]
+//! Serialize any value that implements `serde::Serialize` into Eon using [`to_string`]
 //!
 //! ## Usage with [`Value`]
 //! You can also treat an Eon document as a dynamically types [`Value`].
 //!
-//! Load an Eon document into a [`Value`] using [`Value::from_str`].
+//! Load an Eon document into a [`Value`] using [`Value::from_str`](std::str::FromStr::from_str).
+//!
 //! Serialize a [`Value`] into an Eon string using [`Value::format`].
+//!
+//! You can also convert anything that implements `serde::Serialize` into a [`Value`] using [`to_value`],
 //!
 //! ## Reading/writing comments
 //! An Eon document can contain comments, which are NOT part of the [`Value`] type.
 //! To load and serialize comments, use the low-level [`eon_syntax`] crate instead.
+//!
+//! ## Formatting Eon files
+//! Use [`reformat`] to format an Eon file.
+//! You can also use the [`eonfmt`](http://crates.io/crates/eonfmt) CLI tool.
 //!
 //! ## Feature flags
 #![cfg_attr(feature = "document-features", doc = document_features::document_features!())]
@@ -39,7 +45,7 @@ pub use {
     eon_syntax::{Error, FormatOptions, Result, reformat},
 };
 
-/// Exported external crates used by [`eon`].
+/// External crates used by `eon`.
 pub mod external {
     pub use eon_syntax;
     pub use vec1;

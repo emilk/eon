@@ -25,15 +25,6 @@ fn test_unicode() {
         "arabic": "مرحبا بالعالم"
         "horrid escaping": "\\\\\\\"\\\\\\"
         "Rust-style unicode": "\u{1f6ad}"
-
-        // TODO: should we support the following?
-        // "escaped solidus": "\/"
-        // "extended unicode plane codepoint 0x1f6ad": "\uD83D\udead"
-        // "escaping\" and \\ in a \u006b\u0065\u0079": false
-        // "Lowercase unicode": "\u2000\u20ff"
-        // "Uppercase unicode": " \u2000\u20FF"
-        // "Unicode 16 bit": "\u20AC"
-        // "Unicode 32 bit": "\U0030dbfd"
     "#;
     let parsed = Value::from_str(input);
     let parsed = parsed.unwrap_or_else(|err| panic!("Failed to parse unicode test input: {err}"));

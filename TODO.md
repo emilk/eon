@@ -12,9 +12,6 @@
 * [x] Handle Windows newlines (strip all `\r` from input).
 * [ ] Generate comparison with https://docs.rs/ron/
 * [ ] Remove all TODOs
-* [ ] Read and improve the docs for
-    * [ ] `eon`
-    * [ ] `eon_syntax`
 * [ ] Numbers
     * [x] Allow `_` in numbers
     * [x] Test hexal and binary numbers

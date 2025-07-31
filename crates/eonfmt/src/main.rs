@@ -1,9 +1,9 @@
-use std::{fs, path::Path, process};
+//! Eon formatter.
+//!
+//! Formats Eon files according to the Eon syntax.
+//! See <https://github.com/emilk/eon> for more.
 
-// Add these dependencies to your Cargo.toml:
-// [dependencies]
-// clap = { version = "4.0", features = ["derive"] }
-// ignore = "0.4"
+use std::{fs, path::Path, process};
 
 use clap::{Arg, Command};
 use ignore::WalkBuilder;

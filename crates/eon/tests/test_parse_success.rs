@@ -24,6 +24,7 @@ fn test_unicode() {
         "chinese": "你好，世界！"
         "arabic": "مرحبا بالعالم"
         "horrid escaping": "\\\\\\\"\\\\\\"
+        "backslashes in literal string": 'C:\Windows\System32'
         "Rust-style unicode": "\u{1f6ad}"
     "#;
     let parsed = Value::from_str(input);
@@ -34,7 +35,8 @@ fn test_unicode() {
     "cyrillic": "Привет мир!"
     "chinese": "你好，世界！"
     "arabic": "مرحبا بالعالم"
-    "horrid escaping": '\\\\\\"\\\\\\'
+    "horrid escaping": '\\\"\\\'
+    "backslashes in literal string": 'C:\Windows\System32'
     "Rust-style unicode": "🚭"
     "#);
 }

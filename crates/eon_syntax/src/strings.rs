@@ -33,24 +33,32 @@ pub fn is_valid_identifier(string: &str) -> bool {
 /// Format a string into Eon, adding quotes and escaping as needed.
 ///
 /// The exact type of quoting (single, double, multiline basic, or multiline literal) will be determined automatically based on the content of the string.
-// TODO: smartly choose between all four types of strings: double, single, multiline basic, and multiline literal.
 pub fn escape_and_quote(raw: &str) -> String {
-    #![expect(clippy::unwrap_used)] // Can't fail - the Debug format always produces a string with quotes.
+    // TODO: smartly choose between all four types of strings: double, single, multiline basic, and multiline literal.
 
-    let escaped = format!("{raw:?}");
+    let must_be_double_quoted = raw
+        .chars()
+        .any(|c| c.is_control() || matches!(c, '\'' | '\n' | '\r' | '\t'));
 
-    if raw.contains('"') && !raw.contains('\'') {
-        // Use single-quotes instead of double-quotes.
-        let unquoted = escaped
-            .strip_prefix('"')
-            .unwrap()
-            .strip_suffix('"')
-            .unwrap(); // Remove quotes
-        let unquoted = unquoted.replace("\\\"", "\""); // No need to escape double-quotes
-        format!("'{unquoted}'") // Use single-quotes
-    } else {
-        escaped
+    if must_be_double_quoted {
+        return doubel_quote(raw);
     }
+
+    let would_be_shorter_if_literal = raw
+        .chars()
+        .any(|c| c.is_control() || matches!(c, '"' | '\\'));
+
+    if would_be_shorter_if_literal {
+        // This would benefit from using single-quoted literal strings:
+        format!("'{raw}'")
+    } else {
+        // The default
+        doubel_quote(raw)
+    }
+}
+
+fn doubel_quote(raw: &str) -> String {
+    format!("{raw:?}")
 }
 
 /// Remove the quotes and unescape the string.
@@ -215,16 +223,37 @@ fn test_escape() {
         r#""a string with 'single-quotes'""#
     );
     assert_eq!(
-        escape_and_quote(r#"a string with "double-quotes""#),
-        r#"'a string with "double-quotes"'"#
+        escape_and_quote(r#"a string with "double-quotes" and \ backslash"#),
+        r#"'a string with "double-quotes" and \ backslash'"#
     );
     assert_eq!(
         escape_and_quote(r#"a string with 'single-quotes' and "double-quotes""#),
         r#""a string with 'single-quotes' and \"double-quotes\"""#
     );
     assert_eq!(
-        escape_and_quote("a string with newline \n"),
-        r#""a string with newline \n""#
+        escape_and_quote("a string with tab \t"),
+        r#""a string with tab \t""#
+    );
+    assert_eq!(
+        escape_and_quote("a string with tab \t and \"double-quotes\""),
+        r#""a string with tab \t and \"double-quotes\"""#
+    );
+    assert_eq!(
+        escape_and_quote("a string with tab \t and \"double-quotes\""),
+        r#""a string with tab \t and \"double-quotes\"""#
+    );
+
+    assert_eq!(
+        escape_and_quote(r#"C:\System32\foo.dll"#),
+        r#"'C:\System32\foo.dll'"#
+    );
+    assert_eq!(
+        escape_and_quote(r#"I use "quotes" in this string"#),
+        r#"'I use "quotes" in this string'"#
+    );
+    assert_eq!(
+        escape_and_quote(r#"[+\-0-9\.][0-9a-zA-Z\.+\-_]*"#),
+        r#"'[+\-0-9\.][0-9a-zA-Z\.+\-_]*'"#
     );
 }
 

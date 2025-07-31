@@ -1,3 +1,7 @@
+// Update snapshot tests by running:
+//
+// `cargo insta test --all-features --accept`
+
 use eon::{Number, Value};
 
 #[test]
@@ -22,9 +26,7 @@ fn test_format() {
                     [
                         (
                             "key1".to_owned(),
-                            Value::String(
-                                "a string containing \"quotes\" and a newline: \n".to_owned(),
-                            ),
+                            Value::String("a string containing \"quotes\"".to_owned()),
                         ),
                         ("key2".to_owned(), Value::Number(Number::from(42.0))),
                     ]

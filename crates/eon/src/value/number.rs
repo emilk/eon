@@ -339,7 +339,7 @@ impl std::fmt::Display for Number {
                 } else if *n == f32::INFINITY {
                     "+inf".fmt(f)
                 } else {
-                    n.fmt(f) // TODO: always include a decimal point?
+                    n.fmt(f)
                 }
             }
 
@@ -351,7 +351,7 @@ impl std::fmt::Display for Number {
                 } else if *n == f64::INFINITY {
                     "+inf".fmt(f)
                 } else {
-                    n.fmt(f) // TODO: always include a decimal point?
+                    n.fmt(f)
                 }
             }
         }

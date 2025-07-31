@@ -10,8 +10,8 @@
 * [x] Make sure CI workss
 * [x] Produce error if the same key is repeated
 * [x] Handle Windows newlines (strip all `\r` from input).
+* [x] Remove all naked TODOs
 * [ ] Generate comparison with https://docs.rs/ron/
-* [ ] Remove all TODOs
 * [ ] Numbers
     * [x] Allow `_` in numbers
     * [x] Test hexal and binary numbers

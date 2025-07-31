@@ -34,7 +34,7 @@ pub fn is_valid_identifier(string: &str) -> bool {
 ///
 /// The exact type of quoting (single, double, multiline basic, or multiline literal) will be determined automatically based on the content of the string.
 pub fn escape_and_quote(raw: &str) -> String {
-    // TODO: smartly choose between all four types of strings: double, single, multiline basic, and multiline literal.
+    // TODO(emilk): smartly choose between all four types of strings: double, single, multiline basic, and multiline literal.
 
     let must_be_double_quoted = raw
         .chars()

@@ -255,7 +255,7 @@ impl<'o> Formatter<'o> {
         self.indented_comments(&key.prefix_comments);
         self.indented_comments(&value.prefix_comments);
         self.add_indent();
-        self.value(&key.value); // TODO: handle optional quotes around keys
+        self.value(&key.value);
         self.out.push_str(&self.options.key_value_separator);
         self.value(&value.value);
         self.suffix_comment(&value.suffix_comment);

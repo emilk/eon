@@ -41,7 +41,7 @@ pub fn escape_and_quote(raw: &str) -> String {
         .any(|c| c.is_control() || matches!(c, '\'' | '\n' | '\r' | '\t'));
 
     if must_be_double_quoted {
-        return doubel_quote(raw);
+        return double_quote(raw);
     }
 
     let would_be_shorter_if_literal = raw
@@ -53,11 +53,11 @@ pub fn escape_and_quote(raw: &str) -> String {
         format!("'{raw}'")
     } else {
         // The default
-        doubel_quote(raw)
+        double_quote(raw)
     }
 }
 
-fn doubel_quote(raw: &str) -> String {
+fn double_quote(raw: &str) -> String {
     format!("{raw:?}")
 }
 

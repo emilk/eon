@@ -36,7 +36,7 @@ Eon is designed to be
 ## Formatter
 You can format any Eon file using the `eonfmt` binary
 
-```
+```sh
 cargo install eonfmt
 eonfmt *.eon
 ```
@@ -107,29 +107,31 @@ Numbers in Eon can have an optional sign (`+` or `-`) followed by either:
 - a decimal (`42`)
 - a hexadecimal (`0xbeef`, case insensitive)
 - a binary (`0b0101`)
-- a float (`3.14`, `6.022e23` etc)
+- a decimal (`3.14`, `6.022e23` etc)
 
 Numbers can use `_` anywhere in them as a visual separator, e.g. `123_456` or `0xdead_beef`.
+
+There is not explicit bounds on the precision and magnitude of supported numbers in an Eon file,
+but the `eon` crate is currently only support integers in the `[-2^127, 2^128)` range, and decimals are limited to the precision of `f64`.
 
 Eon also support the special values:
 - `+nan`: [IEEE 754 `NaN`](https://en.wikipedia.org/wiki/NaN)
 - `+inf`: positive infinity
 - `-inf`: negative infinity
 
-Note that these values MUST be prefixed with a sign.
+Note that these special values MUST be prefixed with a sign (they are not keywords like `true/false/null` are).
 
 #### Strings
 Text in Eon comes in four flavors:
 
 ##### `"Basic strings"`
-Basic strings uses double-quotes, and can contain escape sequences:
+Basic strings uses double-quoted, and can contain escape sequences:
 
-```
+```py
 "I'm a string."
 "I contain \"quotes\"."
 "Newline:\nUnicode: \u{262E} (☮)"
 ```
-
 
 #### `"""Multi-line basic strings"""`
 When you have long text it can be useful to have a string span multiple lines, using triple-quotes.
@@ -138,7 +140,7 @@ Escape sequences still work, and a line ending with `\` removes the newline and 
 
 This means these two strings are equivalent:
 
-```
+```py
 str1: """\
     It was the best of strings.
     It was the worst of strings."""
@@ -150,23 +152,25 @@ str2: "It was the best of strings.\n    It was the worst of strings"
 #### `'Literal strings'`
 Literal strings uses single quotes, and no escaping is performed. What you see is exactly what you get:
 
-```
+```py
 windows_path: 'C:\System32\foo.dll'
 quotes: 'I use "quotes" in this string'
 regex: '[+\-0-9\.][0-9a-zA-Z\.+\-_]*'
 ```
 
-There is no way to put a single quote inside of a literal strings, but you can in…
+There is no way to put a single quote inside of a literal strings, but you can in a…
 
 #### `'''Multi-line literal strings'''`
-A multi-line literal string uses three single quotes. Within that, everything is taken verbatim, except the very first newline (if any) is ignored:
+A multi-line literal string uses three single quotes. Within that, everything is taken verbatim, except that the very first newline (if any) is ignored:
 
+```py
 quote_re: '''(["'])[^"']*$1'''
 python: '''
 # The above newline is ignored, but everything else is kept
 def main():
     print('Hello world!')
 '''
+```
 
 
 #### List
@@ -209,14 +213,14 @@ This can be serialized to Eon as:
 ```C
 country_codes: {
     "United States": 1
-    "France": 3
-    "United Kingdom": 4
-    "Sweden": 4
-    "Germany": 4
-    "Australia": 6
-    "Japan": 8
-    "China": 8
-    "India": 9
+    "France": 33
+    "United Kingdom": 44
+    "Sweden": 46
+    "Germany": 49
+    "Australia": 61
+    "Japan": 81
+    "China": 86
+    "India": 91
 }
 ```
 
@@ -278,10 +282,19 @@ string: Hello          // ERROR! "Hello" should be in quotes
 key: null              // OK! 'null' is a special value (it's NOT a string)
 42: "forty-two"        // OK! Maps the integer 42 to a string
 "42": "forty-two"      // OK! Maps the string "42" to a string (which is different from the above!)
-true: "confusing"      // Confusing, but OK. Uses a boolean as key (not a string!).
+true: "confusing"      // ⚠️ Confusing, but OK. Uses a boolean as key (not a string!).
 "true": "fine"         // OK! Uses the string "true" as key
 ```
 
+#### `null/true/false` as map keys
+The last two lines in the above example show that you need to be careful when using key names that matches one of the three keywords (`true/false/null`). This is is a (small) footgun in Eon, but hopefully these key names are rare (they are already forbidden identifiers in many programming languages).
+
+Alternative designs I've considered:
+* Always require quotes for map keys (like JSON). Con: very ugly.
+* Only allow strings as map keys. Con: can't express general maps (limiting).
+* Only allow identifiers as map keys (like a Rust `struct`). Con: can't serialize a `HashMap<String, …>`.
+* Change `null/true/false` to something else (e.g. `%null`, `%true`, `%false`). Would be both surprising and ugly.
+* Forbid using unquoted `null/true/false` as map keys. Con: can't serialize `HashMap<bool, …>` or a general `HashMap<Value, …>`. Feels arbitrary.
 
 ### Variants
 Let's first consider a simple `enum`, like one you would find in C or Java:

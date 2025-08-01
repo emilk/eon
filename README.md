@@ -14,6 +14,15 @@ Eon is aimed to be a replacement for [Toml](https://toml.io/en/) and Yaml.
 
 This repository also contains a Rust crate `eon` for using Eon with `serde`, and a `eonfmt` binary for formatting Eon files.
 
+## Sections:
+
+* [Overview](#overview)
+* [Design goals](#design-goals)
+* [Why another config format?](#why-another-config-format)
+* [Performance](#performance)
+* [Roadmap](#roadmap)
+* [Eon specification](#eon-specification)
+
 
 ## Overview
 ```text

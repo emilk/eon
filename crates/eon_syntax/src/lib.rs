@@ -1,5 +1,24 @@
 //! # Eon: the human-friendly configuration format
-//! To learn the Eon syntax, see <https://github.com/emilk/eon>.
+//! Eon is a human-friendly configuration format that is designed to be easy to read and write.
+//!
+//! Example Eon document:
+//!
+//! ```text
+//! // Comment
+//! string: "Hello Eon!"
+//! list: [1, 2, 3]
+//! object: {
+//!     boolean: true
+//!     regex: '\d{3}-\d{3}-\d{4}'
+//! }
+//! map: {
+//!     1: "map keys don't need to be strings"
+//!     2: "they can be any Eon value"
+//! }
+//! special_floats: [+inf, -inf, +nan]
+//! ```
+//!
+//! Read more at <https://github.com/emilk/eon>.
 //!
 //! This crate provides a parser and formatter for Eon.
 //! It is used to implement the [`eonfmt`](http://crates.io/crates/eonfmt) CLI tool,

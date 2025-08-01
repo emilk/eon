@@ -149,6 +149,13 @@ impl From<Number> for Value {
     }
 }
 
+impl From<&str> for Value {
+    #[inline]
+    fn from(value: &str) -> Self {
+        Self::String(value.into())
+    }
+}
+
 impl From<String> for Value {
     #[inline]
     fn from(value: String) -> Self {

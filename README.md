@@ -11,10 +11,10 @@ This repository also contains a Rust crate `eon` for using Eon with `serde`, and
 ```yaml
 // Comment
 string: "Hello Eon!"
-list: [1 2 3]
+list: [1, 2, 3]
 object: {
     boolean: true
-    key: 'Use single quotes if your string contains "quotes"'
+    regex: '\d{3}-\d{3}-\d{4}'
 }
 map: {
     1: "map keys don't need to be strings"
@@ -99,7 +99,7 @@ A document can be one of:
 - The contents of a Map, e.g. `foo: 42, bar: 32` (this is syntactic sugar so you don't have to wrap the document in `{}`)
 - The contents of a List, e.g. `32 46 12` (useful for a stream of values, e.g. like [ndjson](https://docs.mulesoft.com/dataweave/latest/dataweave-formats-ndjson))
 
-Commas are optional in Eon, so `[1,2,3]` is the same as `[1 2 3]`.
+Commas are optional in Eon, so `[1,2,3]` is the same as `[1, 2, 3]`.
 By convention, commas are included when multiple values are on the same line, but omitted for multi-line maps and lists.
 
 Whitespace is not significant (other than as a token separator).
@@ -214,7 +214,7 @@ also_fine: [
     3,
 ]
 
-very_terse: [1 2 3]
+very_terse: [1, 2, 3]
 ```
 
 A list can contain any Eon value (including other lists).

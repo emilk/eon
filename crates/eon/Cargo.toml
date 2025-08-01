@@ -34,12 +34,13 @@ eon_syntax.workspace = true
 
 document-features = { workspace = true, optional = true }
 indexmap.workspace = true
+ryu.workspace = true
 serde = { workspace = true, optional = true }
 vec1.workspace = true
 
 
 [dev-dependencies]
-divan = "0.1.21"
+divan.workspace = true
 insta.workspace = true
 serde = { workspace = true, features = ["derive"] }
 

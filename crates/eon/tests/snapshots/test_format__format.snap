@@ -10,5 +10,5 @@ nothing: null
 list: ["item1", 1337]
 map: {
 	key1: 'a string containing "quotes"'
-	key2: 42
+	key2: 42.0
 }

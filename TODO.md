@@ -11,12 +11,13 @@
 * [x] Produce error if the same key is repeated
 * [x] Handle Windows newlines (strip all `\r` from input).
 * [x] Remove all naked TODOs
-* [ ] Generate comparison with https://docs.rs/ron/
-* [ ] Numbers
+* [x] Numbers
     * [x] Allow `_` in numbers
     * [x] Test hexal and binary numbers
     * [x] What strings should we use for infinities
-    * [ ] Test perfect round-tripping of floats
+    * [x] Test perfect round-tripping of floats
+* [ ] Create an `example.eon` file
+* [ ] Generate comparison with https://docs.rs/ron/
 * [ ] Publish crates
 * [ ] Warn about unused keys (i.e. mistyped keys that was never accessed during deserialization)
 

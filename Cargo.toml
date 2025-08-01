@@ -24,11 +24,13 @@ eon_syntax = { path = "crates/eon_syntax", version = "0.0.1" }
 
 ariadne = "0.5.1"
 clap = "4.5.41"
+divan = "0.1.21"
 document-features = "0.2.11"
 ignore = "0.4.23"
 indexmap = "2.10.0"
 insta = "1.0.9"
 logos = "0.15.0"
+ryu = "1.0.20"
 serde = "1.0.219"
 vec1 = "1.12.1"
 

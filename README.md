@@ -30,7 +30,7 @@ Eon is designed to be
 * **Familiar**: strongly resembles JSON
 * **Clean**: forgoes unnecessary commas and quotes
 * **Clear**: lists are enclosed in `[ ]`, maps in `{ }`
-* **Powerful**: supports sum types (e.g. Rust enums) and arbitrary map keys
+* **Powerful**: supports arbitrary map keys and sum types (e.g. Rust enums)
 * **Unambiguous**: no [Norway problem](https://www.bram.us/2022/01/11/yaml-the-norway-problem/)
 
 ## Formatter

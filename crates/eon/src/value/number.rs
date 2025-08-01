@@ -101,22 +101,22 @@ impl std::str::FromStr for Number {
             let number = u128::from_str_radix(hex, 16)
                 .map_err(|_err| "Failed to parse hexadecimal number. Expected '0x…'".to_owned())?;
             NumberImpl::U128(number)
-        } else if string.contains('.') || string.contains('e') {
+        } else if looks_like_decimal(string) {
             let as_f64 = string.parse::<f64>().map_err(|_err| {
                 "Failed to parse float number. Expected a valid float.".to_owned()
             })?;
-            let as_f32 = as_f64 as f32;
-            if as_f32 as f64 == as_f64 {
-                NumberImpl::F32(as_f32)
+            NumberImpl::F64(as_f64)
+        } else {
+            // It looks like an integer. Can we fit it in an u128?
+            if let Ok(i) = string.parse() {
+                NumberImpl::U128(i)
             } else {
+                // Use f64 as an approximate representation of the integer:
+                let as_f64 = string
+                    .parse::<f64>()
+                    .map_err(|_err| "Failed to parse number".to_owned())?;
                 NumberImpl::F64(as_f64)
             }
-        } else {
-            NumberImpl::U128(
-                string
-                    .parse()
-                    .map_err(|_err| "Not a valid number".to_owned())?,
-            )
         };
 
         if sign == -1 {
@@ -127,6 +127,10 @@ impl std::str::FromStr for Number {
             Ok(Self(unsigned))
         }
     }
+}
+
+fn looks_like_decimal(string: &str) -> bool {
+    string.contains('.') || string.contains('e') || string.contains('E')
 }
 
 impl Number {
@@ -328,33 +332,38 @@ impl std::fmt::Display for Number {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match &self.0 {
             NumberImpl::I128(n) => n.fmt(f),
-
             NumberImpl::U128(n) => n.fmt(f),
-
-            NumberImpl::F32(n) => {
-                if n.is_nan() {
-                    "+nan".fmt(f)
-                } else if *n == f32::NEG_INFINITY {
-                    "-inf".fmt(f)
-                } else if *n == f32::INFINITY {
-                    "+inf".fmt(f)
-                } else {
-                    n.fmt(f)
-                }
-            }
-
-            NumberImpl::F64(n) => {
-                if n.is_nan() {
-                    "+nan".fmt(f)
-                } else if *n == f64::NEG_INFINITY {
-                    "-inf".fmt(f)
-                } else if *n == f64::INFINITY {
-                    "+inf".fmt(f)
-                } else {
-                    n.fmt(f)
-                }
-            }
+            NumberImpl::F32(n) => format_f32(*n).fmt(f),
+            NumberImpl::F64(n) => format_f64(*n).fmt(f),
         }
+    }
+}
+
+fn format_f32(f_64: f32) -> String {
+    if f_64 == 0.0 && f_64.signum() == -1.0 {
+        String::from("-0.0")
+    } else if f_64.is_nan() {
+        "+nan".to_owned()
+    } else if f_64 == f32::NEG_INFINITY {
+        "-inf".to_owned()
+    } else if f_64 == f32::INFINITY {
+        "+inf".to_owned()
+    } else {
+        ryu::Buffer::new().format(f_64).to_owned()
+    }
+}
+
+fn format_f64(f_64: f64) -> String {
+    if f_64 == 0.0 && f_64.signum() == -1.0 {
+        String::from("-0.0")
+    } else if f_64.is_nan() {
+        "+nan".to_owned()
+    } else if f_64 == f64::NEG_INFINITY {
+        "-inf".to_owned()
+    } else if f_64 == f64::INFINITY {
+        "+inf".to_owned()
+    } else {
+        ryu::Buffer::new().format(f_64).to_owned()
     }
 }
 

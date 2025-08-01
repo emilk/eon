@@ -1,0 +1,54 @@
+// This is an example of an Eon file.
+string: "Hello Eon!"
+bool: true
+integer: 42
+list: [1, 2, 3]
+keywords: [null, false, true]
+special_numbers: [+inf, -inf, +nan]
+monsters: [
+	{
+		name: "Rabbit of Caerbannog"
+		strength: 1000
+	}
+	{
+		name: "Ni"
+		desires: "A shrubbery"
+	}
+]
+
+// Map keys can be any valid Eon value
+any_map: {
+	"42": "This key is an string"
+	42: "This key is an integer"
+	[]: "This key is an empy list"
+}
+
+// Strings come in four flavors:
+basic_strings: [
+	"I'm a string."
+	"I contain \"quotes\"."
+	"Newline:\nUnicode: \u{262E} (☮)"
+]
+multiline_basic_strings: [
+	"""\
+		It was the best of strings.
+		It was the worst of strings."""
+
+	// The above is equivalent to:
+	"It was the best of strings.\n\t\tIt was the worst of strings."
+]
+literal_strings: {
+	// Literal strings uses single quotes, and no escaping is performed.
+	// What you see is exactly what you get:
+	windows_path: 'C:\System32\foo.dll'
+	quotes: 'I use "quotes" in this string'
+	regex: '[+\-0-9\.][0-9a-zA-Z\.+\-_]*'
+}
+multiline_literal_strings: {
+	quote_re: '''(["'])[^"']*$1'''
+	python: '''
+    # The above newline is ignored, but everything else is kept
+    def main():
+        print('Hello world!')
+    '''
+}

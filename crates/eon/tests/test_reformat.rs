@@ -50,13 +50,9 @@ fn test_reformat_1() {
     // Comment about the second key-value pair.
     // Very weird comment
     key: null
-
     empty_map: {}
-
     empty_list: []
-
     short_list: [1, 2, 3]
-
     variants: [
     	"zero_variant"
     	"one_variant"(true)

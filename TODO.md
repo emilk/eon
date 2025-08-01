@@ -16,7 +16,7 @@
     * [x] Test hexal and binary numbers
     * [x] What strings should we use for infinities
     * [x] Test perfect round-tripping of floats
-* [ ] Create an `example.eon` file
+* [x] Create an `example.eon` file
 * [ ] Generate comparison with https://docs.rs/ron/
 * [ ] Publish crates
 * [ ] Warn about unused keys (i.e. mistyped keys that was never accessed during deserialization)

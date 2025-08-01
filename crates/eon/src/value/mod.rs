@@ -83,6 +83,42 @@ impl Value {
             None
         }
     }
+
+    /// Return the string iff this is a [`Value::String`].
+    pub fn as_string(&self) -> Option<&str> {
+        if let Self::String(s) = self {
+            Some(s)
+        } else {
+            None
+        }
+    }
+
+    /// Return the list iff this is a [`Value::List`].
+    pub fn as_list(&self) -> Option<&[Self]> {
+        if let Self::List(l) = self {
+            Some(l)
+        } else {
+            None
+        }
+    }
+
+    /// Return the map iff this is a [`Value::Map`].
+    pub fn as_map(&self) -> Option<&Map> {
+        if let Self::Map(m) = self {
+            Some(m)
+        } else {
+            None
+        }
+    }
+
+    /// Return the variant iff this is a [`Value::Variant`].
+    pub fn as_variant(&self) -> Option<&Variant> {
+        if let Self::Variant(v) = self {
+            Some(v)
+        } else {
+            None
+        }
+    }
 }
 
 impl std::fmt::Display for Value {

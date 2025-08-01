@@ -50,6 +50,11 @@ impl Map {
         self.hash_of_values ^= value_hash; // Using XOR guarantees that it's order-independent
         self.map.insert(key, value)
     }
+
+    /// Get a reference to the value associated with the given string key.
+    pub fn get_str(&self, arg: &str) -> Option<&Value> {
+        self.map.get(&Value::String(arg.to_owned()))
+    }
 }
 
 impl PartialEq for Map {

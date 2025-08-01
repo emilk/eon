@@ -4,7 +4,13 @@ categories.workspace = true
 description = "Use the Eon config format with serde"
 edition.workspace = true
 homepage.workspace = true
-include = ["LICENSE-APACHE", "LICENSE-MIT", "**/*.rs", "Cargo.toml"]
+include = [
+    "../example.eon",
+    "../LICENSE-APACHE",
+    "../LICENSE-MIT",
+    "**/*.rs",
+    "Cargo.toml",
+]
 keywords.workspace = true
 license.workspace = true
 name = "eon"

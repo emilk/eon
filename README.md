@@ -123,6 +123,10 @@ Note that these special values MUST be prefixed with a sign (they are not keywor
 
 #### Strings
 Text in Eon comes in four flavors:
+* `"basic string"`
+* `"""multiline basic string"""`
+* `'literal string'`
+* `'''multiline literal string'''`
 
 ##### `"Basic strings"`
 Basic strings uses double-quoted, and can contain escape sequences:
@@ -145,7 +149,7 @@ str1: """\
     It was the best of strings.
     It was the worst of strings."""
 
-str2: "It was the best of strings.\n    It was the worst of strings"
+str2: "It was the best of strings.\n\tIt was the worst of strings."
 ```
 
 

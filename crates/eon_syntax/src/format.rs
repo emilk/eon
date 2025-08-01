@@ -100,6 +100,10 @@ impl<'o> Formatter<'o> {
         self.out
     }
 
+    fn newline(&mut self) {
+        self.out.push_str(&self.options.newline);
+    }
+
     fn add_indent(&mut self) {
         for _ in 0..self.indent {
             self.out.push_str(&self.options.indentation);
@@ -110,7 +114,7 @@ impl<'o> Formatter<'o> {
         for &comment in comments {
             self.add_indent();
             self.out.push_str(comment);
-            self.out.push('\n');
+            self.newline();
         }
     }
 
@@ -177,7 +181,7 @@ impl<'o> Formatter<'o> {
         } else {
             self.out.push('[');
             self.indent += 1;
-            self.out.push('\n');
+            self.newline();
             self.list_content(list);
             self.indent -= 1;
             self.add_indent();
@@ -191,19 +195,20 @@ impl<'o> Formatter<'o> {
             closing_comments,
         } = list;
 
-        let add_blank_lines = values.iter().any(|v| !v.prefix_comments.is_empty());
-
         for (i, value) in values.iter().enumerate() {
-            self.indented_value(value);
-            self.out.push('\n');
-            if add_blank_lines && i + 1 < values.len() {
-                self.out.push('\n');
+            if 0 < i && !value.prefix_comments.is_empty() {
+                self.newline();
             }
+            self.indented_value(value);
+            self.newline();
         }
-        if add_blank_lines && !closing_comments.is_empty() {
-            self.out.push('\n');
+
+        if !closing_comments.is_empty() {
+            if !values.is_empty() {
+                self.newline();
+            }
+            self.indented_comments(closing_comments);
         }
-        self.indented_comments(closing_comments);
     }
 
     fn map(&mut self, map: &TokenMap<'_>) {
@@ -219,7 +224,7 @@ impl<'o> Formatter<'o> {
 
         self.out.push('{');
         self.indent += 1;
-        self.out.push('\n');
+        self.newline();
         self.map_content(map);
         self.indent -= 1;
         self.add_indent();
@@ -232,22 +237,20 @@ impl<'o> Formatter<'o> {
             closing_comments,
         } = map;
 
-        let add_blank_lines = key_values
-            .iter()
-            .any(|kv| !kv.key.prefix_comments.is_empty());
-
         for (i, key_value) in key_values.iter().enumerate() {
-            self.indented_key_value(key_value);
-            self.out.push('\n');
-            if add_blank_lines && i + 1 < key_values.len() {
-                self.out.push('\n');
+            if 0 < i && !key_value.key.prefix_comments.is_empty() {
+                self.newline();
             }
+            self.indented_key_value(key_value);
+            self.newline();
         }
 
-        if add_blank_lines && !closing_comments.is_empty() {
-            self.out.push('\n');
+        if !closing_comments.is_empty() {
+            if !key_values.is_empty() {
+                self.newline();
+            }
+            self.indented_comments(closing_comments);
         }
-        self.indented_comments(closing_comments);
     }
 
     fn indented_key_value(&mut self, key_value: &TokenKeyValue<'_>) {
@@ -301,7 +304,7 @@ impl<'o> Formatter<'o> {
                 self.out.push_str(quoted_name);
                 self.out.push_str("({");
                 self.indent += 1;
-                self.out.push('\n');
+                self.newline();
                 self.map_content(map);
                 self.indent -= 1;
                 self.add_indent();
@@ -324,30 +327,31 @@ impl<'o> Formatter<'o> {
                 self.out.push_str(quoted_name);
                 self.out.push_str("([");
                 self.indent += 1;
-                self.out.push('\n');
+                self.newline();
                 self.list_content(list);
                 self.indent -= 1;
                 self.add_indent();
                 self.out.push_str("])");
             }
         } else {
-            let add_blank_lines = values.iter().any(|v| !v.prefix_comments.is_empty());
-
             self.out.push_str(quoted_name);
             self.out.push('(');
             self.indent += 1;
-            self.out.push('\n');
+            self.newline();
             for (i, value) in values.iter().enumerate() {
-                self.indented_value(value);
-                self.out.push('\n');
-                if add_blank_lines && i + 1 < values.len() {
-                    self.out.push('\n');
+                if 0 < i && !value.prefix_comments.is_empty() {
+                    self.newline();
                 }
+                self.newline();
             }
-            if add_blank_lines && !closing_comments.is_empty() {
-                self.out.push('\n');
+
+            if !closing_comments.is_empty() {
+                if !values.is_empty() {
+                    self.newline();
+                }
+                self.indented_comments(closing_comments);
             }
-            self.indented_comments(closing_comments);
+
             self.indent -= 1;
             self.add_indent();
             self.out.push(')');

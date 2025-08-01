@@ -1,7 +1,4 @@
 # Eon - The simple and friendly config format
-> [!WARNING]
-> ⚠️ As of July 2025, the Eon library and Spec is still under heavy development.
-
 This repository contains the definition of _Eon_, a simple config format designed for human editing.
 
 Eon uses the `.eon` file ending.
@@ -27,11 +24,11 @@ special_floats: [+inf, -inf, +nan]
 ```
 
 Eon is designed to be
-* **Familiar**: strongly resembles JSON
-* **Clean**: forgoes unnecessary commas and quotes
-* **Clear**: lists are enclosed in `[ ]`, maps in `{ }`
-* **Powerful**: supports arbitrary map keys and sum types (e.g. Rust enums)
-* **Unambiguous**: no [Norway problem](https://www.bram.us/2022/01/11/yaml-the-norway-problem/)
+- **Familiar**: strongly resembles JSON
+- **Clean**: forgoes unnecessary commas and quotes
+- **Clear**: lists are enclosed in `[ ]`, maps in `{ }`
+- **Powerful**: supports arbitrary map keys and sum types (e.g. Rust enums)
+- **Unambiguous**: no [Norway problem](https://www.bram.us/2022/01/11/yaml-the-norway-problem/)
 
 ## Formatter
 You can format any Eon file using the `eonfmt` binary
@@ -44,8 +41,8 @@ eonfmt *.eon
 
 ## Why another config format?
 I wanted a format designed for human eyes with
-* Indented hierarchy using `{ }` and `[ ]` (like JSON, C, Rust, …). Rules out YAML and TOML.
-* No top-level `{ }` wrapping the whole file. Rules out JSON5, RON, and others.
+- Indented hierarchy using `{ }` and `[ ]` (like JSON, C, Rust, …). Rules out YAML and TOML.
+- No top-level `{ }` wrapping the whole file. Rules out JSON5, RON, and others.
 
 ### Why not [JSON5](https://json5.org/)?
 JSON5 is _almost_ great, but requires wrapping the whole file in an extra `{ }` block, and indent that. That's too ugly for me.
@@ -76,13 +73,31 @@ It still parses a chunky 1MB file in under 10ms on an M3 MacBook.
 
 I would not recommend using Eon as a data transfer format. For that, use a binary format (like MsgPack or protobuffs), or JSON (which has optimized parser/formatters for every programming language).
 
+## Roadmap
+Future work, which I may or may not get to (contributions welcome!)
+
+### Additional tools
+- VSCode extension for
+    - Syntax highlighting
+    - Formatting
+
+### Extending the spec
+- Add special types?
+    - ISO 8601
+        - datetimes
+        - local times
+        - Durations? But ISO 8601 durations are so ugly
+    - UUID?
+- Hex floats?
+
+
 ## Eon specification
 An Eon document is always encoded as UTF-8.
 
 A document can be one of:
-* A single value, e.g. `42` or `{foo: 1337, bar: 32}`
-* The contents of a Map, e.g. `foo: 42, bar: 32` (this is syntactic sugar so you don't have to wrap the document in `{}`)
-* The contents of a List, e.g. `32 46 12` (useful for a stream of values, e.g. like [ndjson](https://docs.mulesoft.com/dataweave/latest/dataweave-formats-ndjson))
+- A single value, e.g. `42` or `{foo: 1337, bar: 32}`
+- The contents of a Map, e.g. `foo: 42, bar: 32` (this is syntactic sugar so you don't have to wrap the document in `{}`)
+- The contents of a List, e.g. `32 46 12` (useful for a stream of values, e.g. like [ndjson](https://docs.mulesoft.com/dataweave/latest/dataweave-formats-ndjson))
 
 Commas are optional in Eon, so `[1,2,3]` is the same as `[1 2 3]`.
 By convention, commas are included when multiple values are on the same line, but omitted for multi-line maps and lists.
@@ -123,10 +138,10 @@ Note that these special values MUST be prefixed with a sign (they are not keywor
 
 #### Strings
 Text in Eon comes in four flavors:
-* `"basic string"`
-* `"""multiline basic string"""`
-* `'literal string'`
-* `'''multiline literal string'''`
+- `"basic string"`
+- `"""multiline basic string"""`
+- `'literal string'`
+- `'''multiline literal string'''`
 
 ##### `"Basic strings"`
 Basic strings uses double-quoted, and can contain escape sequences:
@@ -294,11 +309,11 @@ true: "confusing"      // ⚠️ Confusing, but OK. Uses a boolean as key (not a
 The last two lines in the above example show that you need to be careful when using key names that matches one of the three keywords (`true/false/null`). This is is a (small) footgun in Eon, but hopefully these key names are rare (they are already forbidden identifiers in many programming languages).
 
 Alternative designs I've considered:
-* Always require quotes for map keys (like JSON). Con: very ugly.
-* Only allow strings as map keys. Con: can't express general maps (limiting).
-* Only allow identifiers as map keys (like a Rust `struct`). Con: can't serialize a `HashMap<String, …>`.
-* Change `null/true/false` to something else (e.g. `%null`, `%true`, `%false`). Would be both surprising and ugly.
-* Forbid using unquoted `null/true/false` as map keys. Con: can't serialize `HashMap<bool, …>` or a general `HashMap<Value, …>`. Feels arbitrary.
+- Always require quotes for map keys (like JSON). Con: very ugly.
+- Only allow strings as map keys. Con: can't express general maps (limiting).
+- Only allow identifiers as map keys (like a Rust `struct`). Con: can't serialize a `HashMap<String, …>`.
+- Change `null/true/false` to something else (e.g. `%null`, `%true`, `%false`). Would be both surprising and ugly.
+- Forbid using unquoted `null/true/false` as map keys. Con: can't serialize `HashMap<bool, …>` or a general `HashMap<Value, …>`. Feels arbitrary.
 
 ### Variants
 Let's first consider a simple `enum`, like one you would find in C or Java:
@@ -338,10 +353,10 @@ In Eon, enum variants are written as `"Variant"(data)`.
 
 So different values for the above choice would be written as:
 
-* `"Black"` (equivalent to `"Black"()`)
-* `"Gray"(128)`
-* `"Hsl"(0, 100, 200)`
-* `"Rgb"({r: 255, g: 0, b: 0})`
+- `"Black"` (equivalent to `"Black"()`)
+- `"Gray"(128)`
+- `"Hsl"(0, 100, 200)`
+- `"Rgb"({r: 255, g: 0, b: 0})`
 
 #### Digression: why this syntax for sum types?
 

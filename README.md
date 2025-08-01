@@ -16,7 +16,7 @@ This repository also contains a Rust crate `eon` for using Eon with `serde`, and
 
 
 ## Overview
-```yaml
+```text
 // Comment
 string: "Hello Eon!"
 list: [1, 2, 3]

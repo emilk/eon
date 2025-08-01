@@ -1,4 +1,11 @@
 # Eon - The simple and friendly config format
+
+[![Latest version](https://img.shields.io/crates/v/eon.svg)](https://crates.io/crates/eon)
+[![Documentation](https://docs.rs/eon/badge.svg)](https://docs.rs/eon)
+[![unsafe forbidden](https://img.shields.io/badge/unsafe-forbidden-success.svg)](https://github.com/rust-secure-code/safety-dance/)
+![MIT](https://img.shields.io/badge/license-MIT-blue.svg)
+![Apache](https://img.shields.io/badge/license-Apache-blue.svg)
+
 This repository contains the definition of _Eon_, a simple config format designed for human editing.
 
 Eon uses the `.eon` file ending.
@@ -74,7 +81,7 @@ multiline_literal_strings: {
 You can format any Eon file using the `eonfmt` binary
 
 ```sh
-cargo install eonfmt
+cargo install --locked eonfmt
 eonfmt *.eon
 ```
 

@@ -1,10 +1,14 @@
 # Formatter for Eon config files
+[![Latest version](https://img.shields.io/crates/v/eonfmt.svg)](https://crates.io/crates/eonfmt)
+[![unsafe forbidden](https://img.shields.io/badge/unsafe-forbidden-success.svg)](https://github.com/rust-secure-code/safety-dance/)
+![MIT](https://img.shields.io/badge/license-MIT-blue.svg)
+![Apache](https://img.shields.io/badge/license-Apache-blue.svg)
 
 See <https://github.com/emilk/eon> for info about Eon.
 
 ## Installation
 ```
-cargo install eonfmt
+cargo install --locked eonfmt
 ```
 
 ## Usage

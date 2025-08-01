@@ -1,4 +1,11 @@
 # Eon: the human-friendly configuration format
+[![Latest version](https://img.shields.io/crates/v/eon_syntax.svg)](https://crates.io/crates/eon_syntax)
+[![Documentation](https://docs.rs/eon_syntax/badge.svg)](https://docs.rs/eon_syntax)
+[![unsafe forbidden](https://img.shields.io/badge/unsafe-forbidden-success.svg)](https://github.com/rust-secure-code/safety-dance/)
+![MIT](https://img.shields.io/badge/license-MIT-blue.svg)
+![Apache](https://img.shields.io/badge/license-Apache-blue.svg)
+
+
 Eon is a configuration format that is designed to be familiar, clean, and powerful.
 
 Example Eon document:

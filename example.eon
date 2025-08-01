@@ -20,7 +20,7 @@ monsters: [
 any_map: {
 	"42": "This key is an string"
 	42: "This key is an integer"
-	[]: "This key is an empy list"
+	[]: "This key is an empty list"
 }
 
 // Strings come in four flavors:
@@ -47,7 +47,7 @@ literal_strings: {
 multiline_literal_strings: {
 	quote_re: '''(["'])[^"']*$1'''
 	python: '''
-    # The above newline is ignored, but everything else is kept
+    # The first newline is ignored, but everything else is kept
     def main():
         print('Hello world!')
     '''

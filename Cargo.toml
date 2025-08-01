@@ -16,11 +16,11 @@ keywords = ["eon", "config", "format", "yaml", "toml"]
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/emilk/eon"
 rust-version = "1.85"
-version = "0.0.1"
+version = "0.2.0"
 
 
 [workspace.dependencies]
-eon_syntax = { path = "crates/eon_syntax", version = "0.0.1" }
+eon_syntax = { path = "crates/eon_syntax", version = "0.2.0" }
 
 ariadne = "0.5.1"
 clap = "4.5.41"

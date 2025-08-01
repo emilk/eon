@@ -218,7 +218,7 @@ checksum = "34aa73646ffb006b8f5147f3dc182bd4bcb190227ce861fc4a4844bf8e3cb2c0"
 
 [[package]]
 name = "eon"
-version = "0.0.1"
+version = "0.2.0"
 dependencies = [
  "divan",
  "document-features",
@@ -232,7 +232,7 @@ dependencies = [
 
 [[package]]
 name = "eon_syntax"
-version = "0.0.1"
+version = "0.2.0"
 dependencies = [
  "ariadne",
  "logos",
@@ -240,7 +240,7 @@ dependencies = [
 
 [[package]]
 name = "eonfmt"
-version = "0.0.1"
+version = "0.2.0"
 dependencies = [
  "clap",
  "eon_syntax",

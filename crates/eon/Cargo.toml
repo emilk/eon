@@ -5,9 +5,9 @@ description = "Use the Eon config format with serde"
 edition.workspace = true
 homepage.workspace = true
 include = [
-    "../example.eon",
-    "../LICENSE-APACHE",
-    "../LICENSE-MIT",
+    "../../example.eon",
+    "../../LICENSE-APACHE",
+    "../../LICENSE-MIT",
     "**/*.rs",
     "Cargo.toml",
 ]
@@ -15,7 +15,7 @@ keywords.workspace = true
 license.workspace = true
 name = "eon"
 publish = true
-readme = "../README.md"
+readme = "../../README.md"
 repository.workspace = true
 rust-version.workspace = true
 version.workspace = true

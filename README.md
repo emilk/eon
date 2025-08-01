@@ -7,28 +7,68 @@ Eon is aimed to be a replacement for [Toml](https://toml.io/en/) and Yaml.
 
 This repository also contains a Rust crate `eon` for using Eon with `serde`, and a `eonfmt` binary for formatting Eon files.
 
+
 ## Overview
 ```yaml
 // Comment
 string: "Hello Eon!"
 list: [1, 2, 3]
-object: {
-    boolean: true
-    regex: '\d{3}-\d{3}-\d{4}'
-}
 map: {
-    1: "map keys don't need to be strings"
-    2: "they can be any Eon value"
+    boolean: true
+    literal_string: 'Can contain \ and "quotes"'
 }
-special_floats: [+inf, -inf, +nan]
+any_map: {
+    42: "This key is an integer"
+	[]: "This key is an empty list"
+}
+hex: 0xdead_beef
+special_numbers: [+inf, -inf, +nan]
+
+// Strings come in four flavors:
+basic_strings: [
+	"I'm a string."
+	"I contain \"quotes\"."
+	"Newline:\nUnicode: \u{262E} (☮)"
+]
+multiline_basic_strings: [
+	"""\
+		It was the best of strings.
+		It was the worst of strings."""
+
+	// The above is equivalent to:
+	"It was the best of strings.\n\t\tIt was the worst of strings."
+]
+literal_strings: {
+	// What you see is what you get:
+	windows_path: 'C:\System32\foo.dll'
+	quotes: 'I use "quotes" in this string'
+	regex: '[+\-0-9\.][0-9a-zA-Z\.+\-_]*'
+}
+multiline_literal_strings: {
+	python: '''
+    # The first newline is ignored, but everything else is kept
+    def main():
+        print('Hello world!')
+    '''
+}
 ```
 
-Eon is designed to be
+### Design goals
 - **Familiar**: strongly resembles JSON
 - **Clean**: forgoes unnecessary commas and quotes
-- **Clear**: lists are enclosed in `[ ]`, maps in `{ }`
 - **Powerful**: supports arbitrary map keys and sum types (e.g. Rust enums)
-- **Unambiguous**: no [Norway problem](https://www.bram.us/2022/01/11/yaml-the-norway-problem/)
+
+
+### Main differences from JSON
+* No need to wrap entire document in `{}`
+* Quotes around map keys are optional for identifiers
+* Map keys can be any value (not just string)
+* Commas are optional
+* Eon adds:
+    * `// Comments`
+    * Special floats: `+inf`, `-inf`, `+nan`
+    * Named sum-type variants
+
 
 ## Formatter
 You can format any Eon file using the `eonfmt` binary
@@ -65,6 +105,7 @@ The `[[array.of.tables]]` syntax is also quite confusing to newcomers.
 ### Why not [YAML](https://yaml.org/)?
 Yaml is clean, but over-complicated, inconsistent, and filled with foot guns. [It is known](https://ruudvanasseldonk.com/2023/01/11/the-yaml-document-from-hell).
 
+
 ## Performance
 The Eon language (and library) are designed for config files that humans edit by hand.
 
@@ -72,6 +113,7 @@ There is nothing in the Eon spec that would not make it as fast (or as slow, dep
 It still parses a chunky 1MB file in under 10ms on an M3 MacBook.
 
 I would not recommend using Eon as a data transfer format. For that, use a binary format (like MsgPack or protobuffs), or JSON (which has optimized parser/formatters for every programming language).
+
 
 ## Roadmap
 Future work, which I may or may not get to (contributions welcome!)
@@ -99,7 +141,7 @@ A document can be one of:
 - The contents of a Map, e.g. `foo: 42, bar: 32` (this is syntactic sugar so you don't have to wrap the document in `{}`)
 - The contents of a List, e.g. `32 46 12` (useful for a stream of values, e.g. like [ndjson](https://docs.mulesoft.com/dataweave/latest/dataweave-formats-ndjson))
 
-Commas are optional in Eon, so `[1,2,3]` is the same as `[1, 2, 3]`.
+Commas are optional in Eon, so `[1, 2, 3]` is the same as `[1  2  3]`.
 By convention, commas are included when multiple values are on the same line, but omitted for multi-line maps and lists.
 
 Whitespace is not significant (other than as a token separator).
@@ -112,7 +154,7 @@ Comments are prefixed with `//`.
 An Eon value is one of:
 
 #### `null`
-A special `null` value.
+A special `null` value, signifying nothingness.
 
 #### Boolean
 `true` or `false`.
@@ -185,7 +227,7 @@ A multi-line literal string uses three single quotes. Within that, everything is
 ```py
 quote_re: '''(["'])[^"']*$1'''
 python: '''
-# The above newline is ignored, but everything else is kept
+# The first newline is ignored, but everything else is kept
 def main():
     print('Hello world!')
 '''
@@ -315,7 +357,7 @@ Alternative designs I've considered:
 - Change `null/true/false` to something else (e.g. `%null`, `%true`, `%false`). Would be both surprising and ugly.
 - Forbid using unquoted `null/true/false` as map keys. Con: can't serialize `HashMap<bool, …>` or a general `HashMap<Value, …>`. Feels arbitrary.
 
-### Variants
+### Named sum-type variants
 Let's first consider a simple `enum`, like one you would find in C or Java:
 
 ```c

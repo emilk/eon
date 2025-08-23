@@ -272,7 +272,7 @@ also_fine: [
     3,
 ]
 
-very_terse: [1, 2, 3]
+very_terse: [1 2 3]
 ```
 
 A list can contain any Eon value (including other lists).

@@ -1,0 +1,23 @@
+[package]
+authors.workspace = true
+categories.workspace = true
+description = "Language Server Protocol implementation for Eon"
+edition.workspace = true
+homepage.workspace = true
+include = ["../../LICENSE-APACHE", "../../LICENSE-MIT", "**/*.rs", "Cargo.toml"]
+keywords.workspace = true
+license.workspace = true
+name = "eon_lsp"
+publish = false
+repository.workspace = true
+rust-version.workspace = true
+version.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+eon.workspace = true
+eon_syntax.workspace = true
+tokio = { workspace = true, features = ["io-std", "macros", "rt-multi-thread", "sync"] }
+tower-lsp.workspace = true

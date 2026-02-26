@@ -1,0 +1,39 @@
+on:
+  push:
+    branches:
+      - "main"
+  pull_request:
+    types: [opened, synchronize]
+
+name: Eon Zed Extension
+
+jobs:
+  tree_sitter:
+    name: Tree-sitter Grammar
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: tree-sitter-eon
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: tree-sitter-eon/package-lock.json
+      - run: npm ci
+      - run: npm run generate
+      - run: npm test
+
+  zed_extension:
+    name: Zed Extension WASM Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          toolchain: 1.85.0
+          override: true
+          target: wasm32-wasip2
+      - name: Check extension on wasm32-wasip2
+        run: cargo check --target wasm32-wasip2 --manifest-path zed-extension/Cargo.toml

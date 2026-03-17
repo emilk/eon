@@ -3,7 +3,12 @@
 //! Formats Eon files according to the Eon syntax.
 //! See <https://github.com/emilk/eon> for more.
 
-use std::{fs, path::Path, process};
+use std::{
+    fs,
+    io::{self, Read as _, Write as _},
+    path::Path,
+    process,
+};
 
 use clap::{Arg, Command};
 use ignore::WalkBuilder;
@@ -13,7 +18,7 @@ fn main() {
         .about("Format Eon files")
         .arg(
             Arg::new("files")
-                .help("Files or directories to format")
+                .help("Files or directories to format. Pass \"-\" to read from stdin and write to stdout")
                 .num_args(1..)
                 .required(true)
                 .index(1),
@@ -40,13 +45,58 @@ fn main() {
         .map(|s| s.as_str())
         .collect();
     let check_mode = matches.get_flag("check");
+
+    if paths.len() == 1 && paths[0] == "-" {
+        let exit_code = format_stdin(check_mode);
+        #[allow(clippy::exit, clippy::allow_attributes)]
+        process::exit(exit_code);
+    }
+
     let extension = matches
         .get_one::<String>("extension")
         .expect("Missing extension")
         .as_str();
 
-    let mut exit_code = 0;
+    let exit_code = format_files(&paths, extension, check_mode);
 
+    #[allow(clippy::exit, clippy::allow_attributes)]
+    process::exit(exit_code);
+}
+
+fn format_stdin(check_mode: bool) -> i32 {
+    let mut input = String::new();
+    if let Err(err) = io::stdin().read_to_string(&mut input) {
+        eprintln!("Error reading stdin: {err}");
+        return 1;
+    }
+
+    let options = eon_syntax::FormatOptions::default();
+    match eon_syntax::reformat(&input, &options) {
+        Ok(formatted) => {
+            if check_mode {
+                if input == formatted {
+                    0
+                } else {
+                    eprintln!("stdin is not formatted");
+                    1
+                }
+            } else {
+                if let Err(err) = io::stdout().write_all(formatted.as_bytes()) {
+                    eprintln!("Error writing to stdout: {err}");
+                    return 1;
+                }
+                0
+            }
+        }
+        Err(err) => {
+            eprintln!("Error formatting stdin: {err}");
+            1
+        }
+    }
+}
+
+fn format_files(paths: &[&str], extension: &str, check_mode: bool) -> i32 {
+    let mut exit_code = 0;
     let mut file_paths = Vec::new();
 
     for path_str in paths {
@@ -120,8 +170,7 @@ fn main() {
         );
     }
 
-    #[allow(clippy::exit, clippy::allow_attributes)]
-    process::exit(exit_code);
+    exit_code
 }
 
 fn has_extension(entry_path: &Path, extension: &str) -> bool {

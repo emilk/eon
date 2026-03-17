@@ -1,0 +1,101 @@
+name: eon_lsp Release
+
+on:
+  workflow_dispatch:
+  release:
+    types: [published]
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build ${{ matrix.asset_suffix }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+            binary_name: eon_lsp
+            archive_ext: tar.gz
+            asset_suffix: linux-x86_64
+          - os: ubuntu-latest
+            target: aarch64-unknown-linux-gnu
+            binary_name: eon_lsp
+            archive_ext: tar.gz
+            asset_suffix: linux-aarch64
+          - os: macos-14
+            target: aarch64-apple-darwin
+            binary_name: eon_lsp
+            archive_ext: tar.gz
+            asset_suffix: darwin-aarch64
+          - os: macos-13
+            target: x86_64-apple-darwin
+            binary_name: eon_lsp
+            archive_ext: tar.gz
+            asset_suffix: darwin-x86_64
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+            binary_name: eon_lsp.exe
+            archive_ext: zip
+            asset_suffix: windows-x86_64
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          toolchain: 1.85.0
+          override: true
+          target: ${{ matrix.target }}
+
+      - name: Install linux aarch64 linker
+        if: matrix.target == 'aarch64-unknown-linux-gnu'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gcc-aarch64-linux-gnu
+
+      - name: Configure linux aarch64 linker
+        if: matrix.target == 'aarch64-unknown-linux-gnu'
+        shell: bash
+        run: echo "CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER=aarch64-linux-gnu-gcc" >> "$GITHUB_ENV"
+
+      - name: Build eon_lsp
+        run: cargo build --release -p eon_lsp --target ${{ matrix.target }}
+
+      - name: Package tar.gz (Unix)
+        if: runner.os != 'Windows'
+        shell: bash
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          ASSET="eon-lsp-${VERSION}-${{ matrix.asset_suffix }}.${{ matrix.archive_ext }}"
+          mkdir -p dist/package
+          cp "target/${{ matrix.target }}/release/${{ matrix.binary_name }}" "dist/package/eon-lsp"
+          chmod +x "dist/package/eon-lsp"
+          tar -czf "dist/${ASSET}" -C dist/package .
+          echo "ASSET_PATH=dist/${ASSET}" >> "$GITHUB_ENV"
+
+      - name: Package zip (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $version = $env:GITHUB_REF_NAME -replace '^v', ''
+          $asset = "eon-lsp-$version-${{ matrix.asset_suffix }}.${{ matrix.archive_ext }}"
+          New-Item -ItemType Directory -Force -Path dist/package | Out-Null
+          Copy-Item "target/${{ matrix.target }}/release/${{ matrix.binary_name }}" "dist/package/eon-lsp.exe"
+          Compress-Archive -Path dist/package/* -DestinationPath "dist/$asset" -Force
+          "ASSET_PATH=dist/$asset" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+
+      - name: Upload workflow artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: eon-lsp-${{ matrix.asset_suffix }}
+          path: ${{ env.ASSET_PATH }}
+
+      - name: Upload release asset
+        if: github.event_name == 'release'
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ${{ env.ASSET_PATH }}

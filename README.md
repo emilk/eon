@@ -107,7 +107,7 @@ It also has a bunch of unnecessary commas between values.
 RON has the same problem.
 
 ### Why not [RON](https://github.com/ron-rs/ron)?
-The goal of RON is to perfectly map the Rust datatypes, which is cool, but it means it leans more towards being verobse and complex while Eon wants to be lean and simple.
+The goal of RON is to perfectly map the Rust datatypes, which is cool, but it means it leans more towards being verbose and complex while Eon wants to be lean and simple.
 
 ### Why not [Toml](https://toml.io/en/)?
 Toml is a very nice and clean language.

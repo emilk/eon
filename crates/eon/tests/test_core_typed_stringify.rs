@@ -53,3 +53,25 @@ fn test_typed_core_stringify_matches_value_core_for_root_map() {
     assert_eq!(direct, via_value);
     assert_eq!(direct, "alpha: 1, beta: 2");
 }
+
+#[test]
+fn test_typed_core_stringify_matches_value_core_for_composite_root_map_key() {
+    let document = BTreeMap::from([(BTreeMap::from([("nested".to_owned(), 1_u32)]), 2_u32)]);
+
+    let direct = experimental::to_string_with_core(&document).unwrap();
+    let via_value = to_value(&document).unwrap().to_string_with_core();
+
+    assert_eq!(direct, via_value);
+    assert_eq!(direct, "{nested: 1}: 2");
+}
+
+#[test]
+fn test_typed_core_stringify_keeps_empty_root_maps_explicit() {
+    let document = BTreeMap::<String, u32>::new();
+
+    let direct = experimental::to_string_with_core(&document).unwrap();
+    let via_value = to_value(&document).unwrap().to_string_with_core();
+
+    assert_eq!(direct, via_value);
+    assert_eq!(direct, "{}");
+}

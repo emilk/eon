@@ -65,3 +65,10 @@ fn test_core_stringify_quotes_non_identifier_unit_variants() {
 
     assert_eq!(value_to_string_with_core(&value), "\"kebab-case\"()");
 }
+
+#[test]
+fn test_core_stringify_keeps_empty_root_maps_explicit() {
+    let value = Value::Map(Map::new());
+
+    assert_eq!(value_to_string_with_core(&value), "{}");
+}

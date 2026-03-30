@@ -87,11 +87,7 @@ where
 }
 
 fn root_map_can_be_implicit(map: &Map) -> bool {
-    let Some((first_key, _)) = map.iter().next() else {
-        return true;
-    };
-
-    !matches!(first_key, Value::Map(_))
+    !map.is_empty()
 }
 
 fn write_variant<W>(out: &mut W, variant: &Variant, position: Position) -> fmt::Result

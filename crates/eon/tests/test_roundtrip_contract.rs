@@ -1,6 +1,31 @@
 use eon::{Map, Value, Variant, experimental};
 
 #[test]
+fn test_core_value_roundtrip_keeps_empty_root_maps_explicit() {
+    let original = Value::Map(Map::new());
+
+    let serialized = experimental::value_to_string_with_core(&original);
+    assert_eq!(serialized, "{}");
+
+    let parsed = experimental::value_from_str_with_core(&serialized).unwrap();
+    assert_eq!(parsed, original);
+}
+
+#[test]
+fn test_core_value_roundtrip_keeps_composite_root_map_keys_braceless() {
+    let original = Value::Map(Map::from_iter([(
+        Value::Map(Map::from_iter([(Value::from("nested"), Value::from(1))])),
+        Value::from(2),
+    )]));
+
+    let serialized = experimental::value_to_string_with_core(&original);
+    assert_eq!(serialized, "{nested: 1}: 2");
+
+    let parsed = experimental::value_from_str_with_core(&serialized).unwrap();
+    assert_eq!(parsed, original);
+}
+
+#[test]
 fn test_core_value_roundtrip_excludes_keyword_map_keys() {
     let original = Value::Map(Map::from_iter([
         (Value::Null, Value::from(0)),

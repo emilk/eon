@@ -211,13 +211,13 @@ fn test_core_typed_stringify_quotes_keyword_variant_names() {
 }
 
 #[test]
-fn test_core_value_stringify_wraps_root_map_when_first_key_is_a_map() {
+fn test_core_value_stringify_keeps_root_map_with_first_map_key_braceless() {
     let key = Value::Map(Map::from_iter([(Value::from("nested"), Value::from(1))]));
     let value = Value::Map(Map::from_iter([(key, Value::from("safe"))]));
 
     let serialized = experimental::value_to_string_with_core(&value);
 
-    assert!(serialized.starts_with("{{"));
+    assert_eq!(serialized, "{nested: 1}: \"safe\"");
     let roundtripped = experimental::value_from_str_with_core(&serialized).unwrap();
     assert_eq!(roundtripped, value);
 }

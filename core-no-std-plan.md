@@ -121,6 +121,7 @@ Current semantics draft:
   - Comments between `:` and the value normalize to entry-prefix comments.
   - Simple lists and variants stay on one line when they are short and comment-free; multiline containers omit commas in canonical output.
   - On the compact owned `Value` core writer, unit variants may be bare only in root/value position; map-key variants stay explicit with `()`.
+  - On the compact owned `Value` and typed core writers, empty root maps stay explicit as `{}`, while non-empty root maps remain brace-less even when the first key is composite.
   - On the legacy owned `Value` formatter, unit variants collapse to quoted strings.
 - Exact roundtrip guarantees currently documented:
   - Formatter-core canonical output is idempotent on the tested subset of root maps/lists/values, variants, strings, comments, and composite-root-key shapes.
@@ -152,7 +153,7 @@ Tasks:
 - [ ] Keep identifiers, numbers, comments, and unescaped strings borrowed
 - [ ] Represent escaped strings as raw slice plus "needs decode" metadata
 - [ ] Avoid building owned `Value` trees on the critical path unless requested
-- [ ] Add tests that prove borrowed paths work across representative inputs
+- [x] Add tests that prove borrowed paths work across representative inputs
 
 Exit criteria:
 
@@ -455,3 +456,5 @@ Entries:
 - `2026-03-31 | codex1 | WS1/WS8 | Added a short semantics draft to the tracker and tightened the documented exact-roundtrip exclusions: legacy and core keyword map keys canonicalize to strings, legacy unit variants collapse to strings, and fuzz-contract comments now point at tested behavior | next semantics work is to finish the remaining unsupported/tolerated ambiguity list rather than leave it implied`
 - `2026-03-31 | codex1 | WS1/WS8 | Clarified that owned-Value 'exact roundtrip' means Value equality rather than source spelling or numeric storage identity, and marked the value-roundtrip fuzz contract task complete | next semantics work is to review whether any remaining exclusions still need to be promoted from implementation detail to documented non-guarantee`
 - `2026-03-31 | codex2 | WS7/WS9 | Added scripts/run_benchmark_baseline.sh and benchmark-data/README.md with a reproducible local baseline for bench_parse and bench_core_vs_serde at 477118a | next performance slice is release-size tracking or stronger benchmark automation`
+- `2026-03-31 | codex1 | WS1/WS3 | Aligned the compact owned/typed core writers with parser and formatter-core root-map semantics: empty root maps now stay explicit as '{}' and composite first keys no longer force outer braces; added direct regression coverage for both serializers and exact-roundtrip tests for the owned Value path | next semantics work is to review any remaining implementation-tolerated ambiguities that still are not either guaranteed or explicitly excluded`
+- `2026-03-31 | codex1 | WS2 | Added borrowed-slice parser tests in eon_core covering identifiers, numbers, raw escaped strings, and quoted variant heads, so the zero-copy contract is now enforced on representative common tokens | next zero-copy work is the actual allocation audit and deciding whether escaped-string metadata should become more explicit than the current raw-token model`

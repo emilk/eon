@@ -398,8 +398,10 @@ where
             ));
         }
 
-        if self.mode == MapMode::Explicit {
-            self.writer.write_char('}').map_err(fmt_error)?;
+        match self.mode {
+            MapMode::Explicit => self.writer.write_char('}').map_err(fmt_error)?,
+            MapMode::PendingRootMap => self.writer.write_str("{}").map_err(fmt_error)?,
+            MapMode::ImplicitRoot => {}
         }
 
         Ok(())
@@ -435,12 +437,7 @@ where
             MapMode::PendingRootMap => {
                 debug_assert!(self.first);
                 let rendered = serialize_fragment(key, Position::MapKey)?;
-                if rendered.starts_with('{') {
-                    self.writer.write_char('{').map_err(fmt_error)?;
-                    self.mode = MapMode::Explicit;
-                } else {
-                    self.mode = MapMode::ImplicitRoot;
-                }
+                self.mode = MapMode::ImplicitRoot;
                 self.writer.write_str(&rendered).map_err(fmt_error)?;
             }
             MapMode::Explicit | MapMode::ImplicitRoot => {

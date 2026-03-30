@@ -595,10 +595,32 @@ impl<'a> EventSink<'a> for NoopSink {
 
 #[cfg(test)]
 mod tests {
-    use std::string::String;
+    use std::{string::String, vec::Vec};
 
     use super::NoopSink;
-    use crate::{Error, ErrorKind, EventWriter, ParseError, parse, parse_with_limit};
+    use crate::{
+        Error, ErrorKind, Event, EventSink, EventWriter, ParseError, Scalar, Span, SpannedEvent,
+        StringKind, VariantName, parse, parse_with_limit,
+    };
+
+    #[derive(Default)]
+    struct CollectSink<'a> {
+        events: Vec<SpannedEvent<'a>>,
+    }
+
+    impl<'a> EventSink<'a> for CollectSink<'a> {
+        type Error = core::convert::Infallible;
+
+        fn event(&mut self, event: SpannedEvent<'a>) -> core::result::Result<(), Self::Error> {
+            self.events.push(event);
+            Ok(())
+        }
+    }
+
+    fn assert_borrowed_slice(source: &str, span: Span, slice: &str) {
+        assert_eq!(slice, &source[span.start..span.end]);
+        assert_eq!(slice.as_ptr(), source[span.start..].as_ptr());
+    }
 
     #[test]
     fn parse_empty_document_as_implicit_map() {
@@ -668,6 +690,76 @@ mod tests {
         parse("{ nested: true }: answer", &mut writer).unwrap();
         writer.finish().unwrap();
         assert_eq!(out, "{nested: true}: answer");
+    }
+
+    #[test]
+    fn parser_borrows_identifier_and_number_tokens_from_source() {
+        let source = "mode: EnumValue(42)";
+        let mut sink = CollectSink::default();
+        parse(source, &mut sink).unwrap();
+
+        let (identifier_span, identifier) = sink
+            .events
+            .iter()
+            .find_map(|event| match event.event {
+                Event::Scalar(Scalar::Identifier(identifier)) if identifier == "mode" => {
+                    Some((event.span, identifier))
+                }
+                _ => None,
+            })
+            .unwrap();
+        assert_borrowed_slice(source, identifier_span, identifier);
+
+        let (number_span, number) = sink
+            .events
+            .iter()
+            .find_map(|event| match event.event {
+                Event::Scalar(Scalar::Number(number)) => Some((event.span, number)),
+                _ => None,
+            })
+            .unwrap();
+        assert_eq!(number, "42");
+        assert_borrowed_slice(source, number_span, number);
+    }
+
+    #[test]
+    fn parser_borrows_raw_escaped_string_tokens_from_source() {
+        let source = "label: \"he\\nllo\"";
+        let mut sink = CollectSink::default();
+        parse(source, &mut sink).unwrap();
+
+        let (string_span, raw, kind) = sink
+            .events
+            .iter()
+            .find_map(|event| match event.event {
+                Event::Scalar(Scalar::String(token)) => Some((event.span, token.raw, token.kind)),
+                _ => None,
+            })
+            .unwrap();
+        assert_eq!(kind, StringKind::Basic);
+        assert_eq!(raw, "\"he\\nllo\"");
+        assert_borrowed_slice(source, string_span, raw);
+    }
+
+    #[test]
+    fn parser_borrows_quoted_variant_heads_from_source() {
+        let source = "mode: \"kebab-case\"()";
+        let mut sink = CollectSink::default();
+        parse(source, &mut sink).unwrap();
+
+        let (variant_span, raw, kind) = sink
+            .events
+            .iter()
+            .find_map(|event| match event.event {
+                Event::BeginVariant {
+                    name: VariantName::String(token),
+                } => Some((event.span, token.raw, token.kind)),
+                _ => None,
+            })
+            .unwrap();
+        assert_eq!(kind, StringKind::Basic);
+        assert_eq!(raw, "\"kebab-case\"");
+        assert_borrowed_slice(source, variant_span, raw);
     }
 
     #[test]

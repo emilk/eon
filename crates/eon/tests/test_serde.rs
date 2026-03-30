@@ -85,3 +85,43 @@ fn test_bool_to_string() {
     true: "true"
     "#);
 }
+
+#[test]
+fn test_serde_roundtrips_nul_escape_in_strings() {
+    #[derive(serde::Deserialize, serde::Serialize, Debug, PartialEq)]
+    struct WithNul {
+        value: String,
+    }
+
+    let original = WithNul {
+        value: "prefix\0suffix".to_owned(),
+    };
+
+    let serialized = eon::to_string(&original, &eon::FormatOptions::default()).unwrap();
+    assert!(serialized.contains("\\0"));
+
+    let roundtripped: WithNul = eon::from_str(&serialized).unwrap();
+    assert_eq!(roundtripped, original);
+}
+
+#[test]
+fn test_serde_escapes_hidden_unicode_in_strings() {
+    #[derive(serde::Deserialize, serde::Serialize, Debug, PartialEq)]
+    struct HiddenUnicode {
+        value: String,
+    }
+
+    let original = HiddenUnicode {
+        value: "prefix\u{11101}suffix".to_owned(),
+    };
+
+    let serialized = eon::to_string(&original, &eon::FormatOptions::default()).unwrap();
+    assert!(
+        serialized.contains("\\u{11101}")
+            || serialized.contains("\\u{11101}".to_lowercase().as_str())
+    );
+    assert!(!serialized.contains('\u{11101}'));
+
+    let roundtripped: HiddenUnicode = eon::from_str(&serialized).unwrap();
+    assert_eq!(roundtripped, original);
+}

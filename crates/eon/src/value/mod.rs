@@ -28,9 +28,6 @@ pub enum Value {
     /// A string value, like `"Hello, world!"`
     ///
     /// Also commonly used as the key in a [`Map`].
-    ///
-    /// Strings are also used for simple sum-type (enum) variants values, e.g. `"Maybe"`.
-    /// See [`Self::Variant`] for more complex sum-type (enum) variants.
     String(String),
 
     /// A list of values.
@@ -39,24 +36,14 @@ pub enum Value {
     /// Maps strings to values, i.e. like a `struct`.
     Map(Map),
 
-    /// A sum-type (enum) variant containing some data, like `"Rgb"(255, 0, 0)`.
-    ///
-    /// For simple enum types (e.g. `enum Maybe { Yes, No }`),
-    /// the variants will be represented as [`Self::String`] instead.
+    /// A sum-type (enum) variant, like `"Black"` or `"Rgb"(255, 0, 0)`.
     Variant(Variant),
 }
 
 impl Value {
     /// Construct a variant of an enum (sum-type) with a name and optional values.
-    ///
-    /// If the values is empty, this will return a [`Value::String`],
-    /// otherwise it will return a [`Value::Variant`].
     pub fn new_variant(name: String, values: Vec<Self>) -> Self {
-        if let Ok(values) = vec1::Vec1::try_from_vec(values) {
-            Self::Variant(Variant { name, values })
-        } else {
-            Self::String(name)
-        }
+        Self::Variant(Variant { name, values })
     }
 
     /// Pretty-print a [`Value`] to an Eon string.
@@ -64,6 +51,22 @@ impl Value {
     /// You can parse the result with [`Value::from_str`](std::str::FromStr::from_str).
     pub fn format(&self, options: &FormatOptions) -> String {
         TokenTree::from(self.clone()).format(options)
+    }
+
+    /// Parse an Eon document using the experimental `eon_core` event parser.
+    ///
+    /// This keeps the existing parser as the default path while allowing early
+    /// experimentation with the no-dependency core.
+    pub fn from_str_with_core(eon_source: &str) -> Result<Self> {
+        crate::value_from_core::from_str_with_core(eon_source)
+    }
+
+    /// Serialize a [`Value`] using the experimental `eon_core` syntax rules.
+    ///
+    /// This uses the new compact core-backed writer and can therefore differ
+    /// from [`Self::format`] in how enum variants are rendered.
+    pub fn to_string_with_core(&self) -> String {
+        crate::value_to_core::to_string_with_core(self)
     }
 
     /// Return the bool value iff this is a [`Value::Bool`].

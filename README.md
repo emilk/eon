@@ -137,7 +137,11 @@ Future work, which I may or may not get to (contributions welcome!)
 ### Additional tools
 - VSCode extension for
     - Syntax highlighting
-    - Formatting
+- Formatting
+- Zed extension
+- tree-sitter lsp
+
+![Example](/example.png)
 
 ### Extending the spec
 - Add special types?

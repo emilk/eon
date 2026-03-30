@@ -1,3 +1,5 @@
+mod core_deserializer;
+mod core_serializer;
 mod deserialize_value;
 mod deserializer;
 mod serializer;
@@ -40,6 +42,24 @@ where
 {
     let serializer = Serializer::default();
     value.serialize(&serializer)
+}
+
+/// Serialize a value (using serde) directly into the experimental compact
+/// `eon_core` syntax.
+pub fn to_string_with_core<T>(value: &T) -> Result<String, SerializationError>
+where
+    T: ?Sized + Serialize,
+{
+    self::core_serializer::to_string_with_core(value)
+}
+
+/// Parse an Eon value from a string into a type `T` using the experimental
+/// `eon_core` parser.
+pub fn from_str_with_core<T>(eon_source: &str) -> Result<T, crate::Error>
+where
+    T: serde::de::DeserializeOwned,
+{
+    self::core_deserializer::from_str_with_core(eon_source)
 }
 
 /// Serialize a value (using serde) into an Eon string.

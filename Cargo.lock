@@ -280,6 +280,7 @@ version = "0.2.0"
 dependencies = [
  "divan",
  "document-features",
+ "eon_core",
  "eon_syntax",
  "indexmap",
  "insta",
@@ -287,6 +288,10 @@ dependencies = [
  "serde",
  "vec1",
 ]
+
+[[package]]
+name = "eon_core"
+version = "0.2.0"
 
 [[package]]
 name = "eon_lsp"

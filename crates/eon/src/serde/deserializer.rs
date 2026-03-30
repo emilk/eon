@@ -1,5 +1,6 @@
 // See https://serde.rs/impl-deserializer.html
 
+use std::collections::HashSet;
 use std::str::FromStr as _;
 
 use serde::{
@@ -7,7 +8,7 @@ use serde::{
     de::{self, Error as _, Visitor},
 };
 
-use crate::Number;
+use crate::{Map, Number, Value};
 
 use eon_syntax::{Span, TokenKeyValue, TokenTree, TokenValue, unescape_and_unquote};
 
@@ -124,6 +125,7 @@ impl<'de> de::Deserializer<'de> for TokenTreeDeserializer<'de> {
 
             TokenValue::Map(map) => visitor.visit_map(MapAccessor {
                 kvs: &map.key_values,
+                seen_keys: HashSet::with_capacity(map.key_values.len()),
             }),
 
             TokenValue::Variant(_) => Err(DeserError::new(span, "Did not expect a variant here")),
@@ -236,6 +238,7 @@ impl<'de> de::SeqAccess<'de> for ListAccessor<'de> {
 
 struct MapAccessor<'de> {
     kvs: &'de [TokenKeyValue<'de>],
+    seen_keys: HashSet<Value>,
 }
 
 impl<'de> de::MapAccess<'de> for MapAccessor<'de> {
@@ -250,6 +253,10 @@ impl<'de> de::MapAccess<'de> for MapAccessor<'de> {
         K: de::DeserializeSeed<'de>,
     {
         if let Some(kv) = self.kvs.first() {
+            let key = key_identity_from_token_tree(&kv.key)?;
+            if !self.seen_keys.insert(key) {
+                return Err(DeserError::new(kv.key.span, "Duplicate key in map"));
+            }
             seed.deserialize(TokenTreeDeserializer::new(&kv.key))
                 .map(Some)
         } else {
@@ -381,5 +388,69 @@ impl<'de> de::Deserializer<'de> for IdentifierDeserializer<'de> {
         bool i8 i16 i32 i64 i128 u8 u16 u32 u64 u128 f32 f64 char str string
         bytes byte_buf unit unit_struct newtype_struct seq tuple enum option
         tuple_struct map struct identifier ignored_any
+    }
+}
+
+#[derive(Clone, Copy)]
+enum ValuePosition {
+    MapKey,
+    Value,
+}
+
+fn key_identity_from_token_tree(tree: &TokenTree<'_>) -> Result<Value> {
+    token_tree_to_value(tree, ValuePosition::MapKey)
+}
+
+fn token_tree_to_value(tree: &TokenTree<'_>, position: ValuePosition) -> Result<Value> {
+    match &tree.value {
+        TokenValue::Identifier(identifier) => match position {
+            ValuePosition::MapKey => Ok(Value::String(identifier.to_string())),
+            ValuePosition::Value => Ok(Value::String(identifier.to_string())),
+        },
+        TokenValue::Number(raw) => Number::from_str(raw)
+            .map(Value::Number)
+            .map_err(|err| DeserError::new(tree.span, err)),
+        TokenValue::QuotedString(raw) => {
+            unescape_and_unquote(raw).map(Value::String).map_err(|err| {
+                DeserError::new(
+                    tree.span,
+                    format!("Failed to unescape quoted string: {raw:?}: {err}"),
+                )
+            })
+        }
+        TokenValue::List(list) => list
+            .values
+            .iter()
+            .map(|value| token_tree_to_value(value, ValuePosition::Value))
+            .collect::<Result<Vec<_>>>()
+            .map(Value::List),
+        TokenValue::Map(map) => {
+            let mut out = Map::with_capacity(map.key_values.len());
+            for kv in &map.key_values {
+                let key = token_tree_to_value(&kv.key, ValuePosition::MapKey)?;
+                let value = token_tree_to_value(&kv.value, ValuePosition::Value)?;
+                if out.insert(key, value).is_some() {
+                    return Err(DeserError::new(kv.key.span, "Duplicate key in map"));
+                }
+            }
+            Ok(Value::Map(out))
+        }
+        TokenValue::Variant(variant) => {
+            let name = unescape_and_unquote(&variant.quoted_name).map_err(|err| {
+                DeserError::new(
+                    variant.name_span,
+                    format!(
+                        "Failed to unescape quoted name: {:?}: {err}",
+                        variant.quoted_name
+                    ),
+                )
+            })?;
+            let values = variant
+                .values
+                .iter()
+                .map(|value| token_tree_to_value(value, ValuePosition::Value))
+                .collect::<Result<Vec<_>>>()?;
+            Ok(Value::new_variant(name, values))
+        }
     }
 }

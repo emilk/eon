@@ -74,6 +74,24 @@ fn test_numbers() {
 }
 
 #[test]
+fn test_float_infinity_is_not_treated_as_integer() {
+    let value = Value::from_str("+inf").expect("Failed to parse infinity");
+    let number = value.as_number().expect("Expected a number");
+    assert_eq!(number.as_i64(), None);
+    assert_eq!(number.as_u64(), None);
+    assert_eq!(number.as_i128(), None);
+    assert_eq!(number.as_u128(), None);
+}
+
+#[test]
+fn test_legacy_and_core_parsers_agree_on_overflowing_exponent_map_key() {
+    let legacy = Value::from_str("2E1130:-126.").expect("legacy parser should accept exponent key");
+    let core =
+        Value::from_str_with_core("2E1130:-126.").expect("core parser should accept exponent key");
+    assert_eq!(legacy, core);
+}
+
+#[test]
 fn test_roundtrip_string() {
     test_roundtrip_eon("42");
     test_roundtrip_eon("-42");

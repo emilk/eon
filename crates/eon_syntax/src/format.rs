@@ -1,6 +1,12 @@
 //! Serialize a [`TokenTree`] to an Eon string.
 
-use crate::token_tree::{TokenKeyValue, TokenList, TokenMap, TokenTree, TokenValue, TokenVariant};
+use std::fmt::Write as _;
+
+use crate::{
+    escape_and_quote,
+    token_tree::{TokenKeyValue, TokenList, TokenMap, TokenTree, TokenValue, TokenVariant},
+    unescape_and_unquote,
+};
 
 /// How to format an Eon document.
 ///
@@ -113,7 +119,7 @@ impl<'o> Formatter<'o> {
     fn indented_comments(&mut self, comments: &[&str]) {
         for &comment in comments {
             self.add_indent();
-            self.out.push_str(comment);
+            self.write_comment(comment);
             self.newline();
         }
     }
@@ -135,17 +141,16 @@ impl<'o> Formatter<'o> {
     fn suffix_comment(&mut self, suffix_comment: &Option<&str>) {
         if let Some(suffix_comment) = suffix_comment {
             self.out.push(' ');
-            self.out.push_str(suffix_comment);
+            self.write_comment(suffix_comment);
         }
     }
 
     fn value(&mut self, value: &TokenValue<'_>) {
         match value {
-            TokenValue::Identifier(slice)
-            | TokenValue::Number(slice)
-            | TokenValue::QuotedString(slice) => {
+            TokenValue::Identifier(slice) | TokenValue::Number(slice) => {
                 self.out.push_str(slice);
             }
+            TokenValue::QuotedString(slice) => self.write_quoted_token(slice),
             TokenValue::List(list) => {
                 self.list(list);
             }
@@ -273,12 +278,12 @@ impl<'o> Formatter<'o> {
         } = variant;
 
         if values.is_empty() && closing_comments.is_empty() {
-            self.out.push_str(quoted_name); // Omit parentheses if no values
+            self.write_quoted_token(quoted_name); // Omit parentheses if no values
             return;
         }
 
         if should_format_variant_on_one_line(variant) {
-            self.out.push_str(quoted_name);
+            self.write_quoted_token(quoted_name);
             self.out.push('(');
             for (i, value) in values.iter().enumerate() {
                 self.value(&value.value);
@@ -296,12 +301,12 @@ impl<'o> Formatter<'o> {
             };
 
             if map.key_values.is_empty() && map.closing_comments.is_empty() {
-                self.out.push_str(quoted_name);
+                self.write_quoted_token(quoted_name);
                 self.out.push_str("({ })");
             } else {
                 // A single map variant, like `"VariantName"({ key: value, … })`.
                 // Here we avoid double-indenting for nicer/more compact output.
-                self.out.push_str(quoted_name);
+                self.write_quoted_token(quoted_name);
                 self.out.push_str("({");
                 self.indent += 1;
                 self.newline();
@@ -319,12 +324,12 @@ impl<'o> Formatter<'o> {
             };
 
             if list.values.is_empty() && list.closing_comments.is_empty() {
-                self.out.push_str(quoted_name);
+                self.write_quoted_token(quoted_name);
                 self.out.push_str("([ ])");
             } else {
                 // A single list variant, like `"VariantName"({ key: value, … })`.
                 // Here we avoid double-indenting for nicer/more compact output.
-                self.out.push_str(quoted_name);
+                self.write_quoted_token(quoted_name);
                 self.out.push_str("([");
                 self.indent += 1;
                 self.newline();
@@ -334,7 +339,7 @@ impl<'o> Formatter<'o> {
                 self.out.push_str("])");
             }
         } else {
-            self.out.push_str(quoted_name);
+            self.write_quoted_token(quoted_name);
             self.out.push('(');
             self.indent += 1;
             self.newline();
@@ -342,6 +347,7 @@ impl<'o> Formatter<'o> {
                 if 0 < i && !value.prefix_comments.is_empty() {
                     self.newline();
                 }
+                self.indented_value(value);
                 self.newline();
             }
 
@@ -357,6 +363,43 @@ impl<'o> Formatter<'o> {
             self.out.push(')');
         }
     }
+
+    fn write_comment(&mut self, comment: &str) {
+        if !contains_hidden_unicode(comment) {
+            self.out.push_str(comment);
+            return;
+        }
+
+        for chr in comment.chars() {
+            if should_escape_for_visibility(chr) {
+                write!(self.out, "\\u{{{:X}}}", chr as u32).expect("writing to String cannot fail");
+            } else {
+                self.out.push(chr);
+            }
+        }
+    }
+
+    fn write_quoted_token(&mut self, quoted: &str) {
+        if !contains_hidden_unicode(quoted) {
+            self.out.push_str(quoted);
+            return;
+        }
+
+        if let Ok(unescaped) = unescape_and_unquote(quoted) {
+            self.out.push_str(&escape_and_quote(&unescaped));
+        } else {
+            self.out.push_str(quoted);
+        }
+    }
+}
+
+fn contains_hidden_unicode(text: &str) -> bool {
+    text.chars().any(should_escape_for_visibility)
+}
+
+fn should_escape_for_visibility(chr: char) -> bool {
+    !matches!(chr, '"' | '\\' | '\'' | '\n' | '\r' | '\t')
+        && chr.escape_debug().next() == Some('\\')
 }
 
 fn should_format_list_on_one_line(list: &TokenList<'_>) -> bool {

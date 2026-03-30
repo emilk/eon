@@ -4,6 +4,26 @@ fn is_keyword(string: &str) -> bool {
     matches!(string, "true" | "false" | "null")
 }
 
+fn is_disallowed_invisible_unicode(chr: char) -> bool {
+    !matches!(chr, '"' | '\\' | '\'' | '\n' | '\r' | '\t')
+        && chr.escape_debug().next() == Some('\\')
+}
+
+/// Return the first invisible Unicode code point that should be rejected from
+/// Eon source text because it can hide malicious content.
+pub fn find_disallowed_invisible_unicode(text: &str) -> Option<(usize, char)> {
+    text.char_indices()
+        .find(|&(_, chr)| is_disallowed_invisible_unicode(chr))
+}
+
+/// Human-readable security error for a disallowed invisible Unicode code point.
+pub fn invisible_unicode_error(chr: char) -> String {
+    format!(
+        "Invisible Unicode character U+{:04X} is not allowed in Eon source because it can hide malicious content",
+        chr as u32
+    )
+}
+
 /// Returns `true` if the string does matches `[a-zA-Z_][a-zA-Z0-9_]*`
 pub fn is_valid_identifier(string: &str) -> bool {
     if is_keyword(string) {
@@ -36,9 +56,11 @@ pub fn is_valid_identifier(string: &str) -> bool {
 pub fn escape_and_quote(raw: &str) -> String {
     // TODO(emilk): smartly choose between all four types of strings: double, single, multiline basic, and multiline literal.
 
-    let must_be_double_quoted = raw
-        .chars()
-        .any(|c| c.is_control() || matches!(c, '\'' | '\n' | '\r' | '\t'));
+    let must_be_double_quoted = raw.chars().any(|c| {
+        c.is_control()
+            || is_disallowed_invisible_unicode(c)
+            || matches!(c, '\'' | '\n' | '\r' | '\t')
+    });
 
     if must_be_double_quoted {
         return double_quote(raw);
@@ -139,6 +161,7 @@ fn unescape(s: &str) -> Result<String, String> {
                 'e' | 'E' => '\u{1B}',
                 'f' => '\u{0C}',
                 'n' => '\n',
+                '0' => '\0',
                 'r' => '\r',
                 't' => '\t',
                 'v' => '\u{0B}',
@@ -255,6 +278,10 @@ fn test_escape() {
         escape_and_quote(r#"[+\-0-9\.][0-9a-zA-Z\.+\-_]*"#),
         r#"'[+\-0-9\.][0-9a-zA-Z\.+\-_]*'"#
     );
+    assert_eq!(escape_and_quote("\0"), r#""\0""#);
+    let hidden = escape_and_quote("\u{11101}");
+    assert!(hidden.starts_with('"'));
+    assert!(hidden.contains("\\u{11101}") || hidden.contains("\\u{11101}".to_lowercase().as_str()));
 }
 
 #[test]
@@ -280,4 +307,5 @@ fn test_unescape() {
         unescape_and_unquote("\"\"\"Multi\\\n  line\n  String\n\"\"\"").unwrap(),
         "Multiline\n  String\n",
     );
+    assert_eq!(unescape_and_unquote(r#""\0""#).unwrap(), "\0");
 }

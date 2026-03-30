@@ -36,6 +36,7 @@ serde = ["dep:serde"]
 
 
 [dependencies]
+eon_core.workspace = true
 eon_syntax.workspace = true
 
 document-features = { workspace = true, optional = true }
@@ -52,4 +53,8 @@ serde = { workspace = true, features = ["derive"] }
 
 [[bench]]
 name = "bench_parse"
+harness = false
+
+[[bench]]
+name = "bench_core_vs_serde"
 harness = false

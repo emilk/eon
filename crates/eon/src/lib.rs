@@ -54,7 +54,9 @@
 
 mod token_tree_from_value;
 mod value;
+mod value_from_core;
 mod value_from_token_tree;
+mod value_to_core;
 
 #[cfg(feature = "serde")]
 mod serde;
@@ -63,6 +65,16 @@ pub use {
     crate::value::{Map, Number, Value, Variant},
     eon_syntax::{Error, FormatOptions, Result, reformat},
 };
+
+/// Experimental APIs that sit on top of the new `eon_core` parser.
+pub mod experimental {
+    #[cfg(feature = "serde")]
+    pub use crate::serde::from_str_with_core;
+    #[cfg(feature = "serde")]
+    pub use crate::serde::to_string_with_core;
+    pub use crate::value_from_core::from_str_with_core as value_from_str_with_core;
+    pub use crate::value_to_core::to_string_with_core as value_to_string_with_core;
+}
 
 /// External crates used by `eon`.
 pub mod external {

@@ -3,6 +3,7 @@
 use crate::{
     error::{Error, Result},
     span::Span,
+    strings::{find_disallowed_invisible_unicode, invisible_unicode_error},
     token_kind::TokenKind,
     token_tree::{TokenKeyValue, TokenList, TokenMap, TokenTree, TokenValue, TokenVariant},
 };
@@ -62,6 +63,31 @@ impl<'s> Iterator for PlacedTokenIter<'s> {
         };
         let slice = self.iter.slice();
         if let Ok(token) = result {
+            if matches!(
+                token,
+                TokenKind::Comment
+                    | TokenKind::DoubleQuotedString
+                    | TokenKind::SingleQuotedString
+                    | TokenKind::MultilineBasicString
+                    | TokenKind::MultilineLiteralString
+            ) {
+                if let Some((offset, chr)) = find_disallowed_invisible_unicode(slice) {
+                    let span = Span {
+                        start: span.start + offset,
+                        end: span.start + offset + chr.len_utf8(),
+                    };
+                    return Some(PlacedTokenResult {
+                        span,
+                        slice,
+                        kind: Err(Error::new_at(
+                            self.iter.source(),
+                            span,
+                            invisible_unicode_error(chr),
+                        )),
+                    });
+                }
+            }
+
             Some(PlacedTokenResult {
                 span,
                 slice,

@@ -107,3 +107,15 @@ fn test_reformat_2() {
     }
     ");
 }
+
+#[test]
+fn test_reformat_rejects_hidden_unicode_in_strings_comments_and_variant_names() {
+    let input = format!(
+        "// prefix\u{202E}\nmode: \"Enum\u{202E}Value\"()\ntext: 'a\u{200B}b' // suffix\u{2066}"
+    );
+
+    let err = eon::reformat(&input, &Default::default()).unwrap_err();
+    let message = err.to_string().to_lowercase();
+    assert!(message.contains("invisible unicode"));
+    assert!(message.contains("hide malicious content"));
+}

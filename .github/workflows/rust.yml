@@ -28,6 +28,11 @@ jobs:
           command: check
           args: --all-features
 
+      - uses: actions-rs/cargo@v1
+        with:
+          command: check
+          args: -p eon_core --no-default-features
+
   check_wasm:
     name: Check wasm32
     runs-on: ubuntu-latest
@@ -45,6 +50,12 @@ jobs:
         with:
           command: check
           args: --target wasm32-unknown-unknown --lib
+
+      - name: Check eon_core wasm32
+        uses: actions-rs/cargo@v1
+        with:
+          command: check
+          args: -p eon_core --target wasm32-unknown-unknown
 
       - name: Clippy wasm32
         env:

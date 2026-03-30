@@ -95,6 +95,9 @@ fn arbitrary_variant_name(u: &mut Unstructured<'_>) -> String {
 
 fn supports_exact_legacy_roundtrip(value: &Value, in_map_key: bool) -> bool {
     match value {
+        // The legacy formatter emits bare keywords for bool/null values, but
+        // those cannot roundtrip exactly in map-key position. It also renders
+        // empty variants as quoted strings, so unit variants are excluded.
         Value::Null | Value::Bool(_) => !in_map_key,
         Value::Number(_) | Value::String(_) => true,
         Value::List(values) => values
@@ -116,6 +119,9 @@ fn supports_exact_legacy_roundtrip(value: &Value, in_map_key: bool) -> bool {
 
 fn supports_exact_core_roundtrip(value: &Value, in_map_key: bool) -> bool {
     match value {
+        // The compact core parser canonicalizes keyword-looking map keys to
+        // strings ("null"/"true"/"false"), so exact roundtrip excludes
+        // bool/null values in key position.
         Value::Null | Value::Bool(_) => !in_map_key,
         Value::Number(_) | Value::String(_) => true,
         Value::List(values) => values

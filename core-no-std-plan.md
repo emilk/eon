@@ -194,6 +194,8 @@ Current formatter compatibility contract:
   - Byte-for-byte preservation of original commas, braces, or whitespace/trivia.
   - Matching legacy error messages.
   - Full legacy parity outside the documented and tested overlapping syntax subset.
+  - Exact owned `Value::format` roundtrip for unit variants with empty payloads; the legacy formatter renders them as quoted strings.
+  - Exact owned `Value::to_string_with_core` roundtrip for `null`/`true`/`false` in map-key position; the core parser canonicalizes those key-position keywords to strings.
 
 Exit criteria:
 
@@ -416,4 +418,5 @@ Entries:
 - `2026-03-31 | codex1 | WS1/WS3/WS4 | Documented that non-empty root maps may remain brace-less even with composite first keys and added contract/roundtrip coverage for composite-key root maps with nested strings/comments | next boundary work is deciding which remaining ambiguous map-key forms are guaranteed versus merely tolerated`
 - `2026-03-31 | codex1 | WS1/WS3/WS4 | Documented the key/colon boundary: whitespace and newlines before ':' are canonicalized, comments there are rejected, and comments after ':' normalize to entry-prefix comments | this narrows the remaining ambiguity work to other still-undocumented map-key forms rather than generic separator trivia`
 - `2026-03-31 | codex1 | WS3 | Added formatter-core roundtrip coverage for literal keys plus multiline basic/literal string tokens in both key and value position | string-family coverage is broader, but full writer determinism across all nested shapes is still not declared complete`
+- `2026-03-31 | codex1 | WS1/WS8 | Documented and regression-tested the owned-Value exact-roundtrip exclusions already assumed by fuzzing: legacy unit variants collapse to strings, and core keyword map keys canonicalize to string keys | next contract work is to decide whether any additional fuzz exclusions should be promoted to documented non-guarantees`
 - `2026-03-31 | codex2 | WS7/WS9 | Added scripts/run_benchmark_baseline.sh and benchmark-data/README.md with a reproducible local baseline for bench_parse and bench_core_vs_serde at 477118a | next performance slice is release-size tracking or stronger benchmark automation`

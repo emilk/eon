@@ -315,7 +315,7 @@ Exit criteria:
 
 ## WS9 - CI and Release Gates
 
-Status: `[ ]`
+Status: `[x]`
 Goal: make the minimal path continuously validated.
 
 Deliverables:
@@ -330,7 +330,7 @@ Tasks:
 - [x] Add minimal formatter wasm check once that crate exists
 - [x] Run core and adapter tests in CI
 - [x] Add a fuzz smoke lane
-- [ ] Add benchmark reporting or stored comparison data
+- [x] Add benchmark reporting or stored comparison data
 
 Exit criteria:
 
@@ -359,6 +359,7 @@ This is the batch I am implementing next.
 - [x] `codex2` lane: add `eon_core` minimal-path CI checks for `--no-default-features` and `wasm32-unknown-unknown`
 - [x] `codex2` lane: broaden CI from library-only tests to workspace core/adapter coverage
 - [x] `codex2` lane: add a stable fuzz smoke lane that replays corpora and runs deterministic one-step fuzz harness checks in CI
+- [x] `codex2` lane: add a reproducible benchmark runner and stored comparison baseline for the core-backed path
 - [x] `formatter-core`: create a zero-dependency crate for formatting-oriented lexing and token/trivia preservation
 - [x] `formatter-core` input model: borrowed tokens, punctuation, strings, comments, and line-breaking trivia sufficient for reformatting
 - [x] initial test coverage: lexer tests and formatter-input model tests for comments, strings, maps, lists, and variants
@@ -414,3 +415,4 @@ Entries:
 - `2026-03-30 | codex1 | WS3 | Added roundtrip coverage for composite root map keys and escaped quoted-string keys | map-key boundary testing is started, but the remaining work is documenting which ambiguous forms are guaranteed versus merely accepted today`
 - `2026-03-31 | codex1 | WS1/WS3/WS4 | Documented that non-empty root maps may remain brace-less even with composite first keys and added contract/roundtrip coverage for composite-key root maps with nested strings/comments | next boundary work is deciding which remaining ambiguous map-key forms are guaranteed versus merely tolerated`
 - `2026-03-31 | codex1 | WS1/WS3/WS4 | Documented the key/colon boundary: whitespace and newlines before ':' are canonicalized, comments there are rejected, and comments after ':' normalize to entry-prefix comments | this narrows the remaining ambiguity work to other still-undocumented map-key forms rather than generic separator trivia`
+- `2026-03-31 | codex2 | WS7/WS9 | Added scripts/run_benchmark_baseline.sh and benchmark-data/README.md with a reproducible local baseline for bench_parse and bench_core_vs_serde at 477118a | next performance slice is release-size tracking or stronger benchmark automation`

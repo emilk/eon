@@ -5,6 +5,8 @@ use crate::Span;
 /// Borrowed formatter input preserving the exact token/trivia order.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct TokenStream<'a> {
+    /// The full borrowed source text.
+    pub source: &'a str,
     /// Interleaved trivia and tokens as they appeared in the source.
     pub items: Vec<Item<'a>>,
     pub(crate) token_item_indices: Vec<usize>,
@@ -12,7 +14,7 @@ pub struct TokenStream<'a> {
 
 impl<'a> TokenStream<'a> {
     /// Create a token stream from already lexed items.
-    pub fn new(items: Vec<Item<'a>>) -> Self {
+    pub fn new(source: &'a str, items: Vec<Item<'a>>) -> Self {
         let token_item_indices = items
             .iter()
             .enumerate()
@@ -23,6 +25,7 @@ impl<'a> TokenStream<'a> {
             .collect();
 
         Self {
+            source,
             items,
             token_item_indices,
         }
@@ -31,6 +34,15 @@ impl<'a> TokenStream<'a> {
     /// The number of syntax tokens in the stream.
     pub fn token_count(&self) -> usize {
         self.token_item_indices.len()
+    }
+
+    /// Return one syntax token by zero-based token index.
+    pub fn token(&self, token_index: usize) -> Option<Token<'a>> {
+        let item_index = *self.token_item_indices.get(token_index)?;
+        let Item::Token(token) = self.items[item_index] else {
+            unreachable!("token_item_indices always point at tokens");
+        };
+        Some(token)
     }
 
     /// Returns `true` if the stream contains no syntax tokens.
@@ -42,11 +54,20 @@ impl<'a> TokenStream<'a> {
     pub fn tokens(&self) -> crate::TokenRefs<'_, 'a> {
         crate::TokenRefs::new(self)
     }
+
+    /// Borrow one token view by zero-based token index.
+    pub fn token_ref(&self, token_index: usize) -> Option<crate::TokenRef<'_, 'a>> {
+        if token_index < self.token_count() {
+            Some(crate::TokenRef::new(self, token_index))
+        } else {
+            None
+        }
+    }
 }
 
 impl<'a> Default for TokenStream<'a> {
     fn default() -> Self {
-        Self::new(Vec::new())
+        Self::new("", Vec::new())
     }
 }
 

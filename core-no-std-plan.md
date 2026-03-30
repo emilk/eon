@@ -331,6 +331,7 @@ This is the batch I am implementing next.
 
 - [x] `codex1` lane: bootstrap a zero-dependency `formatter-core` crate with a borrowed token/trivia model and lexer tests
 - [x] `codex2` lane: add formatter-facing token views and trivia classification on top of the flat item stream
+- [x] `codex2` lane: add root document analysis for implicit map/list/value shapes on top of the formatter-core stream
 - [-] `formatter-core`: create a zero-dependency crate for formatting-oriented lexing and token/trivia preservation
 - [-] `formatter-core` input model: borrowed tokens, punctuation, strings, comments, and line-breaking trivia sufficient for reformatting
 - [-] initial test coverage: lexer tests and formatter-input model tests for comments, strings, maps, lists, and variants
@@ -370,3 +371,4 @@ Entries:
 - `2026-03-30 | codex2 | WS4/WS5 | Landed the formatter-core bootstrap crate with a borrowed token/trivia stream, manual lexer, tests, and a wasm check | next slice can build formatter behavior on top of the flat Item stream`
 - `2026-03-30 | codex2 | WS4/WS5 | Started the token-view/trivia-classification slice on top of the flat formatter-core stream | target API: leading-gap classification, suffix-comment detection, token iteration`
 - `2026-03-30 | codex2 | WS4/WS5 | Landed token views, trivia iterators, leading-gap classification, and suffix-comment detection on top of formatter-core | next slice should build the first formatter walker on top of TokenRef APIs`
+- `2026-03-30 | codex2 | WS4/WS5 | Landed root document analysis for implicit map/list/value forms using token spans on top of formatter-core | next slice can build the first root formatter walker against Document/ValueSpan APIs`

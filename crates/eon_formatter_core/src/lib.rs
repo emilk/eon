@@ -9,6 +9,7 @@
 
 extern crate alloc;
 
+mod document;
 mod error;
 mod lexer;
 mod span;
@@ -16,6 +17,7 @@ mod token;
 mod view;
 
 pub use crate::{
+    document::{Document, DocumentKind, MapEntry, ValueSpan, analyze_document},
     error::{Error, ErrorKind, Result},
     lexer::lex,
     span::Span,

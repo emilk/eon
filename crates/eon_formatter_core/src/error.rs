@@ -31,6 +31,10 @@ pub enum ErrorKind {
     UnterminatedString,
     /// Hidden Unicode that can disguise malicious content is not allowed.
     DisallowedInvisibleUnicode(char),
+    /// Reached the end of the token stream too early.
+    UnexpectedEnd,
+    /// The token stream is structurally malformed for formatting.
+    MalformedStructure(&'static str),
 }
 
 impl fmt::Display for ErrorKind {
@@ -43,6 +47,8 @@ impl fmt::Display for ErrorKind {
                 "Invisible Unicode character U+{:04X} is not allowed in Eon source because it can hide malicious content",
                 *chr as u32
             ),
+            Self::UnexpectedEnd => f.write_str("unexpected end of input"),
+            Self::MalformedStructure(msg) => f.write_str(msg),
         }
     }
 }

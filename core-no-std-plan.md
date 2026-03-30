@@ -141,7 +141,7 @@ Tasks:
 
 - [x] Differential tests for legacy vs core on supported overlapping syntax
 - [x] Roundtrip tests for root value, implicit map, and implicit list documents
-- [ ] Roundtrip tests for variants, lists, maps, strings, and comments where applicable
+- [-] Roundtrip tests for variants, lists, maps, strings, and comments where applicable
 - [-] Document and test map-key ambiguity boundaries
 - [ ] Keep writer behavior deterministic for all supported cases
 
@@ -415,4 +415,5 @@ Entries:
 - `2026-03-30 | codex1 | WS3 | Added roundtrip coverage for composite root map keys and escaped quoted-string keys | map-key boundary testing is started, but the remaining work is documenting which ambiguous forms are guaranteed versus merely accepted today`
 - `2026-03-31 | codex1 | WS1/WS3/WS4 | Documented that non-empty root maps may remain brace-less even with composite first keys and added contract/roundtrip coverage for composite-key root maps with nested strings/comments | next boundary work is deciding which remaining ambiguous map-key forms are guaranteed versus merely tolerated`
 - `2026-03-31 | codex1 | WS1/WS3/WS4 | Documented the key/colon boundary: whitespace and newlines before ':' are canonicalized, comments there are rejected, and comments after ':' normalize to entry-prefix comments | this narrows the remaining ambiguity work to other still-undocumented map-key forms rather than generic separator trivia`
+- `2026-03-31 | codex1 | WS3 | Added formatter-core roundtrip coverage for literal keys plus multiline basic/literal string tokens in both key and value position | string-family coverage is broader, but full writer determinism across all nested shapes is still not declared complete`
 - `2026-03-31 | codex2 | WS7/WS9 | Added scripts/run_benchmark_baseline.sh and benchmark-data/README.md with a reproducible local baseline for bench_parse and bench_core_vs_serde at 477118a | next performance slice is release-size tracking or stronger benchmark automation`

@@ -109,6 +109,27 @@ fn escaped_string_keys_are_stable() {
 }
 
 #[test]
+fn literal_string_keys_are_stable() {
+    let input = "outer: { 'literal': \"value\" }\n";
+    let expected = "outer: {\n\t'literal': \"value\"\n}\n";
+    assert_reformat_roundtrip(input, expected);
+}
+
+#[test]
+fn multiline_string_tokens_are_stable() {
+    let input = "outer: { \"\"\"line\nfeed\"\"\": '''value''' }\n";
+    let expected = "outer: {\n\t\"\"\"line\nfeed\"\"\": '''value'''\n}\n";
+    assert_reformat_roundtrip(input, expected);
+}
+
+#[test]
+fn multiline_literal_values_are_stable() {
+    let input = "{ 'key': '''line\nfeed''' }\n";
+    let expected = "'key': '''line\nfeed'''\n";
+    assert_reformat_roundtrip(input, expected);
+}
+
+#[test]
 fn nested_strings_comments_and_composite_root_keys_are_stable() {
     let input = r#"
         { [1, 2]: {

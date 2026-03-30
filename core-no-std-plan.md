@@ -1,6 +1,6 @@
 # Eon Core / Minimal Dependency Production Plan
 
-Last updated: 2026-03-30
+Last updated: 2026-03-31
 Branch: `add-lsp-and-zed-extension`
 Baseline commit: `ea2f5c1`
 
@@ -91,16 +91,47 @@ Deliverables:
 
 Tasks:
 
-- [ ] Write a short spec for `eon_core` parse semantics
-- [ ] Write a short spec for `eon_core` write semantics
-- [ ] Define exact roundtrip guarantees
-- [ ] Define which legacy behaviors are compatibility-only and not core guarantees
-- [ ] Document unsupported or intentionally ambiguous cases
+- [x] Write a short spec for `eon_core` parse semantics
+- [x] Write a short spec for `eon_core` write semantics
+- [-] Define exact roundtrip guarantees
+- [-] Define which legacy behaviors are compatibility-only and not core guarantees
+- [-] Document unsupported or intentionally ambiguous cases
 
 Exit criteria:
 
 - every fuzz/property invariant matches a documented contract
 - unsupported cases are identified instead of silently drifting
+
+Current semantics draft:
+
+- Parse semantics:
+  - Root shape is determined from local syntax only.
+  - A top-level `value:` pair starts an implicit root map.
+  - Multiple top-level values without root braces become an implicit root list.
+  - Otherwise the document is a single root value.
+  - On the core-backed owned `Value` path, identifiers in value position parse as unit variants, while quoted tokens parse as strings.
+  - On owned `Value` parse paths, identifiers in map-key position canonicalize to string keys rather than identifier/variant values.
+  - Variant payload `(` must be inline with the variant head; comments or newlines between the head and `(` are rejected on the formatter-core path.
+- Write semantics:
+  - Formatter-core canonicalizes non-empty root maps without outer braces by default.
+  - Empty root maps remain explicit because brace-less output cannot represent them.
+  - Composite first keys do not force outer braces; callers can opt in with `always_include_outer_braces`.
+  - Whitespace and newlines between a map key and `:` are canonicalized away.
+  - Comments between a map key and `:` are rejected.
+  - Comments between `:` and the value normalize to entry-prefix comments.
+  - Simple lists and variants stay on one line when they are short and comment-free; multiline containers omit commas in canonical output.
+  - On the compact owned `Value` core writer, unit variants may be bare only in root/value position; map-key variants stay explicit with `()`.
+  - On the legacy owned `Value` formatter, unit variants collapse to quoted strings.
+- Exact roundtrip guarantees currently documented:
+  - Formatter-core canonical output is idempotent on the tested subset of root maps/lists/values, variants, strings, comments, and composite-root-key shapes.
+  - Exact owned `Value` roundtrip through the compact core path is expected on the tested subset except for the explicit exclusions below.
+  - Exact owned `Value` roundtrip through the legacy formatter/parser path is expected on the tested subset except for the explicit exclusions below.
+- Current explicit non-guarantees and tolerated boundaries:
+  - Exact owned legacy `Value::format` roundtrip is not guaranteed for unit variants with empty payloads; they serialize as quoted strings.
+  - Exact owned legacy/core `Value` roundtrip is not guaranteed for `null`/`true`/`false` in map-key position; both parse paths canonicalize those keys to strings.
+  - Byte-for-byte preservation of commas, braces, indentation, or trivia is not guaranteed.
+  - Legacy parity is guaranteed only on the documented and tested overlapping formatter subset.
+  - Remaining unsupported or merely tolerated ambiguous forms should be promoted into this list as fuzz/property exclusions are reviewed.
 
 ## WS2 - Zero-Copy Parsing
 
@@ -195,7 +226,7 @@ Current formatter compatibility contract:
   - Matching legacy error messages.
   - Full legacy parity outside the documented and tested overlapping syntax subset.
   - Exact owned `Value::format` roundtrip for unit variants with empty payloads; the legacy formatter renders them as quoted strings.
-  - Exact owned `Value::to_string_with_core` roundtrip for `null`/`true`/`false` in map-key position; the core parser canonicalizes those key-position keywords to strings.
+  - Exact owned `Value::format` and `Value::to_string_with_core` roundtrip for `null`/`true`/`false` in map-key position; both parse paths canonicalize those key-position keywords to strings.
 
 Exit criteria:
 
@@ -298,7 +329,7 @@ Tasks:
 - [ ] Keep byte-level parser fuzzing in place
 - [ ] Keep hidden-Unicode rejection fuzzing in place
 - [ ] Keep typed-path fuzzing in place
-- [ ] Stabilize value-roundtrip fuzzing around documented guarantees
+- [-] Stabilize value-roundtrip fuzzing around documented guarantees
 - [ ] Add every real fuzz-found bug as a normal regression test
 - [ ] Add longer-running fuzz jobs outside the fast CI lane
 
@@ -419,4 +450,5 @@ Entries:
 - `2026-03-31 | codex1 | WS1/WS3/WS4 | Documented the key/colon boundary: whitespace and newlines before ':' are canonicalized, comments there are rejected, and comments after ':' normalize to entry-prefix comments | this narrows the remaining ambiguity work to other still-undocumented map-key forms rather than generic separator trivia`
 - `2026-03-31 | codex1 | WS3 | Added formatter-core roundtrip coverage for literal keys plus multiline basic/literal string tokens in both key and value position | string-family coverage is broader, but full writer determinism across all nested shapes is still not declared complete`
 - `2026-03-31 | codex1 | WS1/WS8 | Documented and regression-tested the owned-Value exact-roundtrip exclusions already assumed by fuzzing: legacy unit variants collapse to strings, and core keyword map keys canonicalize to string keys | next contract work is to decide whether any additional fuzz exclusions should be promoted to documented non-guarantees`
+- `2026-03-31 | codex1 | WS1/WS8 | Added a short semantics draft to the tracker and tightened the documented exact-roundtrip exclusions: legacy and core keyword map keys canonicalize to strings, legacy unit variants collapse to strings, and fuzz-contract comments now point at tested behavior | next semantics work is to finish the remaining unsupported/tolerated ambiguity list rather than leave it implied`
 - `2026-03-31 | codex2 | WS7/WS9 | Added scripts/run_benchmark_baseline.sh and benchmark-data/README.md with a reproducible local baseline for bench_parse and bench_core_vs_serde at 477118a | next performance slice is release-size tracking or stronger benchmark automation`

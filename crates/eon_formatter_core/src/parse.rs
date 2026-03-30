@@ -133,7 +133,7 @@ impl<'a, 'd> Parser<'a, 'd> {
     }
 
     fn parse_implicit_root_map(&mut self) -> Result<Document<'a>> {
-        let map = self.parse_map_body(None, 0)?;
+        let map = self.parse_map_body(None, 1)?;
         if !self.is_eof() {
             return Err(self.parse_error_current(ParseErrorKind::TrailingTokens));
         }
@@ -146,23 +146,20 @@ impl<'a, 'd> Parser<'a, 'd> {
     }
 
     fn parse_root_list_or_value(&mut self) -> Result<Document<'a>> {
-        let list = self.parse_list_body(None, 0)?;
-        if !self.is_eof() {
-            return Err(self.parse_error_current(ParseErrorKind::TrailingTokens));
-        }
-
-        if list.values.len() == 1 {
-            let root = list
-                .values
-                .into_iter()
-                .next()
-                .expect("single-value list must contain one value");
+        let mut value_parser = self.clone();
+        let root = value_parser.parse_value(0)?;
+        if value_parser.is_eof() {
             Ok(Document {
                 root,
                 implicit_root_map: false,
-                trailing_comments: list.closing_comments,
+                trailing_comments: value_parser.current_prefix_comments(),
             })
         } else {
+            let list = self.parse_list_body(None, 1)?;
+            if !self.is_eof() {
+                return Err(self.parse_error_current(ParseErrorKind::TrailingTokens));
+            }
+
             Ok(Document {
                 root: Value::List(list).into(),
                 implicit_root_map: false,
@@ -182,10 +179,10 @@ impl<'a, 'd> Parser<'a, 'd> {
                 });
             }
 
-            let key = self.parse_value(depth + 1)?;
+            let key = self.parse_value(depth)?;
             self.consume_clean(TokenKind::Colon)?;
 
-            let mut value = self.parse_value(depth + 1)?;
+            let mut value = self.parse_value(depth)?;
             if self.peek_kind() == Some(TokenKind::Comma) {
                 self.consume_clean(TokenKind::Comma)?;
                 value.suffix_comment = self.peek_suffix_of_previous();
@@ -210,7 +207,7 @@ impl<'a, 'd> Parser<'a, 'd> {
                 });
             }
 
-            let mut value = self.parse_value(depth + 1)?;
+            let mut value = self.parse_value(depth)?;
             if self.peek_kind() == Some(TokenKind::Comma) {
                 self.consume_clean(TokenKind::Comma)?;
                 value.suffix_comment = self.peek_suffix_of_previous();
@@ -220,7 +217,7 @@ impl<'a, 'd> Parser<'a, 'd> {
     }
 
     fn parse_value(&mut self, depth: usize) -> Result<ValueTree<'a>> {
-        if depth >= self.max_depth {
+        if depth > self.max_depth {
             return Err(self.parse_error_current(ParseErrorKind::MaxDepthExceeded));
         }
 
@@ -390,8 +387,8 @@ impl<'a, 'd> Parser<'a, 'd> {
 mod tests {
     use std::string::ToString;
 
-    use super::parse_document;
-    use crate::{Value, VariantName};
+    use super::{parse_document, parse_document_with_limit};
+    use crate::{ParseErrorKind, Value, VariantName};
 
     #[test]
     fn parse_comments_and_suffix_comments() {
@@ -439,5 +436,39 @@ mod tests {
 
         assert_eq!(document.root.value, Value::Number("1"));
         assert_eq!(document.trailing_comments, alloc::vec!["// tail"]);
+    }
+
+    #[test]
+    fn depth_limit_counts_root_maps_once() {
+        parse_document_with_limit("outer: { inner: { leaf: 1 } }", 3).unwrap();
+        let err = parse_document_with_limit("outer: { inner: { leaf: 1 } }", 2).unwrap_err();
+        assert_eq!(
+            err.kind,
+            crate::ErrorKind::Parse(ParseErrorKind::MaxDepthExceeded)
+        );
+
+        parse_document_with_limit("{ outer: { inner: { leaf: 1 } } }", 3).unwrap();
+        let err = parse_document_with_limit("{ outer: { inner: { leaf: 1 } } }", 2).unwrap_err();
+        assert_eq!(
+            err.kind,
+            crate::ErrorKind::Parse(ParseErrorKind::MaxDepthExceeded)
+        );
+    }
+
+    #[test]
+    fn depth_limit_counts_root_lists_once() {
+        parse_document_with_limit("[[1]]", 2).unwrap();
+        let err = parse_document_with_limit("[[1]]", 1).unwrap_err();
+        assert_eq!(
+            err.kind,
+            crate::ErrorKind::Parse(ParseErrorKind::MaxDepthExceeded)
+        );
+
+        parse_document_with_limit("1, [2]", 2).unwrap();
+        let err = parse_document_with_limit("1, [2]", 1).unwrap_err();
+        assert_eq!(
+            err.kind,
+            crate::ErrorKind::Parse(ParseErrorKind::MaxDepthExceeded)
+        );
     }
 }

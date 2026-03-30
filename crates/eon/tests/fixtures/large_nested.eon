@@ -375,9 +375,30 @@ deep_tree: {
 																																														audited: true
 																																														sealed: false
 																																													}
-																																													terminal: {
-																																														summary: "deep end"
-																																														codes: [900, 901, 902]
+																																													next: {
+																																														layer_15: {
+																																															index: 15
+																																															label: "layer_15"
+																																															window: [15, 16, 17]
+																																															metrics: {
+																																																cpu: 25
+																																																memory: 115
+																																																latency: 15.25
+																																															}
+																																															payload: "Layer"({
+																																																checksum: "CHK-15"
+																																																notes: "layer-15 stable"
+																																																flags: {
+																																																	enabled: false
+																																																	audited: true
+																																																	sealed: true
+																																																}
+																																																terminal: {
+																																																	summary: "deep end"
+																																																	codes: [900, 901, 902]
+																																																}
+																																															})
+																																														}
 																																													}
 																																												})
 																																											}
@@ -427,7 +448,7 @@ deep_tree: {
 report: {
 	counts: {
 		services: 6
-		layers: 15
+		layers: 16
 		matrix_rows: 8
 	}
 	footer: "Report"({

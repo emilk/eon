@@ -76,7 +76,7 @@ fn test_large_nested_fixture_end_to_end() {
             .map(|values| values.len()),
         Some(8)
     );
-    assert_eq!(deep_layer_count(&legacy), 15);
+    assert_eq!(deep_layer_count(&legacy), 16);
 
     let legacy_reformatted =
         eon::reformat(FIXTURE, &FormatOptions::default()).expect("legacy reformat should work");

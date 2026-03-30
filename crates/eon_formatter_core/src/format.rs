@@ -63,10 +63,7 @@ impl Document<'_> {
                     if self.root.suffix_comment.is_some() || !self.trailing_comments.is_empty() {
                         formatter.newline();
                     }
-                    formatter.trailing_comments(
-                        self.root.suffix_comment,
-                        &self.trailing_comments,
-                    );
+                    formatter.trailing_comments(self.root.suffix_comment, &self.trailing_comments);
                     return formatter.finish();
                 }
             }

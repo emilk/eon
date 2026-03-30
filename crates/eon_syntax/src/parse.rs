@@ -190,7 +190,7 @@ fn parse_top_str(eon_source: &str) -> Result<TokenTree<'_>> {
     // Usually an Eon file contains a bunch of `key: value` pairs, without any
     // surrounding braces, so we optimize for that case:
     let mut tokens_a = PeekableIter::new(eon_source);
-    match parse_map_contents(&mut tokens_a, 0) {
+    match parse_map_contents(&mut tokens_a, 1) {
         Ok(map) => {
             check_for_trailing_tokens(&mut tokens_a)?;
             let value = TokenTree {
@@ -280,7 +280,7 @@ fn parse_list_contents<'s>(
             });
         }
 
-        let mut value = parse_token_tree(tokens, recurse_depth + 1)?;
+        let mut value = parse_token_tree(tokens, recurse_depth)?;
 
         {
             let mut prefix_comments = prefix_comments;
@@ -323,7 +323,7 @@ fn parse_map_contents<'s>(
             });
         }
 
-        let mut key = parse_token_tree(tokens, recurse_depth + 1)?;
+        let mut key = parse_token_tree(tokens, recurse_depth)?;
         debug_assert!(
             key.prefix_comments.is_empty(),
             "We should have already consumed these"
@@ -332,7 +332,7 @@ fn parse_map_contents<'s>(
 
         consume_token(tokens, TokenKind::Colon)?;
 
-        let mut value = parse_token_tree(tokens, recurse_depth + 1)?;
+        let mut value = parse_token_tree(tokens, recurse_depth)?;
 
         if tokens
             .peek()
@@ -352,7 +352,7 @@ fn parse_token_tree<'s>(
     tokens: &mut PeekableIter<'s>,
     recurse_depth: usize,
 ) -> Result<TokenTree<'s>> {
-    if recurse_depth >= MAX_RECURSION_DEPTH {
+    if recurse_depth > MAX_RECURSION_DEPTH {
         return Err(tokens.error_at(
             tokens.span_of_previous(),
             "Maximum recursion depth exceeded while parsing document",
@@ -510,6 +510,30 @@ fn parse_comments<'s>(tokens: &mut PeekableIter<'s>) -> Vec<&'s str> {
 mod tests {
     use super::*;
 
+    fn nested_map_source(depth: usize) -> String {
+        let mut source = String::from("root: ");
+        for _ in 0..depth {
+            source.push_str("{ inner: ");
+        }
+        source.push('0');
+        for _ in 0..depth {
+            source.push('}');
+        }
+        source
+    }
+
+    fn nested_list_source(depth: usize) -> String {
+        let mut source = String::new();
+        for _ in 0..depth {
+            source.push('[');
+        }
+        source.push('0');
+        for _ in 0..depth {
+            source.push(']');
+        }
+        source
+    }
+
     #[test]
     fn test_parse_map() {
         let input = r#"
@@ -590,5 +614,23 @@ mod tests {
         } else {
             panic!("Expected a map value, got {value:?}");
         }
+    }
+
+    #[test]
+    fn test_depth_limit_counts_root_maps_once() {
+        let allowed = nested_map_source(MAX_RECURSION_DEPTH - 1);
+        parse_top_str(&allowed).unwrap();
+
+        let rejected = nested_map_source(MAX_RECURSION_DEPTH);
+        assert!(parse_top_str(&rejected).is_err());
+    }
+
+    #[test]
+    fn test_depth_limit_counts_root_lists_once() {
+        let allowed = nested_list_source(MAX_RECURSION_DEPTH);
+        parse_top_str(&allowed).unwrap();
+
+        let rejected = nested_list_source(MAX_RECURSION_DEPTH + 1);
+        assert!(parse_top_str(&rejected).is_err());
     }
 }

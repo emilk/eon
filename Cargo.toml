@@ -2,6 +2,7 @@
 resolver = "2"
 members = [
     "crates/eon_core",
+    "crates/eon_formatter_core",
     "crates/eon_syntax",
     "crates/eon",
     "crates/eonfmt",
@@ -24,6 +25,7 @@ version = "0.2.0"
 [workspace.dependencies]
 eon = { path = "crates/eon", version = "0.2.0" }
 eon_core = { path = "crates/eon_core", version = "0.2.0" }
+eon_formatter_core = { path = "crates/eon_formatter_core", version = "0.2.0" }
 eon_syntax = { path = "crates/eon_syntax", version = "0.2.0" }
 
 ariadne = "0.5.1"

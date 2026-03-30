@@ -1,0 +1,23 @@
+[package]
+authors.workspace = true
+categories.workspace = true
+description = "Zero-dependency formatter input model and lexer for Eon"
+edition.workspace = true
+homepage.workspace = true
+include.workspace = true
+keywords.workspace = true
+license.workspace = true
+name = "eon_formatter_core"
+publish = false
+readme = "../../README.md"
+repository.workspace = true
+rust-version.workspace = true
+version.workspace = true
+
+[lints]
+workspace = true
+
+[features]
+default = []
+
+[dependencies]

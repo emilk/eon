@@ -39,6 +39,13 @@ pub struct TokenRef<'stream, 'source> {
 }
 
 impl<'stream, 'source> TokenRef<'stream, 'source> {
+    pub(crate) fn new(stream: &'stream TokenStream<'source>, token_index: usize) -> Self {
+        Self {
+            stream,
+            token_index,
+        }
+    }
+
     /// Zero-based token index within the token stream.
     pub fn index(self) -> usize {
         self.token_index

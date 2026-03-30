@@ -9,6 +9,7 @@
 
 extern crate alloc;
 
+mod document;
 mod error;
 mod format;
 mod lexer;
@@ -19,6 +20,7 @@ mod token;
 mod view;
 
 pub use crate::{
+    document::{Document as RootDocument, DocumentKind, MapEntry, ValueSpan, analyze_document},
     error::{Error, ErrorKind, ParseErrorKind, Result},
     format::{FormatOptions, reformat},
     lexer::lex,

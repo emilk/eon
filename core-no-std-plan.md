@@ -331,6 +331,7 @@ This is the batch I am implementing next.
 
 - [x] `codex1` lane: bootstrap formatter-core parsing/reformatting and switch `eonfmt` to the minimal reusable path
 - [x] `codex2` lane: add formatter-facing token views and trivia classification on top of the flat item stream
+- [x] `codex2` lane: add root document analysis for implicit map/list/value shapes on top of the formatter-core stream
 - [x] `formatter-core`: create a zero-dependency crate for formatting-oriented lexing and token/trivia preservation
 - [x] `formatter-core` input model: borrowed tokens, punctuation, strings, comments, and line-breaking trivia sufficient for reformatting
 - [x] initial test coverage: lexer tests and formatter-input model tests for comments, strings, maps, lists, and variants
@@ -370,5 +371,6 @@ Entries:
 - `2026-03-30 | codex2 | WS4/WS5 | Landed the formatter-core bootstrap crate with a borrowed token/trivia stream, manual lexer, tests, and a wasm check | next slice can build formatter behavior on top of the flat Item stream`
 - `2026-03-30 | codex2 | WS4/WS5 | Started the token-view/trivia-classification slice on top of the flat formatter-core stream | target API: leading-gap classification, suffix-comment detection, token iteration`
 - `2026-03-30 | codex2 | WS4/WS5 | Landed token views, trivia iterators, leading-gap classification, and suffix-comment detection on top of formatter-core | next slice should build the first formatter walker on top of TokenRef APIs`
+- `2026-03-30 | codex2 | WS4/WS5 | Landed root document analysis for implicit map/list/value forms using token spans on top of formatter-core | next slice can build the first root formatter walker against Document/ValueSpan APIs`
 - `2026-03-30 | codex1 | WS4/WS5 | Added formatter-core parsing/reformatting, switched `eonfmt` to depend on `eon_formatter_core`, and verified wasm buildability | follow-up is legacy parity, idempotency, and CLI coverage`
 - `2026-03-30 | codex1 | WS5 | Added `eonfmt` CLI tests for stdin, --check, and directory walking | protects the new formatter boundary and the directory traversal fix`

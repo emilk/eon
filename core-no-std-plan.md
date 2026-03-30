@@ -243,7 +243,7 @@ Tasks:
 - [ ] Keep and extend `bench_core_vs_serde`
 - [ ] Add representative small, medium, and large fixtures
 - [ ] Measure allocation counts on hot paths
-- [ ] Measure `wasm32-unknown-unknown` output size
+- [x] Measure `wasm32-unknown-unknown` output size
 - [ ] Track release binary size for the minimal formatter path
 - [ ] Define acceptable regression thresholds
 
@@ -322,7 +322,7 @@ These are the next concrete tasks after the current formatter-core landing:
 1. [x] Add differential tests against `eon_syntax::reformat` for supported syntax
 2. [x] Add explicit formatter idempotency tests on real fixtures
 3. [x] Add CLI-focused tests for `eonfmt` stdin, `--check`, and directory walking
-4. [ ] Measure wasm artifact size for `eon_formatter_core`
+4. [x] Measure wasm artifact size for `eon_formatter_core`
 5. [ ] Decide which remaining legacy formatting behaviors are compatibility-only
 
 ## Current Implementation Batch
@@ -332,6 +332,7 @@ This is the batch I am implementing next.
 - [x] `codex1` lane: bootstrap formatter-core parsing/reformatting and switch `eonfmt` to the minimal reusable path
 - [x] `codex2` lane: add formatter-facing token views and trivia classification on top of the flat item stream
 - [x] `codex2` lane: add root document analysis for implicit map/list/value shapes on top of the formatter-core stream
+- [x] `codex2` lane: add a reproducible wasm artifact size measurement path for `eon_formatter_core`
 - [x] `formatter-core`: create a zero-dependency crate for formatting-oriented lexing and token/trivia preservation
 - [x] `formatter-core` input model: borrowed tokens, punctuation, strings, comments, and line-breaking trivia sufficient for reformatting
 - [x] initial test coverage: lexer tests and formatter-input model tests for comments, strings, maps, lists, and variants
@@ -375,3 +376,5 @@ Entries:
 - `2026-03-30 | codex1 | WS4/WS5 | Added formatter-core parsing/reformatting, switched `eonfmt` to depend on `eon_formatter_core`, and verified wasm buildability | follow-up is legacy parity, idempotency, and CLI coverage`
 - `2026-03-30 | codex1 | WS5 | Added `eonfmt` CLI tests for stdin, --check, and directory walking | protects the new formatter boundary and the directory traversal fix`
 - `2026-03-30 | codex1 | WS3/WS4 | Added differential reformat parity tests against \`eon_syntax\`, explicit idempotency tests, and canonical root-map formatting parity on the overlapping syntax subset | remaining work is broader legacy behavior review and size/perf tracking`
+- `2026-03-30 | codex2 | WS7/WS9 | Synced to upstream formatter parity landing at 355efc9 and claimed the wasm-size baseline lane for the minimal formatter path | next slice is a reproducible artifact-size measurement for eon_formatter_core`
+- `2026-03-30 | codex2 | WS7/WS9 | Added a wasm-size measurement script and example harness for eon_formatter_core; current baseline is 39618 raw bytes / 17430 gzip bytes | next slice should turn that baseline into an explicit budget or CI gate`

@@ -245,13 +245,14 @@ Tasks:
 - [ ] Measure allocation counts on hot paths
 - [x] Measure `wasm32-unknown-unknown` output size
 - [ ] Track release binary size for the minimal formatter path
-- [ ] Define acceptable regression thresholds
+- [-] Define acceptable regression thresholds
 
 Suggested initial budgets:
 
 - no new external dependencies in `eon_core`
 - no parse throughput regressions on current core benchmarks
 - no unexplained wasm size jumps on the minimal formatter path
+- `eon_formatter_core` wasm size budget: raw `<= 40000` bytes, gzip `<= 18000` bytes
 
 Exit criteria:
 
@@ -305,7 +306,7 @@ Tasks:
 
 - [ ] Add `cargo check -p eon_core --no-default-features`
 - [ ] Add `cargo check -p eon_core --target wasm32-unknown-unknown`
-- [ ] Add minimal formatter wasm check once that crate exists
+- [x] Add minimal formatter wasm check once that crate exists
 - [ ] Run core and adapter tests in CI
 - [ ] Add a fuzz smoke lane
 - [ ] Add benchmark reporting or stored comparison data
@@ -333,6 +334,7 @@ This is the batch I am implementing next.
 - [x] `codex2` lane: add formatter-facing token views and trivia classification on top of the flat item stream
 - [x] `codex2` lane: add root document analysis for implicit map/list/value shapes on top of the formatter-core stream
 - [x] `codex2` lane: add a reproducible wasm artifact size measurement path for `eon_formatter_core`
+- [x] `codex2` lane: add an explicit wasm size budget and CI gate for `eon_formatter_core`
 - [x] `formatter-core`: create a zero-dependency crate for formatting-oriented lexing and token/trivia preservation
 - [x] `formatter-core` input model: borrowed tokens, punctuation, strings, comments, and line-breaking trivia sufficient for reformatting
 - [x] initial test coverage: lexer tests and formatter-input model tests for comments, strings, maps, lists, and variants
@@ -378,3 +380,4 @@ Entries:
 - `2026-03-30 | codex1 | WS3/WS4 | Added differential reformat parity tests against \`eon_syntax\`, explicit idempotency tests, and canonical root-map formatting parity on the overlapping syntax subset | remaining work is broader legacy behavior review and size/perf tracking`
 - `2026-03-30 | codex2 | WS7/WS9 | Synced to upstream formatter parity landing at 355efc9 and claimed the wasm-size baseline lane for the minimal formatter path | next slice is a reproducible artifact-size measurement for eon_formatter_core`
 - `2026-03-30 | codex2 | WS7/WS9 | Added a wasm-size measurement script and example harness for eon_formatter_core; current baseline is 39618 raw bytes / 17430 gzip bytes | next slice should turn that baseline into an explicit budget or CI gate`
+- `2026-03-30 | codex2 | WS7/WS9 | Added a committed wasm budget file, a --check mode for the formatter-core size script, and a rust.yml CI gate enforcing raw <= 40000 / gzip <= 18000 bytes | next non-overlapping CI slice can add eon_core no-default-features and wasm checks`

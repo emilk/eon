@@ -37,6 +37,24 @@ fn always_include_outer_braces_can_force_composite_root_keys() {
 }
 
 #[test]
+fn whitespace_between_key_and_colon_is_canonicalized() {
+    let formatted = reformat("alpha\n: 1", &FormatOptions::default()).unwrap();
+    assert_eq!(formatted, "alpha: 1\n");
+}
+
+#[test]
+fn comments_between_key_and_colon_are_rejected() {
+    let err = reformat("alpha // nope\n: 1", &FormatOptions::default()).unwrap_err();
+    assert!(err.to_string().contains("unexpected ':'"));
+}
+
+#[test]
+fn comments_between_colon_and_value_become_entry_prefix_comments() {
+    let formatted = reformat("alpha:\n// value comment\n1", &FormatOptions::default()).unwrap();
+    assert_eq!(formatted, "// value comment\nalpha: 1\n");
+}
+
+#[test]
 fn bare_identifier_unit_variants_are_a_supported_extension() {
     let formatted = reformat("mode: EnumValue", &FormatOptions::default()).unwrap();
     assert_eq!(formatted, "mode: EnumValue\n");

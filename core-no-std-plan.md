@@ -182,6 +182,8 @@ Current formatter compatibility contract:
   - Single root values with trailing line comments remain single values rather than being rewritten as implicit lists.
   - Empty root maps remain explicit because brace-less output cannot represent them.
   - Non-empty root maps may remain brace-less even when the first key is composite, such as a list, map, or quoted string; callers that want explicit outer braces can opt in with `always_include_outer_braces`.
+  - Plain whitespace and newlines between a map key and its `:` are accepted and canonicalized away, but comments in that position are rejected.
+  - Comments between `:` and the value are accepted, then normalized as prefix comments on the whole key-value entry.
   - Prefix comments stay on preceding lines and suffix comments stay inline with the preceding value.
   - Simple single-line lists and variants use comma-separated formatting, while multiline containers omit commas in canonical output.
 - Intentional extensions beyond the current legacy formatter/parser contract:
@@ -411,3 +413,4 @@ Entries:
 - `2026-03-30 | codex1 | WS3/WS4 | Added broader formatter-core roundtrip coverage for explicit/implicit root lists and fixed the single-map/list variant shortcut to preserve payload comments by falling back to the generic multiline path when payload values carry trivia | deterministic roundtrip coverage is broader, but nested strings/map-key boundaries still need more work`
 - `2026-03-30 | codex1 | WS3 | Added roundtrip coverage for composite root map keys and escaped quoted-string keys | map-key boundary testing is started, but the remaining work is documenting which ambiguous forms are guaranteed versus merely accepted today`
 - `2026-03-31 | codex1 | WS1/WS3/WS4 | Documented that non-empty root maps may remain brace-less even with composite first keys and added contract/roundtrip coverage for composite-key root maps with nested strings/comments | next boundary work is deciding which remaining ambiguous map-key forms are guaranteed versus merely tolerated`
+- `2026-03-31 | codex1 | WS1/WS3/WS4 | Documented the key/colon boundary: whitespace and newlines before ':' are canonicalized, comments there are rejected, and comments after ':' normalize to entry-prefix comments | this narrows the remaining ambiguity work to other still-undocumented map-key forms rather than generic separator trivia`

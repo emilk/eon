@@ -13,12 +13,14 @@ mod error;
 mod lexer;
 mod span;
 mod token;
+mod view;
 
 pub use crate::{
     error::{Error, ErrorKind, Result},
     lexer::lex,
     span::Span,
     token::{Item, StringKind, Token, TokenKind, TokenStream, Trivia, TriviaKind},
+    view::{LeadingTriviaKind, TokenRef, TokenRefs, TriviaIter},
 };
 
 #[cfg(test)]

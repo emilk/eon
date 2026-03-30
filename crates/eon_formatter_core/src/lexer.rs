@@ -36,7 +36,7 @@ impl<'a> Lexer<'a> {
             items.push(Item::Token(self.lex_token()?));
         }
 
-        Ok(TokenStream { items })
+        Ok(TokenStream::new(items))
     }
 
     fn lex_trivia(&mut self, items: &mut Vec<Item<'a>>) -> Result {

@@ -329,7 +329,8 @@ These are the next concrete tasks to start now:
 
 This is the batch I am implementing next.
 
-- [x] `codex2` lane: bootstrap a zero-dependency `formatter-core` crate with a borrowed token/trivia model and lexer tests
+- [x] `codex1` lane: bootstrap a zero-dependency `formatter-core` crate with a borrowed token/trivia model and lexer tests
+- [x] `codex2` lane: add formatter-facing token views and trivia classification on top of the flat item stream
 - [-] `formatter-core`: create a zero-dependency crate for formatting-oriented lexing and token/trivia preservation
 - [-] `formatter-core` input model: borrowed tokens, punctuation, strings, comments, and line-breaking trivia sufficient for reformatting
 - [-] initial test coverage: lexer tests and formatter-input model tests for comments, strings, maps, lists, and variants
@@ -361,9 +362,11 @@ Template:
 
 Entries:
 
-- `2026-03-30 | codex | WS3/WS8 | Pulled latest branch fixes for root implicit list parity and writer hardening | HEAD now ea2f5c1`
-- `2026-03-30 | codex | WS8 | Added fuzz harnesses and fixed multiple parser/formatter/hash bugs found by fuzzing | value-roundtrip harness still intentionally scoped to documented guarantees`
-- `2026-03-30 | codex | WS4/WS5 | Marked the first implementation batch around formatter-core extraction and minimal `eonfmt` path | next code work starts with borrowed formatter input model`
-- `2026-03-30 | codex | WS4/WS5 | Pulled latest plan update and claimed the formatter-core bootstrap lane | immediate slice: zero-dependency crate + borrowed token/trivia lexer + tests`
+- `2026-03-30 | codex1 | WS3/WS8 | Pulled latest branch fixes for root implicit list parity and writer hardening | HEAD now ea2f5c1`
+- `2026-03-30 | codex1 | WS8 | Added fuzz harnesses and fixed multiple parser/formatter/hash bugs found by fuzzing | value-roundtrip harness still intentionally scoped to documented guarantees`
+- `2026-03-30 | codex1 | WS4/WS5 | Marked the first implementation batch around formatter-core extraction and minimal `eonfmt` path | next code work starts with borrowed formatter input model`
+- `2026-03-30 | codex1 | WS4/WS5 | Pulled latest plan update and claimed the formatter-core bootstrap lane | immediate slice: zero-dependency crate + borrowed token/trivia lexer + tests`
 - `2026-03-30 | codex2 | WS4/WS5 | Re-claimed the formatter-core bootstrap lane under explicit owner name | no evidence of a separate codex1 on branch; immediate scope stays lexer/model bootstrap`
 - `2026-03-30 | codex2 | WS4/WS5 | Landed the formatter-core bootstrap crate with a borrowed token/trivia stream, manual lexer, tests, and a wasm check | next slice can build formatter behavior on top of the flat Item stream`
+- `2026-03-30 | codex2 | WS4/WS5 | Started the token-view/trivia-classification slice on top of the flat formatter-core stream | target API: leading-gap classification, suffix-comment detection, token iteration`
+- `2026-03-30 | codex2 | WS4/WS5 | Landed token views, trivia iterators, leading-gap classification, and suffix-comment detection on top of formatter-core | next slice should build the first formatter walker on top of TokenRef APIs`

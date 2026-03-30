@@ -3,10 +3,51 @@ use alloc::vec::Vec;
 use crate::Span;
 
 /// Borrowed formatter input preserving the exact token/trivia order.
-#[derive(Clone, Debug, Default, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct TokenStream<'a> {
     /// Interleaved trivia and tokens as they appeared in the source.
     pub items: Vec<Item<'a>>,
+    pub(crate) token_item_indices: Vec<usize>,
+}
+
+impl<'a> TokenStream<'a> {
+    /// Create a token stream from already lexed items.
+    pub fn new(items: Vec<Item<'a>>) -> Self {
+        let token_item_indices = items
+            .iter()
+            .enumerate()
+            .filter_map(|(index, item)| match item {
+                Item::Token(_) => Some(index),
+                Item::Trivia(_) => None,
+            })
+            .collect();
+
+        Self {
+            items,
+            token_item_indices,
+        }
+    }
+
+    /// The number of syntax tokens in the stream.
+    pub fn token_count(&self) -> usize {
+        self.token_item_indices.len()
+    }
+
+    /// Returns `true` if the stream contains no syntax tokens.
+    pub fn has_no_tokens(&self) -> bool {
+        self.token_item_indices.is_empty()
+    }
+
+    /// Iterate over syntax tokens with formatter-oriented trivia accessors.
+    pub fn tokens(&self) -> crate::TokenRefs<'_, 'a> {
+        crate::TokenRefs::new(self)
+    }
+}
+
+impl<'a> Default for TokenStream<'a> {
+    fn default() -> Self {
+        Self::new(Vec::new())
+    }
 }
 
 /// A single borrowed formatter item.

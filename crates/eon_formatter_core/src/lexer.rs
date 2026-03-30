@@ -344,7 +344,10 @@ mod tests {
             vec![
                 (TokenKind::String(StringKind::Basic), "\"a\""),
                 (TokenKind::String(StringKind::Literal), "'b'"),
-                (TokenKind::String(StringKind::MultilineBasic), "\"\"\"c\"\"\""),
+                (
+                    TokenKind::String(StringKind::MultilineBasic),
+                    "\"\"\"c\"\"\""
+                ),
                 (TokenKind::String(StringKind::MultilineLiteral), "'''d'''"),
             ]
         );

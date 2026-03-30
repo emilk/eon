@@ -10,15 +10,21 @@
 extern crate alloc;
 
 mod error;
+mod format;
 mod lexer;
+mod parse;
 mod span;
+mod syntax;
 mod token;
 mod view;
 
 pub use crate::{
-    error::{Error, ErrorKind, Result},
+    error::{Error, ErrorKind, ParseErrorKind, Result},
+    format::{FormatOptions, reformat},
     lexer::lex,
+    parse::{DEFAULT_MAX_DEPTH, parse_document},
     span::Span,
+    syntax::{Comment, Document, KeyValue, List, Map, Value, ValueTree, Variant, VariantName},
     token::{Item, StringKind, Token, TokenKind, TokenStream, Trivia, TriviaKind},
     view::{LeadingTriviaKind, TokenRef, TokenRefs, TriviaIter},
 };

@@ -1,4 +1,5 @@
 use alloc::vec::Vec;
+use core::fmt;
 
 use crate::Span;
 
@@ -95,6 +96,24 @@ pub enum TokenKind {
     Number,
     /// Any of the four quoted string token families.
     String(StringKind),
+}
+
+impl fmt::Display for TokenKind {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::OpenList => f.write_str("'['"),
+            Self::CloseList => f.write_str("']'"),
+            Self::OpenBrace => f.write_str("'{'"),
+            Self::CloseBrace => f.write_str("'}'"),
+            Self::OpenParen => f.write_str("'('"),
+            Self::CloseParen => f.write_str("')'"),
+            Self::Colon => f.write_str("':'"),
+            Self::Comma => f.write_str("','"),
+            Self::Identifier => f.write_str("identifier"),
+            Self::Number => f.write_str("number"),
+            Self::String(_) => f.write_str("string"),
+        }
+    }
 }
 
 /// The supported quoted string token families.

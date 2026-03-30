@@ -70,8 +70,8 @@ fn format_stdin(check_mode: bool) -> i32 {
         return 1;
     }
 
-    let options = eon_syntax::FormatOptions::default();
-    match eon_syntax::reformat(&input, &options) {
+    let options = eon_formatter_core::FormatOptions::default();
+    match eon_formatter_core::reformat(&input, &options) {
         Ok(formatted) => {
             if check_mode {
                 if input == formatted {
@@ -117,7 +117,7 @@ fn format_files(paths: &[&str], extension: &str, check_mode: bool) -> i32 {
                     Ok(entry) => {
                         let entry_path = entry.path();
                         if entry_path.is_file() && has_extension(entry_path, extension) {
-                            file_paths.push(path.to_path_buf());
+                            file_paths.push(entry_path.to_path_buf());
                         }
                     }
                     Err(err) => {
@@ -181,15 +181,16 @@ fn has_extension(entry_path: &Path, extension: &str) -> bool {
     }
 }
 
-fn process_file(path: &Path, check_mode: bool) -> Result<bool, Box<dyn std::error::Error>> {
-    let content = fs::read_to_string(path)?;
-    let options = eon_syntax::FormatOptions::default();
-    let formatted = eon_syntax::reformat(&content, &options)?;
+fn process_file(path: &Path, check_mode: bool) -> Result<bool, String> {
+    let content = fs::read_to_string(path).map_err(|err| err.to_string())?;
+    let options = eon_formatter_core::FormatOptions::default();
+    let formatted =
+        eon_formatter_core::reformat(&content, &options).map_err(|err| err.to_string())?;
 
     let needs_formatting = content != formatted;
 
     if needs_formatting && !check_mode {
-        fs::write(path, formatted)?;
+        fs::write(path, formatted).map_err(|err| err.to_string())?;
     }
 
     Ok(needs_formatting)

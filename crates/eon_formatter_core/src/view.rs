@@ -1,6 +1,4 @@
-use crate::{
-    Item, Token, TokenStream, Trivia, TriviaKind,
-};
+use crate::{Item, Token, TokenStream, Trivia, TriviaKind};
 
 /// Iterate over the syntax tokens in a [`TokenStream`].
 pub struct TokenRefs<'stream, 'source> {
@@ -126,7 +124,11 @@ pub struct TriviaIter<'stream, 'source> {
 }
 
 impl<'stream, 'source> TriviaIter<'stream, 'source> {
-    fn new(items: &'stream [Item<'source>], start_item_index: usize, end_item_index: usize) -> Self {
+    fn new(
+        items: &'stream [Item<'source>],
+        start_item_index: usize,
+        end_item_index: usize,
+    ) -> Self {
         Self {
             items,
             next_item_index: start_item_index,
@@ -182,7 +184,10 @@ mod tests {
 
         let one = tokens[2];
         assert_eq!(one.token().raw, "1");
-        assert_eq!(one.suffix_comment().map(|comment| comment.raw), Some("// suffix"));
+        assert_eq!(
+            one.suffix_comment().map(|comment| comment.raw),
+            Some("// suffix")
+        );
 
         let next = tokens[3];
         assert_eq!(next.token().raw, "next");

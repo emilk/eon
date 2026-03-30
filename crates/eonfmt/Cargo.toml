@@ -27,7 +27,7 @@ default = []
 
 
 [dependencies]
-eon_syntax.workspace = true
+eon_formatter_core.workspace = true
 
 clap.workspace = true
 ignore.workspace = true

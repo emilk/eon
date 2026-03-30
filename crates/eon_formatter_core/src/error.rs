@@ -1,28 +1,34 @@
 use core::fmt;
 
-use crate::Span;
+use crate::{Span, TokenKind};
 
-/// Result alias used by the formatter-oriented lexer.
+/// Result alias used by formatter-core APIs.
 pub type Result<T = ()> = core::result::Result<T, Error>;
 
-/// A lexer error with a source span.
+/// A formatter-core error with a source span.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct Error {
-    /// The byte span where lexing failed.
+    /// The byte span where lexing or parsing failed.
     pub span: Span,
-    /// The reason lexing failed.
+    /// The reason lexing or parsing failed.
     pub kind: ErrorKind,
 }
 
 impl Error {
-    /// Create a new lexer error.
+    /// Create a new formatter-core error.
     #[inline]
     pub const fn new(span: Span, kind: ErrorKind) -> Self {
         Self { span, kind }
     }
+
+    /// Create a new parse error.
+    #[inline]
+    pub const fn parse(span: Span, kind: ParseErrorKind) -> Self {
+        Self::new(span, ErrorKind::Parse(kind))
+    }
 }
 
-/// The formatter-core lexer error kinds.
+/// The formatter-core error kinds.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum ErrorKind {
     /// Found an unexpected byte token.
@@ -31,6 +37,25 @@ pub enum ErrorKind {
     UnterminatedString,
     /// Hidden Unicode that can disguise malicious content is not allowed.
     DisallowedInvisibleUnicode(char),
+    /// Parser or formatter-tree construction failure.
+    Parse(ParseErrorKind),
+}
+
+/// Syntax errors produced while building the formatter-oriented tree.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum ParseErrorKind {
+    /// Expected a value token.
+    ExpectedValue,
+    /// Expected a specific syntax token.
+    ExpectedToken(TokenKind),
+    /// Found a token that is not valid at this position.
+    UnexpectedToken(TokenKind),
+    /// Closing token did not match the current container.
+    Unbalanced(TokenKind),
+    /// Extra tokens remained after parsing the root document.
+    TrailingTokens,
+    /// Nesting depth exceeded the supported parser bound.
+    MaxDepthExceeded,
 }
 
 impl fmt::Display for ErrorKind {
@@ -43,6 +68,20 @@ impl fmt::Display for ErrorKind {
                 "Invisible Unicode character U+{:04X} is not allowed in Eon source because it can hide malicious content",
                 *chr as u32
             ),
+            Self::Parse(kind) => kind.fmt(f),
+        }
+    }
+}
+
+impl fmt::Display for ParseErrorKind {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::ExpectedValue => f.write_str("expected a value"),
+            Self::ExpectedToken(kind) => write!(f, "expected {kind}"),
+            Self::UnexpectedToken(kind) => write!(f, "unexpected {kind}"),
+            Self::Unbalanced(kind) => write!(f, "unbalanced {kind}"),
+            Self::TrailingTokens => f.write_str("expected end of document"),
+            Self::MaxDepthExceeded => f.write_str("maximum recursion depth exceeded"),
         }
     }
 }

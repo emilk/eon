@@ -163,12 +163,12 @@ Deliverables:
 
 Tasks:
 
-- [-] Decide the formatter input model
-- [-] Introduce a lightweight trivia-preserving token stream if needed
-- [ ] Port core formatting logic out of `eon_syntax`
-- [ ] Preserve or intentionally redefine formatting behavior case by case
-- [ ] Add formatter idempotency tests
-- [ ] Add browser/wasm build validation for the minimal formatter
+- [x] Decide the formatter input model
+- [x] Introduce a lightweight trivia-preserving token stream if needed
+- [x] Port core formatting logic out of `eon_syntax`
+- [-] Preserve or intentionally redefine formatting behavior case by case
+- [-] Add formatter idempotency tests
+- [x] Add browser/wasm build validation for the minimal formatter
 
 Decision to make:
 
@@ -193,10 +193,10 @@ Deliverables:
 
 Tasks:
 
-- [-] Move formatting logic out of the current `eonfmt` binary path
-- [ ] Keep `clap` and `ignore` in CLI-only code
-- [ ] Expose a small formatting API for library and wasm use
-- [ ] Add tests for CLI behavior separately from formatter behavior
+- [x] Move formatting logic out of the current `eonfmt` binary path
+- [x] Keep `clap` and `ignore` in CLI-only code
+- [x] Expose a small formatting API for library and wasm use
+- [x] Add tests for CLI behavior separately from formatter behavior
 
 Exit criteria:
 
@@ -317,25 +317,25 @@ Exit criteria:
 
 ## Immediate Next Steps
 
-These are the next concrete tasks to start now:
+These are the next concrete tasks after the current formatter-core landing:
 
-1. [-] Define the formatter input model for the minimal path
-2. [-] Extract or design the smallest trivia-preserving representation needed for formatting
-3. [-] Implement the first formatter-core crate or module behind that representation
-4. [ ] Wire `eonfmt` to the new formatter core while keeping the CLI wrapper thin
-5. [ ] Add wasm build checks for the new formatter core
+1. [ ] Add differential tests against `eon_syntax::reformat` for supported syntax
+2. [ ] Add explicit formatter idempotency tests on real fixtures
+3. [ ] Add CLI-focused tests for `eonfmt` stdin, `--check`, and directory walking
+4. [ ] Measure wasm artifact size for `eon_formatter_core`
+5. [ ] Decide which remaining legacy formatting behaviors are compatibility-only
 
 ## Current Implementation Batch
 
 This is the batch I am implementing next.
 
-- [x] `codex1` lane: bootstrap a zero-dependency `formatter-core` crate with a borrowed token/trivia model and lexer tests
+- [x] `codex1` lane: bootstrap formatter-core parsing/reformatting and switch `eonfmt` to the minimal reusable path
 - [x] `codex2` lane: add formatter-facing token views and trivia classification on top of the flat item stream
-- [-] `formatter-core`: create a zero-dependency crate for formatting-oriented lexing and token/trivia preservation
-- [-] `formatter-core` input model: borrowed tokens, punctuation, strings, comments, and line-breaking trivia sufficient for reformatting
-- [-] initial test coverage: lexer tests and formatter-input model tests for comments, strings, maps, lists, and variants
-- [ ] `eonfmt` integration: switch the CLI to the new formatter core after the first formatting slice is working
-- [ ] wasm validation: add `wasm32-unknown-unknown` checks once the formatter core API exists
+- [x] `formatter-core`: create a zero-dependency crate for formatting-oriented lexing and token/trivia preservation
+- [x] `formatter-core` input model: borrowed tokens, punctuation, strings, comments, and line-breaking trivia sufficient for reformatting
+- [x] initial test coverage: lexer tests and formatter-input model tests for comments, strings, maps, lists, and variants
+- [x] `eonfmt` integration: switch the CLI to the new formatter core after the first formatting slice is working
+- [x] wasm validation: add `wasm32-unknown-unknown` checks once the formatter core API exists
 
 ## Parallelization Notes
 
@@ -370,3 +370,5 @@ Entries:
 - `2026-03-30 | codex2 | WS4/WS5 | Landed the formatter-core bootstrap crate with a borrowed token/trivia stream, manual lexer, tests, and a wasm check | next slice can build formatter behavior on top of the flat Item stream`
 - `2026-03-30 | codex2 | WS4/WS5 | Started the token-view/trivia-classification slice on top of the flat formatter-core stream | target API: leading-gap classification, suffix-comment detection, token iteration`
 - `2026-03-30 | codex2 | WS4/WS5 | Landed token views, trivia iterators, leading-gap classification, and suffix-comment detection on top of formatter-core | next slice should build the first formatter walker on top of TokenRef APIs`
+- `2026-03-30 | codex1 | WS4/WS5 | Added formatter-core parsing/reformatting, switched `eonfmt` to depend on `eon_formatter_core`, and verified wasm buildability | follow-up is legacy parity, idempotency, and CLI coverage`
+- `2026-03-30 | codex1 | WS5 | Added `eonfmt` CLI tests for stdin, --check, and directory walking | protects the new formatter boundary and the directory traversal fix`

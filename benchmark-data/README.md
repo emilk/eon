@@ -7,7 +7,7 @@ performance promises.
 
 Measured configuration:
 
-- Source commit under test: `477118a`
+- Source commit under test: `8ba27dd`
 - Date: `2026-03-31`
 - Toolchain: `1.85.0`
 - Command runner: [run_benchmark_baseline.sh](../scripts/run_benchmark_baseline.sh)
@@ -17,24 +17,24 @@ Measured configuration:
 
 | benchmark | mean |
 | --- | --- |
-| `bench_full_parse` | `24.03 ms` |
-| `bench_tokenizer` | `12.71 ms` |
+| `bench_full_parse` | `7.526 ms` |
+| `bench_tokenizer` | `3.758 ms` |
 
 ## bench_core_vs_serde
 
 | benchmark | mean | mean throughput |
 | --- | --- | --- |
-| `parse_typed_core_on_core_syntax` | `38.29 ms` | `22.93 MB/s` |
-| `parse_typed_core_on_serde_syntax` | `38.86 ms` | `25.77 MB/s` |
-| `parse_typed_serde` | `49.3 ms` | `20.31 MB/s` |
-| `parse_value_core_on_core_syntax` | `44.43 ms` | `19.76 MB/s` |
-| `parse_value_core_on_serde_syntax` | `46.22 ms` | `21.67 MB/s` |
-| `parse_value_default` | `63.52 ms` | `15.76 MB/s` |
-| `stringify_typed_core_direct` | `5.166 ms` | `170 MB/s` |
-| `stringify_typed_serde` | `85.16 ms` | `11.76 MB/s` |
-| `stringify_typed_via_core_format` | `38.75 ms` | `22.66 MB/s` |
-| `stringify_value_core` | `9.814 ms` | `89.48 MB/s` |
-| `stringify_value_default` | `60.83 ms` | `16.46 MB/s` |
+| `parse_typed_core_on_core_syntax` | `7.227 ms` | `121.5 MB/s` |
+| `parse_typed_core_on_serde_syntax` | `7.386 ms` | `135.6 MB/s` |
+| `parse_typed_serde` | `11.81 ms` | `84.81 MB/s` |
+| `parse_value_core_on_core_syntax` | `8.949 ms` | `98.13 MB/s` |
+| `parse_value_core_on_serde_syntax` | `8.865 ms` | `112.9 MB/s` |
+| `parse_value_default` | `14.29 ms` | `70.06 MB/s` |
+| `stringify_typed_core_direct` | `1.859 ms` | `472.3 MB/s` |
+| `stringify_typed_serde` | `14.26 ms` | `70.23 MB/s` |
+| `stringify_typed_via_core_format` | `6.795 ms` | `129.2 MB/s` |
+| `stringify_value_core` | `2.399 ms` | `366 MB/s` |
+| `stringify_value_default` | `9.606 ms` | `104.2 MB/s` |
 
 Use these values for relative comparisons when extending the core-backed path.
 If the benchmark configuration changes, update this file together with the

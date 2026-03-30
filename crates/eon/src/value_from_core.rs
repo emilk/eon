@@ -1,12 +1,14 @@
-use std::str::FromStr as _;
+use std::{borrow::Cow, str::FromStr as _};
 
 use eon_core::{
-    Event, EventSink, ParseError, Scalar, Span as CoreSpan, SpannedEvent, StringToken, VariantName,
-    parse,
+    Event, EventSink, ParseError, Scalar, Span as CoreSpan, SpannedEvent, VariantName, parse,
 };
-use eon_syntax::{Span, unescape_and_unquote};
+use eon_syntax::Span;
 
-use crate::{Error, Map, Number, Result, Value, Variant};
+use crate::{
+    Error, Map, Number, Result, Value, Variant,
+    core_string::{decode_string_token, decode_variant_name},
+};
 
 /// Parse an Eon document into an owned [`Value`] using the experimental
 /// `eon_core` event parser instead of the existing `eon_syntax` parser.
@@ -194,11 +196,9 @@ impl ValueCollector {
         name: VariantName<'_>,
         span: CoreSpan,
     ) -> core::result::Result<(), CollectError> {
-        let name = match name {
-            VariantName::Identifier(identifier) => identifier.to_owned(),
-            VariantName::String(StringToken { raw, .. }) => unescape_and_unquote(raw)
-                .map_err(|err| CollectError::at(span, CollectErrorKind::InvalidString(err)))?,
-        };
+        let name = decode_variant_name(name)
+            .map(Cow::into_owned)
+            .map_err(|err| CollectError::at(span, CollectErrorKind::InvalidString(err)))?;
 
         self.stack.push(Frame::Variant {
             name,
@@ -311,7 +311,8 @@ fn scalar_to_value(
             .map(Value::Number)
             .map_err(|err| CollectError::at(span, CollectErrorKind::InvalidNumber(err))),
         Scalar::Identifier(identifier) => Ok(Value::new_variant(identifier.to_owned(), vec![])),
-        Scalar::String(StringToken { raw, .. }) => unescape_and_unquote(raw)
+        Scalar::String(token) => decode_string_token(token)
+            .map(Cow::into_owned)
             .map(Value::String)
             .map_err(|err| CollectError::at(span, CollectErrorKind::InvalidString(err))),
     }
@@ -329,7 +330,8 @@ fn scalar_to_key_value(
         Scalar::Number(raw) => Number::from_str(raw)
             .map(Value::Number)
             .map_err(|err| CollectError::at(span, CollectErrorKind::InvalidNumber(err))),
-        Scalar::String(StringToken { raw, .. }) => unescape_and_unquote(raw)
+        Scalar::String(token) => decode_string_token(token)
+            .map(Cow::into_owned)
             .map(Value::String)
             .map_err(|err| CollectError::at(span, CollectErrorKind::InvalidString(err))),
     }

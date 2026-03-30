@@ -151,7 +151,7 @@ Tasks:
 
 - [ ] Audit every allocation in `eon_core`
 - [ ] Keep identifiers, numbers, comments, and unescaped strings borrowed
-- [ ] Represent escaped strings as raw slice plus "needs decode" metadata
+- [x] Represent escaped strings as raw slice plus "needs decode" metadata
 - [ ] Avoid building owned `Value` trees on the critical path unless requested
 - [x] Add tests that prove borrowed paths work across representative inputs
 
@@ -458,3 +458,4 @@ Entries:
 - `2026-03-31 | codex2 | WS7/WS9 | Added scripts/run_benchmark_baseline.sh and benchmark-data/README.md with a reproducible local baseline for bench_parse and bench_core_vs_serde at 477118a | next performance slice is release-size tracking or stronger benchmark automation`
 - `2026-03-31 | codex1 | WS1/WS3 | Aligned the compact owned/typed core writers with parser and formatter-core root-map semantics: empty root maps now stay explicit as '{}' and composite first keys no longer force outer braces; added direct regression coverage for both serializers and exact-roundtrip tests for the owned Value path | next semantics work is to review any remaining implementation-tolerated ambiguities that still are not either guaranteed or explicitly excluded`
 - `2026-03-31 | codex1 | WS2 | Added borrowed-slice parser tests in eon_core covering identifiers, numbers, raw escaped strings, and quoted variant heads, so the zero-copy contract is now enforced on representative common tokens | next zero-copy work is the actual allocation audit and deciding whether escaped-string metadata should become more explicit than the current raw-token model`
+- `2026-03-31 | codex1 | WS2 | Added a deferred-decode string API on eon_core::StringToken and taught the core-backed eon adapters to borrow literal/no-escape string contents via Cow where possible, only falling back to full unescape for real escape/CRLF cases | next zero-copy work is the remaining allocation audit around owned Value construction and typed core tree materialization`

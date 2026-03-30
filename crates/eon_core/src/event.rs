@@ -81,6 +81,45 @@ pub struct StringToken<'a> {
     pub kind: StringKind,
 }
 
+impl<'a> StringToken<'a> {
+    /// Returns the decoded string contents as a borrowed slice when no
+    /// unescaping or line-ending normalization is required.
+    ///
+    /// This is the zero-copy fast path for higher layers. Strings containing
+    /// `\r` return `None` so callers can preserve the current CRLF
+    /// normalization behavior by falling back to a slower decoder.
+    #[must_use]
+    pub fn decoded_if_borrowed(&self) -> Option<&'a str> {
+        let inner = match self.kind {
+            StringKind::Basic => self.raw.strip_prefix('"')?.strip_suffix('"')?,
+            StringKind::Literal => self.raw.strip_prefix('\'')?.strip_suffix('\'')?,
+            StringKind::MultilineBasic => {
+                self.raw.strip_prefix("\"\"\"")?.strip_suffix("\"\"\"")?
+            }
+            StringKind::MultilineLiteral => self.raw.strip_prefix("'''")?.strip_suffix("'''")?,
+        };
+
+        if inner.contains('\r') {
+            return None;
+        }
+
+        match self.kind {
+            StringKind::Basic | StringKind::MultilineBasic => {
+                (!inner.contains('\\')).then_some(inner)
+            }
+            StringKind::Literal => Some(inner),
+            StringKind::MultilineLiteral => Some(inner.strip_prefix('\n').unwrap_or(inner)),
+        }
+    }
+
+    /// Returns `true` when decoding the token requires escape handling or line
+    /// ending normalization.
+    #[must_use]
+    pub fn requires_decoding(&self) -> bool {
+        self.decoded_if_borrowed().is_none()
+    }
+}
+
 /// A scalar token borrowed from the input.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Scalar<'a> {
@@ -103,4 +142,53 @@ pub enum VariantName<'a> {
     Identifier(&'a str),
     /// A quoted name for non-identifier variant names.
     String(StringToken<'a>),
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{StringKind, StringToken};
+
+    #[test]
+    fn decoded_if_borrowed_handles_unescaped_basic_strings() {
+        let token = StringToken {
+            raw: "\"hello\"",
+            kind: StringKind::Basic,
+        };
+
+        assert_eq!(token.decoded_if_borrowed(), Some("hello"));
+        assert!(!token.requires_decoding());
+    }
+
+    #[test]
+    fn decoded_if_borrowed_rejects_escaped_basic_strings() {
+        let token = StringToken {
+            raw: "\"he\\nllo\"",
+            kind: StringKind::Basic,
+        };
+
+        assert_eq!(token.decoded_if_borrowed(), None);
+        assert!(token.requires_decoding());
+    }
+
+    #[test]
+    fn decoded_if_borrowed_handles_multiline_literal_leading_newline() {
+        let token = StringToken {
+            raw: "'''\nhello'''",
+            kind: StringKind::MultilineLiteral,
+        };
+
+        assert_eq!(token.decoded_if_borrowed(), Some("hello"));
+        assert!(!token.requires_decoding());
+    }
+
+    #[test]
+    fn decoded_if_borrowed_rejects_crlf_normalization_cases() {
+        let token = StringToken {
+            raw: "\"\"\"hello\r\nworld\"\"\"",
+            kind: StringKind::MultilineBasic,
+        };
+
+        assert_eq!(token.decoded_if_borrowed(), None);
+        assert!(token.requires_decoding());
+    }
 }

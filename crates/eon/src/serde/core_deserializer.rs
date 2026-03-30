@@ -1,17 +1,20 @@
-use std::collections::HashSet;
 use std::str::FromStr as _;
+use std::{borrow::Cow, collections::HashSet};
 
 use eon_core::{
     Event, EventSink, ParseError, Scalar, Span as CoreSpan, SpannedEvent, StringToken, VariantName,
     parse,
 };
-use eon_syntax::{Span, unescape_and_unquote};
+use eon_syntax::Span;
 use serde::{
     Deserializer as _,
     de::{self, Error as _, Visitor},
 };
 
-use crate::{Map, Number, Value};
+use crate::{
+    Map, Number, Value,
+    core_string::{decode_string_token, decode_variant_name},
+};
 
 use super::deserializer::DeserError;
 
@@ -369,14 +372,17 @@ impl<'tree, 'de> de::Deserializer<'de> for NodeDeserializer<'tree, 'de> {
             NodeValue::Bool(value) => visitor.visit_bool(*value),
             NodeValue::Identifier(identifier) => visitor.visit_borrowed_str(identifier),
             NodeValue::Number(num_str) => visit_number(span, num_str, visitor),
-            NodeValue::String(StringToken { raw, .. }) => unescape_and_unquote(raw)
+            NodeValue::String(token) => decode_string_token(*token)
                 .map_err(|err| {
                     DeserError::new(
                         span,
-                        format!("Failed to unescape quoted string: {raw:?}: {err}"),
+                        format!("Failed to unescape quoted string: {:?}: {err}", token.raw),
                     )
                 })
-                .and_then(|unescaped| visitor.visit_string(unescaped)),
+                .and_then(|unescaped| match unescaped {
+                    Cow::Borrowed(unescaped) => visitor.visit_borrowed_str(unescaped),
+                    Cow::Owned(unescaped) => visitor.visit_string(unescaped),
+                }),
             NodeValue::List(list) => visitor.visit_seq(ListAccessor(list)),
             NodeValue::Map(map) => visitor.visit_map(MapAccessor {
                 kvs: map,
@@ -418,18 +424,21 @@ impl<'tree, 'de> de::Deserializer<'de> for NodeDeserializer<'tree, 'de> {
                 values = &[][..];
                 *identifier
             }
-            NodeValue::String(StringToken { raw, .. }) => {
+            NodeValue::String(token) => {
                 values = &[][..];
-                let unescaped = unescape_and_unquote(raw).map_err(|err| {
+                let unescaped = decode_string_token(*token).map_err(|err| {
                     DeserError::new(
                         self.value.span,
-                        format!("Failed to unescape quoted name: {raw:?}: {err}"),
+                        format!("Failed to unescape quoted name: {:?}: {err}", token.raw),
                     )
                 })?;
-                let Some(name) = variant_names.iter().find(|&&name| name == unescaped) else {
+                let Some(name) = variant_names
+                    .iter()
+                    .find(|&&name| name == unescaped.as_ref())
+                else {
                     return Err(DeserError::new(
                         self.value.span,
-                        format!("Expected one of: {variant_names:?}, got: {raw}"),
+                        format!("Expected one of: {variant_names:?}, got: {}", token.raw),
                     ));
                 };
                 return visitor.visit_enum(EnumAccessor {
@@ -441,31 +450,29 @@ impl<'tree, 'de> de::Deserializer<'de> for NodeDeserializer<'tree, 'de> {
             NodeValue::Variant(variant) => {
                 values = variant.values.as_slice();
 
-                match variant.name {
-                    VariantName::Identifier(identifier) => identifier,
-                    VariantName::String(StringToken { raw, .. }) => {
-                        let unescaped = unescape_and_unquote(raw).map_err(|err| {
-                            DeserError::new(
-                                self.value.span,
-                                format!("Failed to unescape quoted name: {raw:?}: {err}"),
-                            )
-                        })?;
+                let decoded = decode_variant_name(variant.name).map_err(|err| {
+                    DeserError::new(
+                        self.value.span,
+                        format!("Failed to unescape quoted name: {:?}: {err}", variant.name),
+                    )
+                })?;
 
-                        let Some(name) = variant_names.iter().find(|&&name| name == unescaped)
-                        else {
-                            return Err(DeserError::new(
-                                self.value.span,
-                                format!("Expected one of: {variant_names:?}, got: {raw}"),
-                            ));
-                        };
+                let Some(name) = variant_names.iter().find(|&&name| name == decoded.as_ref())
+                else {
+                    return Err(DeserError::new(
+                        self.value.span,
+                        format!(
+                            "Expected one of: {variant_names:?}, got: {}",
+                            decoded.as_ref()
+                        ),
+                    ));
+                };
 
-                        return visitor.visit_enum(EnumAccessor {
-                            name_span: self.value.span,
-                            name,
-                            values,
-                        });
-                    }
-                }
+                return visitor.visit_enum(EnumAccessor {
+                    name_span: self.value.span,
+                    name,
+                    values,
+                });
             }
             _ => {
                 return Err(DeserError::new(
@@ -753,14 +760,15 @@ fn node_to_value(node: &Node<'_>, position: ValuePosition) -> Result<Value> {
         NodeValue::Number(raw) => Number::from_str(raw)
             .map(Value::Number)
             .map_err(|err| DeserError::new(node.span, err)),
-        NodeValue::String(StringToken { raw, .. }) => {
-            unescape_and_unquote(raw).map(Value::String).map_err(|err| {
+        NodeValue::String(token) => decode_string_token(*token)
+            .map(Cow::into_owned)
+            .map(Value::String)
+            .map_err(|err| {
                 DeserError::new(
                     node.span,
-                    format!("Failed to unescape quoted string: {raw:?}: {err}"),
+                    format!("Failed to unescape quoted string: {:?}: {err}", token.raw),
                 )
-            })
-        }
+            }),
         NodeValue::List(list) => list
             .iter()
             .map(|value| node_to_value(value, ValuePosition::Value))
@@ -778,17 +786,14 @@ fn node_to_value(node: &Node<'_>, position: ValuePosition) -> Result<Value> {
             Ok(Value::Map(out))
         }
         NodeValue::Variant(variant) => {
-            let name = match variant.name {
-                VariantName::Identifier(identifier) => identifier.to_owned(),
-                VariantName::String(StringToken { raw, .. }) => {
-                    unescape_and_unquote(raw).map_err(|err| {
-                        DeserError::new(
-                            node.span,
-                            format!("Failed to unescape quoted name: {raw:?}: {err}"),
-                        )
-                    })?
-                }
-            };
+            let name = decode_variant_name(variant.name)
+                .map(Cow::into_owned)
+                .map_err(|err| {
+                    DeserError::new(
+                        node.span,
+                        format!("Failed to unescape quoted name: {:?}: {err}", variant.name),
+                    )
+                })?;
 
             let values = variant
                 .values

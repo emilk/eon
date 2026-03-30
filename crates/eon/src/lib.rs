@@ -52,6 +52,7 @@
 #![cfg_attr(feature = "document-features", doc = document_features::document_features!())]
 #![warn(missing_docs)] // let's keep eon well-documented
 
+mod core_string;
 mod token_tree_from_value;
 mod value;
 mod value_from_core;

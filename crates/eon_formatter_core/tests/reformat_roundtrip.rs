@@ -42,3 +42,47 @@ fn nested_variant_with_closing_comments_is_stable() {
     let twice = reformat(&once, &FormatOptions::default()).unwrap();
     assert_eq!(twice, once, "canonical form:\n{once}");
 }
+
+#[test]
+fn variant_map_payload_prefix_comments_are_preserved() {
+    let input = r#"
+        mode: EnumValue(
+            // payload
+            {
+                alpha: 1
+            }
+        )
+    "#;
+
+    let expected = "mode: EnumValue(\n\t// payload\n\t{\n\t\talpha: 1\n\t}\n)\n";
+    assert_reformat_roundtrip(input, expected);
+}
+
+#[test]
+fn variant_list_payload_prefix_comments_are_preserved() {
+    let input = r#"
+        mode: EnumValue(
+            // payload
+            [
+                1
+            ]
+        )
+    "#;
+
+    let expected = "mode: EnumValue(\n\t// payload\n\t[1]\n)\n";
+    assert_reformat_roundtrip(input, expected);
+}
+
+#[test]
+fn implicit_root_list_with_trailing_comment_is_stable() {
+    let input = "1\n2\n// tail\n";
+    let expected = "[\n\t1\n\t2\n\n\t// tail\n]";
+    assert_reformat_roundtrip(input, expected);
+}
+
+#[test]
+fn explicit_root_list_with_trailing_comment_stays_explicit() {
+    let input = "[1]\n// tail\n";
+    let expected = "[1]\n// tail\n";
+    assert_reformat_roundtrip(input, expected);
+}

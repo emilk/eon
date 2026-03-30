@@ -244,6 +244,10 @@ impl<'o> Formatter<'o> {
             return;
         }
 
+        let single_comment_free_payload = variant.values.len() == 1
+            && variant.values[0].prefix_comments.is_empty()
+            && variant.values[0].suffix_comment.is_none();
+
         if should_format_variant_on_one_line(variant) {
             self.write_variant_name(variant.name);
             self.out.push('(');
@@ -255,7 +259,7 @@ impl<'o> Formatter<'o> {
             }
             self.out.push(')');
         } else if variant.closing_comments.is_empty()
-            && variant.values.len() == 1
+            && single_comment_free_payload
             && matches!(variant.values[0].value, Value::Map(_))
         {
             let Value::Map(map) = &variant.values[0].value else {
@@ -275,7 +279,7 @@ impl<'o> Formatter<'o> {
                 self.out.push_str("})");
             }
         } else if variant.closing_comments.is_empty()
-            && variant.values.len() == 1
+            && single_comment_free_payload
             && matches!(variant.values[0].value, Value::List(_))
         {
             let Value::List(list) = &variant.values[0].value else {

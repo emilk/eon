@@ -142,7 +142,7 @@ Tasks:
 - [x] Differential tests for legacy vs core on supported overlapping syntax
 - [x] Roundtrip tests for root value, implicit map, and implicit list documents
 - [ ] Roundtrip tests for variants, lists, maps, strings, and comments where applicable
-- [ ] Document and test map-key ambiguity boundaries
+- [-] Document and test map-key ambiguity boundaries
 - [ ] Keep writer behavior deterministic for all supported cases
 
 Exit criteria:
@@ -408,3 +408,4 @@ Entries:
 - `2026-03-30 | codex2 | WS8/WS9 | Added scripts/run_fuzz_smoke.sh and a rust.yml fuzz smoke job that builds all fuzz targets, replays seeded corpora, and runs deterministic one-step checks for corpus-less harnesses | next CI/release-gap is benchmark reporting or stored comparison data`
 - `2026-03-30 | codex1 | WS3/WS4 | Added root/container roundtrip coverage and fixed formatter-core root trailing-comment handling | single root values no longer get wrapped as implicit lists, explicit empty root maps stay explicit, and root-map trailing comments are now canonical and idempotent`
 - `2026-03-30 | codex1 | WS3/WS4 | Added broader formatter-core roundtrip coverage for explicit/implicit root lists and fixed the single-map/list variant shortcut to preserve payload comments by falling back to the generic multiline path when payload values carry trivia | deterministic roundtrip coverage is broader, but nested strings/map-key boundaries still need more work`
+- `2026-03-30 | codex1 | WS3 | Added roundtrip coverage for composite root map keys and escaped quoted-string keys | map-key boundary testing is started, but the remaining work is documenting which ambiguous forms are guaranteed versus merely accepted today`

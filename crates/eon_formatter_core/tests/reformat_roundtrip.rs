@@ -86,3 +86,24 @@ fn explicit_root_list_with_trailing_comment_stays_explicit() {
     let expected = "[1]\n// tail\n";
     assert_reformat_roundtrip(input, expected);
 }
+
+#[test]
+fn root_map_with_explicit_map_key_is_stable() {
+    let input = "{ { alpha: 1 }: 2 }\n";
+    let expected = "{\n\talpha: 1\n}: 2\n";
+    assert_reformat_roundtrip(input, expected);
+}
+
+#[test]
+fn root_map_with_list_key_is_stable() {
+    let input = "{ [1, 2]: 3 }\n";
+    let expected = "[1, 2]: 3\n";
+    assert_reformat_roundtrip(input, expected);
+}
+
+#[test]
+fn escaped_string_keys_are_stable() {
+    let input = "{ \"line\\nfeed\": 1 }\n";
+    let expected = "\"line\\nfeed\": 1\n";
+    assert_reformat_roundtrip(input, expected);
+}

@@ -91,6 +91,19 @@ jobs:
           command: test
           args: --workspace
 
+  fuzz_smoke:
+    name: Fuzz Smoke
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: 1.85.0
+          override: true
+      - name: Run fuzz smoke lane
+        run: ./scripts/run_fuzz_smoke.sh
+
   fmt:
     name: Rustfmt
     runs-on: ubuntu-latest

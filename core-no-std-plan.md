@@ -324,7 +324,7 @@ Tasks:
 - [x] Add `cargo check -p eon_core --target wasm32-unknown-unknown`
 - [x] Add minimal formatter wasm check once that crate exists
 - [x] Run core and adapter tests in CI
-- [ ] Add a fuzz smoke lane
+- [x] Add a fuzz smoke lane
 - [ ] Add benchmark reporting or stored comparison data
 
 Exit criteria:
@@ -353,6 +353,7 @@ This is the batch I am implementing next.
 - [x] `codex2` lane: add an explicit wasm size budget and CI gate for `eon_formatter_core`
 - [x] `codex2` lane: add `eon_core` minimal-path CI checks for `--no-default-features` and `wasm32-unknown-unknown`
 - [x] `codex2` lane: broaden CI from library-only tests to workspace core/adapter coverage
+- [x] `codex2` lane: add a stable fuzz smoke lane that replays corpora and runs deterministic one-step fuzz harness checks in CI
 - [x] `formatter-core`: create a zero-dependency crate for formatting-oriented lexing and token/trivia preservation
 - [x] `formatter-core` input model: borrowed tokens, punctuation, strings, comments, and line-breaking trivia sufficient for reformatting
 - [x] initial test coverage: lexer tests and formatter-input model tests for comments, strings, maps, lists, and variants
@@ -402,3 +403,4 @@ Entries:
 - `2026-03-30 | codex1 | WS4 | Documented the formatter compatibility contract and locked intentional extensions/non-goals with targeted tests | broader legacy behavior review still remains open where not yet covered by parity tests`
 - `2026-03-30 | codex2 | WS9 | Added rust.yml CI coverage for eon_core on --no-default-features and wasm32-unknown-unknown after verifying both commands locally | next CI gap is broader core/adapter test coverage and fuzz smoke`
 - `2026-03-30 | codex2 | WS9 | Switched rust.yml test coverage from cargo test --lib to cargo test --workspace so formatter-core, adapter, and CLI integration tests run in CI | next CI gap is a fuzz smoke lane or benchmark reporting`
+- `2026-03-30 | codex2 | WS8/WS9 | Added scripts/run_fuzz_smoke.sh and a rust.yml fuzz smoke job that builds all fuzz targets, replays seeded corpora, and runs deterministic one-step checks for corpus-less harnesses | next CI/release-gap is benchmark reporting or stored comparison data`

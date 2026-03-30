@@ -48,6 +48,7 @@ vec1.workspace = true
 
 [dev-dependencies]
 divan.workspace = true
+eon_formatter_core.workspace = true
 insta.workspace = true
 serde = { workspace = true, features = ["derive"] }
 

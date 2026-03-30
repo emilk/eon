@@ -174,6 +174,22 @@ Decision to make:
 
 - Can formatting be built from a core token/trivia layer without carrying the full current syntax tree?
 
+Current formatter compatibility contract:
+
+- Required compatibility on the tested overlapping syntax subset:
+  - `eon_formatter_core::reformat` should match `eon_syntax::reformat` output for root maps, root scalars, root lists, quoted variants, and comment-placement cases covered by differential tests.
+  - Root maps are canonicalized without outer braces by default, matching the legacy formatter.
+  - Prefix comments stay on preceding lines and suffix comments stay inline with the preceding value.
+  - Simple single-line lists and variants use comma-separated formatting, while multiline containers omit commas in canonical output.
+- Intentional extensions beyond the current legacy formatter/parser contract:
+  - Bare identifier variant heads in value position are accepted and formatted as variants, e.g. `EnumValue` and `EnumValue(...)`.
+  - Quoted variant heads remain supported for compatibility.
+  - Variant payload parentheses must remain inline with the variant head; comments or newlines between the head and `(` are rejected.
+- Explicitly not guaranteed today:
+  - Byte-for-byte preservation of original commas, braces, or whitespace/trivia.
+  - Matching legacy error messages.
+  - Full legacy parity outside the documented and tested overlapping syntax subset.
+
 Exit criteria:
 
 - the reusable formatter library has no CLI-only dependencies
@@ -324,7 +340,7 @@ These are the next concrete tasks after the current formatter-core landing:
 2. [x] Add explicit formatter idempotency tests on real fixtures
 3. [x] Add CLI-focused tests for `eonfmt` stdin, `--check`, and directory walking
 4. [x] Measure wasm artifact size for `eon_formatter_core`
-5. [ ] Decide which remaining legacy formatting behaviors are compatibility-only
+5. [x] Decide which remaining legacy formatting behaviors are compatibility-only
 
 ## Current Implementation Batch
 
@@ -381,3 +397,4 @@ Entries:
 - `2026-03-30 | codex2 | WS7/WS9 | Synced to upstream formatter parity landing at 355efc9 and claimed the wasm-size baseline lane for the minimal formatter path | next slice is a reproducible artifact-size measurement for eon_formatter_core`
 - `2026-03-30 | codex2 | WS7/WS9 | Added a wasm-size measurement script and example harness for eon_formatter_core; current baseline is 39618 raw bytes / 17430 gzip bytes | next slice should turn that baseline into an explicit budget or CI gate`
 - `2026-03-30 | codex2 | WS7/WS9 | Added a committed wasm budget file, a --check mode for the formatter-core size script, and a rust.yml CI gate enforcing raw <= 40000 / gzip <= 18000 bytes | next non-overlapping CI slice can add eon_core no-default-features and wasm checks`
+- `2026-03-30 | codex1 | WS4 | Documented the formatter compatibility contract and locked intentional extensions/non-goals with targeted tests | broader legacy behavior review still remains open where not yet covered by parity tests`

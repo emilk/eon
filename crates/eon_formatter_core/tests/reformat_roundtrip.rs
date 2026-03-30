@@ -107,3 +107,19 @@ fn escaped_string_keys_are_stable() {
     let expected = "\"line\\nfeed\": 1\n";
     assert_reformat_roundtrip(input, expected);
 }
+
+#[test]
+fn nested_strings_comments_and_composite_root_keys_are_stable() {
+    let input = r#"
+        { [1, 2]: {
+            "line\nfeed": [
+                EnumValue
+                // list tail
+            ]
+            // map tail
+        } }
+    "#;
+
+    let expected = "[1, 2]: {\n\t\"line\\nfeed\": [\n\t\tEnumValue\n\n\t\t// list tail\n\t]\n\n\t// map tail\n}\n";
+    assert_reformat_roundtrip(input, expected);
+}

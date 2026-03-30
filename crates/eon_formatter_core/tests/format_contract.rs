@@ -19,6 +19,24 @@ fn always_include_outer_braces_preserves_root_map_container() {
 }
 
 #[test]
+fn composite_root_keys_remain_braceless_by_default() {
+    let formatted = reformat("{ [1, 2]: 3 }", &FormatOptions::default()).unwrap();
+    assert_eq!(formatted, "[1, 2]: 3\n");
+}
+
+#[test]
+fn always_include_outer_braces_can_force_composite_root_keys() {
+    let document = parse_document("{ [1, 2]: 3 }").unwrap();
+    let options = FormatOptions {
+        always_include_outer_braces: true,
+        ..FormatOptions::default()
+    };
+
+    let formatted = document.format(&options);
+    assert_eq!(formatted, "{\n\t[1, 2]: 3\n}");
+}
+
+#[test]
 fn bare_identifier_unit_variants_are_a_supported_extension() {
     let formatted = reformat("mode: EnumValue", &FormatOptions::default()).unwrap();
     assert_eq!(formatted, "mode: EnumValue\n");

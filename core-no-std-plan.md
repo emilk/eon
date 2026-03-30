@@ -139,8 +139,8 @@ Deliverables:
 
 Tasks:
 
-- [ ] Differential tests for legacy vs core on supported overlapping syntax
-- [ ] Roundtrip tests for root value, implicit map, and implicit list documents
+- [x] Differential tests for legacy vs core on supported overlapping syntax
+- [-] Roundtrip tests for root value, implicit map, and implicit list documents
 - [ ] Roundtrip tests for variants, lists, maps, strings, and comments where applicable
 - [ ] Document and test map-key ambiguity boundaries
 - [ ] Keep writer behavior deterministic for all supported cases
@@ -167,7 +167,7 @@ Tasks:
 - [x] Introduce a lightweight trivia-preserving token stream if needed
 - [x] Port core formatting logic out of `eon_syntax`
 - [-] Preserve or intentionally redefine formatting behavior case by case
-- [-] Add formatter idempotency tests
+- [x] Add formatter idempotency tests
 - [x] Add browser/wasm build validation for the minimal formatter
 
 Decision to make:
@@ -319,9 +319,9 @@ Exit criteria:
 
 These are the next concrete tasks after the current formatter-core landing:
 
-1. [ ] Add differential tests against `eon_syntax::reformat` for supported syntax
-2. [ ] Add explicit formatter idempotency tests on real fixtures
-3. [ ] Add CLI-focused tests for `eonfmt` stdin, `--check`, and directory walking
+1. [x] Add differential tests against `eon_syntax::reformat` for supported syntax
+2. [x] Add explicit formatter idempotency tests on real fixtures
+3. [x] Add CLI-focused tests for `eonfmt` stdin, `--check`, and directory walking
 4. [ ] Measure wasm artifact size for `eon_formatter_core`
 5. [ ] Decide which remaining legacy formatting behaviors are compatibility-only
 
@@ -374,3 +374,4 @@ Entries:
 - `2026-03-30 | codex2 | WS4/WS5 | Landed root document analysis for implicit map/list/value forms using token spans on top of formatter-core | next slice can build the first root formatter walker against Document/ValueSpan APIs`
 - `2026-03-30 | codex1 | WS4/WS5 | Added formatter-core parsing/reformatting, switched `eonfmt` to depend on `eon_formatter_core`, and verified wasm buildability | follow-up is legacy parity, idempotency, and CLI coverage`
 - `2026-03-30 | codex1 | WS5 | Added `eonfmt` CLI tests for stdin, --check, and directory walking | protects the new formatter boundary and the directory traversal fix`
+- `2026-03-30 | codex1 | WS3/WS4 | Added differential reformat parity tests against \`eon_syntax\`, explicit idempotency tests, and canonical root-map formatting parity on the overlapping syntax subset | remaining work is broader legacy behavior review and size/perf tracking`

@@ -296,6 +296,9 @@ version = "0.2.0"
 [[package]]
 name = "eon_formatter_core"
 version = "0.2.0"
+dependencies = [
+ "eon_syntax",
+]
 
 [[package]]
 name = "eon_lsp"

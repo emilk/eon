@@ -21,3 +21,6 @@ workspace = true
 default = []
 
 [dependencies]
+
+[dev-dependencies]
+eon_syntax.workspace = true

@@ -49,9 +49,12 @@ impl Document<'_> {
     pub fn format(&self, options: &FormatOptions) -> String {
         let mut formatter = Formatter::new(options);
 
-        if self.implicit_root_map && !formatter.options.always_include_outer_braces {
+        if !formatter.options.always_include_outer_braces {
+            // Match the legacy formatter's canonical root-map shape and omit
+            // outer braces for any document whose root value is a map.
             let Value::Map(map) = &self.root.value else {
-                unreachable!("implicit root map must contain a map");
+                formatter.indented_value(&self.root);
+                return formatter.finish();
             };
 
             formatter.indented_comments(&self.root.prefix_comments);
@@ -421,7 +424,7 @@ mod tests {
         let formatted = reformat(input, &FormatOptions::default()).unwrap();
         assert_eq!(
             formatted,
-            "// This comment is outside the outermost map.\n{\n\t// This comment proceeds the first key-value pair.\n\tkey: true // Suffix comment\n\n\t// Comment about the second key-value pair.\n\t// Very weird comment\n\tkey: null\n\tempty_map: {}\n\tempty_list: []\n\tshort_list: [1, 2, 3]\n\tvariants: [\n\t\t\"zero_variant\"\n\t\t\"one_variant\"(true)\n\t\t\"three_variant\"(1, 2, 3)\n\t\t\"map_variant\"({\n\t\t\t\"key\": \"value\"\n\t\t\t\"another_key\": 42\n\t\t})\n\t\t\"list_variant\"([\n\t\t\t\"doc\"\n\t\t\t\"grumpy\"\n\t\t\t\"happy\"\n\t\t\t\"sleepy\"\n\t\t\t\"sneezy\"\n\t\t\t\"bashful\"\n\t\t\t\"dopey\"\n\t\t])\n\t]\n}"
+            "// This comment is outside the outermost map.\n// This comment proceeds the first key-value pair.\nkey: true // Suffix comment\n\n// Comment about the second key-value pair.\n// Very weird comment\nkey: null\nempty_map: {}\nempty_list: []\nshort_list: [1, 2, 3]\nvariants: [\n\t\"zero_variant\"\n\t\"one_variant\"(true)\n\t\"three_variant\"(1, 2, 3)\n\t\"map_variant\"({\n\t\t\"key\": \"value\"\n\t\t\"another_key\": 42\n\t})\n\t\"list_variant\"([\n\t\t\"doc\"\n\t\t\"grumpy\"\n\t\t\"happy\"\n\t\t\"sleepy\"\n\t\t\"sneezy\"\n\t\t\"bashful\"\n\t\t\"dopey\"\n\t])\n]\n"
         );
     }
 }

@@ -126,9 +126,11 @@ Current semantics draft:
   - Formatter-core canonical output is idempotent on the tested subset of root maps/lists/values, variants, strings, comments, and composite-root-key shapes.
   - Exact owned `Value` roundtrip through the compact core path is expected on the tested subset except for the explicit exclusions below.
   - Exact owned `Value` roundtrip through the legacy formatter/parser path is expected on the tested subset except for the explicit exclusions below.
+  - For owned `Value` roundtrip checks, "exact" means `Value` equality after parse/serialize, not preservation of original source spelling or internal numeric storage kind.
 - Current explicit non-guarantees and tolerated boundaries:
   - Exact owned legacy `Value::format` roundtrip is not guaranteed for unit variants with empty payloads; they serialize as quoted strings.
   - Exact owned legacy/core `Value` roundtrip is not guaranteed for `null`/`true`/`false` in map-key position; both parse paths canonicalize those keys to strings.
+  - Exact owned `Value` roundtrip does not imply preservation of lexical number spelling or `f32` vs `f64` internal storage identity.
   - Byte-for-byte preservation of commas, braces, indentation, or trivia is not guaranteed.
   - Legacy parity is guaranteed only on the documented and tested overlapping formatter subset.
   - Remaining unsupported or merely tolerated ambiguous forms should be promoted into this list as fuzz/property exclusions are reviewed.
@@ -329,7 +331,7 @@ Tasks:
 - [ ] Keep byte-level parser fuzzing in place
 - [ ] Keep hidden-Unicode rejection fuzzing in place
 - [ ] Keep typed-path fuzzing in place
-- [-] Stabilize value-roundtrip fuzzing around documented guarantees
+- [x] Stabilize value-roundtrip fuzzing around documented guarantees
 - [ ] Add every real fuzz-found bug as a normal regression test
 - [ ] Add longer-running fuzz jobs outside the fast CI lane
 
@@ -451,4 +453,5 @@ Entries:
 - `2026-03-31 | codex1 | WS3 | Added formatter-core roundtrip coverage for literal keys plus multiline basic/literal string tokens in both key and value position | string-family coverage is broader, but full writer determinism across all nested shapes is still not declared complete`
 - `2026-03-31 | codex1 | WS1/WS8 | Documented and regression-tested the owned-Value exact-roundtrip exclusions already assumed by fuzzing: legacy unit variants collapse to strings, and core keyword map keys canonicalize to string keys | next contract work is to decide whether any additional fuzz exclusions should be promoted to documented non-guarantees`
 - `2026-03-31 | codex1 | WS1/WS8 | Added a short semantics draft to the tracker and tightened the documented exact-roundtrip exclusions: legacy and core keyword map keys canonicalize to strings, legacy unit variants collapse to strings, and fuzz-contract comments now point at tested behavior | next semantics work is to finish the remaining unsupported/tolerated ambiguity list rather than leave it implied`
+- `2026-03-31 | codex1 | WS1/WS8 | Clarified that owned-Value 'exact roundtrip' means Value equality rather than source spelling or numeric storage identity, and marked the value-roundtrip fuzz contract task complete | next semantics work is to review whether any remaining exclusions still need to be promoted from implementation detail to documented non-guarantee`
 - `2026-03-31 | codex2 | WS7/WS9 | Added scripts/run_benchmark_baseline.sh and benchmark-data/README.md with a reproducible local baseline for bench_parse and bench_core_vs_serde at 477118a | next performance slice is release-size tracking or stronger benchmark automation`

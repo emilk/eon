@@ -16,6 +16,8 @@ fuzz_target!(|data: &[u8]| {
         let core_text = value.to_string_with_core();
         let reparsed_core = Value::from_str_with_core(&core_text)
             .expect("core serializer output should parse with the core parser");
+        // "Exact" here means Value equality after parse/serialize, not
+        // preservation of source spelling or internal numeric storage kind.
         assert_eq!(reparsed_core, value);
     }
 
@@ -24,6 +26,8 @@ fuzz_target!(|data: &[u8]| {
         let reparsed_legacy: Value = legacy_text
             .parse()
             .expect("legacy formatter output should parse with the legacy parser");
+        // "Exact" here means Value equality after parse/serialize, not
+        // preservation of source spelling or internal numeric storage kind.
         assert_eq!(reparsed_legacy, value);
     }
 });

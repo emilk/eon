@@ -50,20 +50,33 @@ impl Document<'_> {
         let mut formatter = Formatter::new(options);
 
         if !formatter.options.always_include_outer_braces {
-            // Match the legacy formatter's canonical root-map shape and omit
-            // outer braces for any document whose root value is a map.
-            let Value::Map(map) = &self.root.value else {
-                formatter.indented_value(&self.root);
-                return formatter.finish();
-            };
-
-            formatter.indented_comments(&self.root.prefix_comments);
-            formatter.map_content(map);
-            formatter.suffix_comment(self.root.suffix_comment);
-            return formatter.finish();
+            if let Value::Map(map) = &self.root.value {
+                if !map.key_values.is_empty() {
+                    // Match the legacy formatter's canonical root-map shape
+                    // and omit outer braces for non-empty root maps.
+                    //
+                    // Empty root maps cannot be represented without braces, so
+                    // keep them explicit even when outer braces are normally
+                    // omitted.
+                    formatter.indented_comments(&self.root.prefix_comments);
+                    formatter.map_content(map);
+                    if self.root.suffix_comment.is_some() || !self.trailing_comments.is_empty() {
+                        formatter.newline();
+                    }
+                    formatter.trailing_comments(
+                        self.root.suffix_comment,
+                        &self.trailing_comments,
+                    );
+                    return formatter.finish();
+                }
+            }
         }
 
         formatter.indented_value(&self.root);
+        if !self.trailing_comments.is_empty() {
+            formatter.newline();
+            formatter.indented_comments(&self.trailing_comments);
+        }
         formatter.finish()
     }
 }
@@ -117,6 +130,16 @@ impl<'o> Formatter<'o> {
             self.out.push_str(&self.options.space_before_suffix_comment);
             self.out.push_str(comment);
         }
+    }
+
+    fn trailing_comments(&mut self, suffix_comment: Option<&str>, trailing_comments: &[&str]) {
+        if let Some(comment) = suffix_comment {
+            self.add_indent();
+            self.out.push_str(comment);
+            self.newline();
+        }
+
+        self.indented_comments(trailing_comments);
     }
 
     fn value(&mut self, value: &Value<'_>) {
@@ -380,6 +403,24 @@ mod tests {
         let formatted =
             reformat("EnumValue({ foo: [1, 2, 3] })", &FormatOptions::default()).unwrap();
         assert_eq!(formatted, "EnumValue({\n\tfoo: [1, 2, 3]\n})");
+    }
+
+    #[test]
+    fn reformat_keeps_empty_root_map_explicit() {
+        let formatted = reformat("{}", &FormatOptions::default()).unwrap();
+        assert_eq!(formatted, "{}");
+    }
+
+    #[test]
+    fn reformat_root_map_suffix_comment_becomes_trailing_comment_line() {
+        let formatted = reformat("{ alpha: 1 } // tail", &FormatOptions::default()).unwrap();
+        assert_eq!(formatted, "alpha: 1\n\n// tail\n");
+    }
+
+    #[test]
+    fn reformat_single_root_value_keeps_trailing_comments_without_wrapping() {
+        let formatted = reformat("1\n// tail\n", &FormatOptions::default()).unwrap();
+        assert_eq!(formatted, "1\n// tail\n");
     }
 
     #[test]

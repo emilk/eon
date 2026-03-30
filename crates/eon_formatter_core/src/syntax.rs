@@ -10,6 +10,8 @@ pub struct Document<'a> {
     pub root: ValueTree<'a>,
     /// Whether the root map was implicit rather than surrounded by `{}`.
     pub implicit_root_map: bool,
+    /// Comments that appear on lines after a single root value.
+    pub trailing_comments: Vec<Comment<'a>>,
 }
 
 /// A syntax value plus attached comments.

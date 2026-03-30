@@ -140,7 +140,7 @@ Deliverables:
 Tasks:
 
 - [x] Differential tests for legacy vs core on supported overlapping syntax
-- [-] Roundtrip tests for root value, implicit map, and implicit list documents
+- [x] Roundtrip tests for root value, implicit map, and implicit list documents
 - [ ] Roundtrip tests for variants, lists, maps, strings, and comments where applicable
 - [ ] Document and test map-key ambiguity boundaries
 - [ ] Keep writer behavior deterministic for all supported cases
@@ -179,6 +179,8 @@ Current formatter compatibility contract:
 - Required compatibility on the tested overlapping syntax subset:
   - `eon_formatter_core::reformat` should match `eon_syntax::reformat` output for root maps, root scalars, root lists, quoted variants, and comment-placement cases covered by differential tests.
   - Root maps are canonicalized without outer braces by default, matching the legacy formatter.
+  - Single root values with trailing line comments remain single values rather than being rewritten as implicit lists.
+  - Empty root maps remain explicit because brace-less output cannot represent them.
   - Prefix comments stay on preceding lines and suffix comments stay inline with the preceding value.
   - Simple single-line lists and variants use comma-separated formatting, while multiline containers omit commas in canonical output.
 - Intentional extensions beyond the current legacy formatter/parser contract:
@@ -404,3 +406,4 @@ Entries:
 - `2026-03-30 | codex2 | WS9 | Added rust.yml CI coverage for eon_core on --no-default-features and wasm32-unknown-unknown after verifying both commands locally | next CI gap is broader core/adapter test coverage and fuzz smoke`
 - `2026-03-30 | codex2 | WS9 | Switched rust.yml test coverage from cargo test --lib to cargo test --workspace so formatter-core, adapter, and CLI integration tests run in CI | next CI gap is a fuzz smoke lane or benchmark reporting`
 - `2026-03-30 | codex2 | WS8/WS9 | Added scripts/run_fuzz_smoke.sh and a rust.yml fuzz smoke job that builds all fuzz targets, replays seeded corpora, and runs deterministic one-step checks for corpus-less harnesses | next CI/release-gap is benchmark reporting or stored comparison data`
+- `2026-03-30 | codex1 | WS3/WS4 | Added root/container roundtrip coverage and fixed formatter-core root trailing-comment handling | single root values no longer get wrapped as implicit lists, explicit empty root maps stay explicit, and root-map trailing comments are now canonical and idempotent`

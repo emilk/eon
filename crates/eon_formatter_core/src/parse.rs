@@ -141,6 +141,7 @@ impl<'a, 'd> Parser<'a, 'd> {
         Ok(Document {
             root: Value::Map(map).into(),
             implicit_root_map: true,
+            trailing_comments: Vec::new(),
         })
     }
 
@@ -150,7 +151,7 @@ impl<'a, 'd> Parser<'a, 'd> {
             return Err(self.parse_error_current(ParseErrorKind::TrailingTokens));
         }
 
-        if list.values.len() == 1 && list.closing_comments.is_empty() {
+        if list.values.len() == 1 {
             let root = list
                 .values
                 .into_iter()
@@ -159,11 +160,13 @@ impl<'a, 'd> Parser<'a, 'd> {
             Ok(Document {
                 root,
                 implicit_root_map: false,
+                trailing_comments: list.closing_comments,
             })
         } else {
             Ok(Document {
                 root: Value::List(list).into(),
                 implicit_root_map: false,
+                trailing_comments: Vec::new(),
             })
         }
     }
@@ -397,6 +400,7 @@ mod tests {
             panic!("expected root map");
         };
 
+        assert!(document.trailing_comments.is_empty());
         assert_eq!(map.key_values.len(), 1);
         assert_eq!(
             map.key_values[0].key.prefix_comments,
@@ -427,5 +431,13 @@ mod tests {
     fn parse_comments_before_variant_payload_are_rejected() {
         let err = parse_document("\"Rgb\" // nope\n({ r: 1 })").unwrap_err();
         assert!(err.to_string().contains("unexpected '('"));
+    }
+
+    #[test]
+    fn parse_single_root_value_keeps_trailing_line_comments() {
+        let document = parse_document("1\n// tail\n").unwrap();
+
+        assert_eq!(document.root.value, Value::Number("1"));
+        assert_eq!(document.trailing_comments, alloc::vec!["// tail"]);
     }
 }

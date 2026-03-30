@@ -38,6 +38,7 @@ impl From<fmt::Error> for SerializeError {
 /// Compact event-driven Eon writer with a fixed-size stack.
 pub struct EventWriter<W, const N: usize> {
     writer: W,
+    root: Frame,
     frames: [Frame; N],
     depth: usize,
 }
@@ -50,6 +51,7 @@ where
     pub fn new(writer: W) -> Self {
         Self {
             writer,
+            root: Frame::Root { has_value: false },
             frames: [Frame::Root { has_value: false }; N],
             depth: 0,
         }
@@ -65,14 +67,14 @@ where
                     ));
                 }
                 self.before_value_start()?;
-                if !implicit {
-                    self.writer.write_char('{')?;
-                }
                 self.push(Frame::Map {
                     implicit,
                     entries: 0,
                     phase: MapPhase::ExpectKeyMarker,
                 })?;
+                if !implicit {
+                    self.writer.write_char('{')?;
+                }
             }
             Event::EndMap => {
                 let frame = self.pop()?;
@@ -95,7 +97,7 @@ where
                 self.value_completed()?;
             }
             Event::MapKey => {
-                let (entries, phase) = match self.frames[self.depth] {
+                let (entries, phase) = match self.top() {
                     Frame::Map { entries, phase, .. } => (entries, phase),
                     _ => {
                         return Err(SerializeError::UnexpectedEvent("map-key outside of a map"));
@@ -110,13 +112,13 @@ where
                     self.writer.write_str(", ")?;
                 }
 
-                let Frame::Map { phase, .. } = &mut self.frames[self.depth] else {
+                let Frame::Map { phase, .. } = self.top_mut() else {
                     return Err(SerializeError::UnexpectedEvent("map-key outside of a map"));
                 };
                 *phase = MapPhase::WritingKey;
             }
             Event::MapValue => {
-                let phase = match self.frames[self.depth] {
+                let phase = match self.top() {
                     Frame::Map { phase, .. } => phase,
                     _ => {
                         return Err(SerializeError::UnexpectedEvent(
@@ -132,7 +134,7 @@ where
 
                 self.writer.write_str(": ")?;
 
-                let Frame::Map { phase, .. } = &mut self.frames[self.depth] else {
+                let Frame::Map { phase, .. } = self.top_mut() else {
                     return Err(SerializeError::UnexpectedEvent(
                         "map-value outside of a map",
                     ));
@@ -141,8 +143,8 @@ where
             }
             Event::BeginList => {
                 self.before_value_start()?;
-                self.writer.write_char('[')?;
                 self.push(Frame::List { first: true })?;
+                self.writer.write_char('[')?;
             }
             Event::EndList => {
                 let Frame::List { .. } = self.pop()? else {
@@ -155,9 +157,9 @@ where
             }
             Event::BeginVariant { name } => {
                 self.before_value_start()?;
+                self.push(Frame::Variant { first: true })?;
                 self.write_variant_name(name)?;
                 self.writer.write_char('(')?;
-                self.push(Frame::Variant { first: true })?;
             }
             Event::EndVariant => {
                 let Frame::Variant { .. } = self.pop()? else {
@@ -184,7 +186,7 @@ where
             return Err(SerializeError::IncompleteDocument);
         }
 
-        match self.frames[0] {
+        match self.root {
             Frame::Root { has_value: true } => Ok(self.writer),
             Frame::Root { has_value: false } => Err(SerializeError::IncompleteDocument),
             _ => Err(SerializeError::IncompleteDocument),
@@ -192,7 +194,7 @@ where
     }
 
     fn before_value_start(&mut self) -> Result<(), SerializeError> {
-        match self.frames[self.depth] {
+        match self.top() {
             Frame::Root { has_value: false } => Ok(()),
             Frame::Root { has_value: true } => Err(SerializeError::UnexpectedEvent(
                 "multiple root values are not allowed",
@@ -201,7 +203,7 @@ where
                 if !first {
                     self.writer.write_str(", ")?;
                 }
-                let Frame::List { first } = &mut self.frames[self.depth] else {
+                let Frame::List { first } = self.top_mut() else {
                     unreachable!();
                 };
                 *first = false;
@@ -211,7 +213,7 @@ where
                 if !first {
                     self.writer.write_str(", ")?;
                 }
-                let Frame::Variant { first } = &mut self.frames[self.depth] else {
+                let Frame::Variant { first } = self.top_mut() else {
                     unreachable!();
                 };
                 *first = false;
@@ -260,8 +262,8 @@ where
         if self.depth + 1 >= N {
             return Err(SerializeError::DepthLimitExceeded);
         }
-        self.depth += 1;
         self.frames[self.depth] = frame;
+        self.depth += 1;
         Ok(())
     }
 
@@ -271,13 +273,26 @@ where
                 "attempted to close the root frame",
             ));
         }
-        let frame = self.frames[self.depth];
         self.depth -= 1;
+        let frame = self.frames[self.depth];
+        self.frames[self.depth] = Frame::Root { has_value: false };
         Ok(frame)
     }
 
+    fn top(&self) -> Frame {
+        if self.depth == 0 {
+            self.root
+        } else {
+            self.frames[self.depth - 1]
+        }
+    }
+
     fn top_mut(&mut self) -> &mut Frame {
-        &mut self.frames[self.depth]
+        if self.depth == 0 {
+            &mut self.root
+        } else {
+            &mut self.frames[self.depth - 1]
+        }
     }
 
     fn write_scalar(&mut self, scalar: Scalar<'_>) -> Result<(), SerializeError> {
@@ -331,7 +346,7 @@ enum MapPhase {
 mod tests {
     use std::string::String;
 
-    use crate::{Event, EventWriter, Scalar};
+    use crate::{Event, EventWriter, Scalar, SerializeError};
 
     #[test]
     fn writes_compact_map_and_variant() {
@@ -352,5 +367,25 @@ mod tests {
         writer.write(Event::EndMap).unwrap();
         writer.finish().unwrap();
         assert_eq!(out, "some_enum: EnumValue()");
+    }
+
+    #[test]
+    fn zero_capacity_writer_supports_scalar_roots() {
+        let mut out = String::new();
+        let mut writer = EventWriter::<_, 0>::new(&mut out);
+        writer.write(Event::Scalar(Scalar::Null)).unwrap();
+        writer.finish().unwrap();
+        assert_eq!(out, "null");
+    }
+
+    #[test]
+    fn zero_capacity_writer_rejects_containers_without_panicking() {
+        let mut out = String::new();
+        let mut writer = EventWriter::<_, 0>::new(&mut out);
+        assert_eq!(
+            writer.write(Event::BeginList),
+            Err(SerializeError::DepthLimitExceeded)
+        );
+        assert_eq!(out, "");
     }
 }

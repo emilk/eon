@@ -78,3 +78,10 @@ fn test_typed_core_parse_root_map_matches_expected_shape() {
         BTreeMap::from([("alpha".to_owned(), 1_u32), ("beta".to_owned(), 2_u32)])
     );
 }
+
+#[test]
+fn test_typed_core_parse_root_implicit_list_matches_legacy_parser() {
+    let parsed: Vec<u32> = experimental::from_str_with_core("1, 2 3").unwrap();
+
+    assert_eq!(parsed, vec![1, 2, 3]);
+}

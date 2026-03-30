@@ -56,6 +56,13 @@ where
     Parser::new(source, sink, max_depth).parse_document()
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum DocumentKind {
+    ImplicitMap,
+    Value,
+    ImplicitList,
+}
+
 struct Parser<'a, S> {
     source: &'a str,
     bytes: &'a [u8],
@@ -82,21 +89,22 @@ where
         self.skip_ws_comments()?;
 
         if self.is_eof() {
+            self.check_depth(1)?;
             self.emit(Span::new(0, 0), Event::BeginMap { implicit: true })?;
             self.emit(Span::new(0, 0), Event::EndMap)?;
             return Ok(());
         }
 
-        let implicit_map = {
+        let document_kind = {
             let mut probe = Parser::new(self.source, NoopSink, self.max_depth);
             probe.skip_ws_comments()?;
-            probe.looks_like_implicit_map()?
+            probe.lookahead_document_kind()?
         };
 
-        if implicit_map {
-            self.parse_implicit_map(0)?;
-        } else {
-            self.parse_value(0)?;
+        match document_kind {
+            DocumentKind::ImplicitMap => self.parse_implicit_map(1)?,
+            DocumentKind::Value => self.parse_value(0)?,
+            DocumentKind::ImplicitList => self.parse_implicit_list(1)?,
         }
 
         self.skip_ws_comments()?;
@@ -110,13 +118,9 @@ where
         }
     }
 
-    fn looks_like_implicit_map(&mut self) -> Result<bool> {
+    fn lookahead_document_kind(&mut self) -> Result<DocumentKind> {
         if self.is_eof() {
-            return Ok(true);
-        }
-
-        if self.peek_byte() == Some(b'{') {
-            return Ok(false);
+            return Ok(DocumentKind::ImplicitMap);
         }
 
         self.parse_value(0).map_err(|err| match err {
@@ -125,7 +129,11 @@ where
         })?;
 
         self.skip_ws_comments()?;
-        Ok(self.peek_byte() == Some(b':'))
+        Ok(match self.peek_byte() {
+            Some(b':') => DocumentKind::ImplicitMap,
+            Some(_) => DocumentKind::ImplicitList,
+            None => DocumentKind::Value,
+        })
     }
 
     fn parse_implicit_map(
@@ -144,13 +152,34 @@ where
             }
 
             self.emit(self.current_span(), Event::MapKey)?;
-            self.parse_value(depth + 1)?;
+            self.parse_value(depth)?;
 
             self.skip_ws_comments()?;
             self.expect_byte(b':')?;
             self.emit(Span::new(self.pos - 1, self.pos), Event::MapValue)?;
 
-            self.parse_value(depth + 1)?;
+            self.parse_value(depth)?;
+            self.skip_ws_comments()?;
+            let _ = self.consume_byte(b',');
+        }
+    }
+
+    fn parse_implicit_list(
+        &mut self,
+        depth: usize,
+    ) -> core::result::Result<(), ParseError<S::Error>> {
+        self.check_depth(depth)?;
+        let span = Span::new(self.pos, self.pos);
+        self.emit(span, Event::BeginList)?;
+
+        loop {
+            self.skip_ws_comments()?;
+            if self.is_eof() {
+                self.emit(Span::new(self.pos, self.pos), Event::EndList)?;
+                return Ok(());
+            }
+
+            self.parse_value(depth)?;
             self.skip_ws_comments()?;
             let _ = self.consume_byte(b',');
         }
@@ -170,9 +199,9 @@ where
         match byte {
             b'{' => self.parse_explicit_map(depth + 1),
             b'[' => self.parse_list(depth + 1),
-            b'"' | b'\'' => self.parse_string_or_variant(depth + 1),
+            b'"' | b'\'' => self.parse_string_or_variant(depth),
             b'+' | b'-' | b'.' | b'0'..=b'9' => self.parse_number(),
-            b'a'..=b'z' | b'A'..=b'Z' | b'_' => self.parse_identifier_or_variant(depth + 1),
+            b'a'..=b'z' | b'A'..=b'Z' | b'_' => self.parse_identifier_or_variant(depth),
             _ => Err(ParseError::Parse(Error::new(
                 self.current_span(),
                 ErrorKind::UnexpectedByte(byte),
@@ -208,13 +237,13 @@ where
             }
 
             self.emit(self.current_span(), Event::MapKey)?;
-            self.parse_value(depth + 1)?;
+            self.parse_value(depth)?;
 
             self.skip_ws_comments()?;
             self.expect_byte(b':')?;
             self.emit(Span::new(self.pos - 1, self.pos), Event::MapValue)?;
 
-            self.parse_value(depth + 1)?;
+            self.parse_value(depth)?;
             self.skip_ws_comments()?;
             let _ = self.consume_byte(b',');
         }
@@ -241,7 +270,7 @@ where
                 )));
             }
 
-            self.parse_value(depth + 1)?;
+            self.parse_value(depth)?;
             self.skip_ws_comments()?;
             let _ = self.consume_byte(b',');
         }
@@ -326,7 +355,7 @@ where
                 )));
             }
 
-            self.parse_value(depth + 1)?;
+            self.parse_value(depth)?;
             self.skip_ws_comments()?;
             let _ = self.consume_byte(b',');
         }
@@ -568,7 +597,8 @@ impl<'a> EventSink<'a> for NoopSink {
 mod tests {
     use std::string::String;
 
-    use crate::{EventWriter, parse};
+    use super::NoopSink;
+    use crate::{Error, ErrorKind, EventWriter, ParseError, parse, parse_with_limit};
 
     #[test]
     fn parse_empty_document_as_implicit_map() {
@@ -620,5 +650,66 @@ mod tests {
         parse("some_enum: \"kebab-case\"()", &mut writer).unwrap();
         writer.finish().unwrap();
         assert_eq!(out, "some_enum: \"kebab-case\"()");
+    }
+
+    #[test]
+    fn parse_top_level_implicit_list() {
+        let mut out = String::new();
+        let mut writer = EventWriter::<_, 16>::new(&mut out);
+        parse("1, 2 3", &mut writer).unwrap();
+        writer.finish().unwrap();
+        assert_eq!(out, "[1, 2, 3]");
+    }
+
+    #[test]
+    fn parse_root_implicit_map_with_explicit_map_key() {
+        let mut out = String::new();
+        let mut writer = EventWriter::<_, 32>::new(&mut out);
+        parse("{ nested: true }: answer", &mut writer).unwrap();
+        writer.finish().unwrap();
+        assert_eq!(out, "{nested: true}: answer");
+    }
+
+    #[test]
+    fn depth_limit_counts_root_containers_once() {
+        parse_with_limit("[1]", NoopSink, 1).unwrap();
+        parse_with_limit("{answer: 42}", NoopSink, 1).unwrap();
+        parse_with_limit("answer: 42", NoopSink, 1).unwrap();
+        parse_with_limit("EnumValue()", NoopSink, 1).unwrap();
+        parse_with_limit("1, 2, 3", NoopSink, 1).unwrap();
+        parse_with_limit("{nested: true}: answer", NoopSink, 2).unwrap();
+    }
+
+    #[test]
+    fn depth_limit_rejects_nested_containers() {
+        let err = parse_with_limit("[[]]", NoopSink, 1).unwrap_err();
+        assert!(matches!(
+            err,
+            ParseError::Parse(Error {
+                kind: ErrorKind::NestingLimitExceeded,
+                ..
+            })
+        ));
+
+        let err = parse_with_limit("answer: []", NoopSink, 1).unwrap_err();
+        assert!(matches!(
+            err,
+            ParseError::Parse(Error {
+                kind: ErrorKind::NestingLimitExceeded,
+                ..
+            })
+        ));
+    }
+
+    #[test]
+    fn empty_document_respects_depth_limit() {
+        let err = parse_with_limit("", NoopSink, 0).unwrap_err();
+        assert!(matches!(
+            err,
+            ParseError::Parse(Error {
+                kind: ErrorKind::NestingLimitExceeded,
+                ..
+            })
+        ));
     }
 }

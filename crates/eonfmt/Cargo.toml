@@ -1,7 +1,7 @@
 [package]
 authors.workspace = true
 categories.workspace = true
-description = "A binary for formatting .eon config files."
+description = "A minimal Eon formatter library with an optional CLI."
 edition.workspace = true
 homepage.workspace = true
 include.workspace = true
@@ -23,11 +23,17 @@ targets = ["x86_64-unknown-linux-gnu", "wasm32-unknown-unknown"]
 
 
 [features]
-default = []
+default = ["cli"]
+cli = ["dep:clap", "dep:ignore"]
 
 
 [dependencies]
 eon_formatter_core.workspace = true
 
-clap.workspace = true
-ignore.workspace = true
+clap = { workspace = true, optional = true }
+ignore = { workspace = true, optional = true }
+
+[[bin]]
+name = "eonfmt"
+path = "src/main.rs"
+required-features = ["cli"]

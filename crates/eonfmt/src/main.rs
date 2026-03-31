@@ -3,6 +3,8 @@
 //! Formats Eon files according to the Eon syntax.
 //! See <https://github.com/emilk/eon> for more.
 
+#![cfg(feature = "cli")]
+
 use std::{
     fs,
     io::{self, Read as _, Write as _},
@@ -11,6 +13,7 @@ use std::{
 };
 
 use clap::{Arg, Command};
+use eonfmt::{FormatOptions, reformat};
 use ignore::WalkBuilder;
 
 fn main() {
@@ -70,8 +73,8 @@ fn format_stdin(check_mode: bool) -> i32 {
         return 1;
     }
 
-    let options = eon_formatter_core::FormatOptions::default();
-    match eon_formatter_core::reformat(&input, &options) {
+    let options = FormatOptions::default();
+    match reformat(&input, &options) {
         Ok(formatted) => {
             if check_mode {
                 if input == formatted {
@@ -183,9 +186,8 @@ fn has_extension(entry_path: &Path, extension: &str) -> bool {
 
 fn process_file(path: &Path, check_mode: bool) -> Result<bool, String> {
     let content = fs::read_to_string(path).map_err(|err| err.to_string())?;
-    let options = eon_formatter_core::FormatOptions::default();
-    let formatted =
-        eon_formatter_core::reformat(&content, &options).map_err(|err| err.to_string())?;
+    let options = FormatOptions::default();
+    let formatted = reformat(&content, &options).map_err(|err| err.to_string())?;
 
     let needs_formatting = content != formatted;
 

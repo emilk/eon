@@ -11,10 +11,30 @@ See <https://github.com/emilk/eon> for info about Eon.
 cargo install --locked eonfmt
 ```
 
+## Library usage
+
+`eonfmt` can also be used as a small formatting library. To avoid pulling in
+the CLI dependencies (`clap` and `ignore`), disable default features:
+
+```toml
+[dependencies]
+eonfmt = { version = "*", default-features = false }
+```
+
+Then use the formatting API directly:
+
+```rust
+let formatted = eonfmt::format_str("key:true\n")?;
+assert_eq!(formatted, "key: true\n");
+```
+
 ## Usage
 You can format individual files, or a whole folder recursively.
 When given a folder, only `.eon` files will be formatted,
 and `.gitignore` will be respected.
+
+That recursive directory-walking behavior is why the CLI enables the `ignore`
+crate. Library and wasm users do not need that dependency.
 
 ```
 eonfmt file.rs

@@ -23,6 +23,7 @@ jobs:
           profile: minimal
           toolchain: 1.85.0
           override: true
+          target: thumbv7em-none-eabihf
       - uses: actions-rs/cargo@v1
         with:
           command: check
@@ -32,6 +33,11 @@ jobs:
         with:
           command: check
           args: -p eon_core --no-default-features
+
+      - uses: actions-rs/cargo@v1
+        with:
+          command: check
+          args: -p eon_core --no-default-features --target thumbv7em-none-eabihf
 
   check_wasm:
     name: Check wasm32
@@ -56,6 +62,12 @@ jobs:
         with:
           command: check
           args: -p eon_core --target wasm32-unknown-unknown
+
+      - name: Check eonfmt library-only wasm32
+        uses: actions-rs/cargo@v1
+        with:
+          command: check
+          args: -p eonfmt --no-default-features --target wasm32-unknown-unknown
 
       - name: Clippy wasm32
         env:

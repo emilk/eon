@@ -301,7 +301,7 @@ Tasks:
 - [ ] Add representative small, medium, and large fixtures
 - [ ] Measure allocation counts on hot paths
 - [x] Measure `wasm32-unknown-unknown` output size
-- [ ] Track release binary size for the minimal formatter path
+- [x] Track release binary size for the minimal formatter path
 - [-] Define acceptable regression thresholds
 
 Suggested initial budgets:
@@ -362,8 +362,10 @@ Deliverables:
 Tasks:
 
 - [x] Add `cargo check -p eon_core --no-default-features`
+- [x] Add bare-metal `no_std` target validation for `eon_core`
 - [x] Add `cargo check -p eon_core --target wasm32-unknown-unknown`
 - [x] Add minimal formatter wasm check once that crate exists
+- [x] Add `eonfmt --no-default-features` wasm validation
 - [x] Run core and adapter tests in CI
 - [x] Add a fuzz smoke lane
 - [x] Add benchmark reporting or stored comparison data

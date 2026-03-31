@@ -424,7 +424,7 @@ mod tests {
 
     #[test]
     fn parses_error_to_single_diagnostic() {
-        let diagnostics = diagnostics_for_text("key: value");
+        let diagnostics = diagnostics_for_text("key: $value");
         assert_eq!(diagnostics.len(), 1);
         assert!(!diagnostics[0].message.is_empty());
     }

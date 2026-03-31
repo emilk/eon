@@ -46,17 +46,19 @@ impl Value {
         Self::Variant(Variant { name, values })
     }
 
-    /// Pretty-print a [`Value`] to an Eon string.
+    /// Pretty-print a [`Value`] to an Eon string using the legacy formatting
+    /// path.
     ///
-    /// You can parse the result with [`Value::from_str`](std::str::FromStr::from_str).
+    /// The default parser is core-backed, so formatting and parsing are not
+    /// required to preserve exact surface syntax on every shape.
     pub fn format(&self, options: &FormatOptions) -> String {
         TokenTree::from(self.clone()).format(options)
     }
 
-    /// Parse an Eon document using the experimental `eon_core` event parser.
+    /// Parse an Eon document using the core-backed parser.
     ///
-    /// This keeps the existing parser as the default path while allowing early
-    /// experimentation with the no-dependency core.
+    /// This is currently the same implementation as the default
+    /// [`std::str::FromStr`] path.
     pub fn from_str_with_core(eon_source: &str) -> Result<Self> {
         crate::value_from_core::from_str_with_core(eon_source)
     }
@@ -134,7 +136,7 @@ impl std::str::FromStr for Value {
     type Err = crate::Error;
 
     fn from_str(eon_source: &str) -> Result<Self, Self::Err> {
-        TokenTree::parse_str(eon_source).and_then(|tt| Self::try_from_token_tree(eon_source, &tt))
+        crate::value_from_core::from_str_with_core(eon_source)
     }
 }
 

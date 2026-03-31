@@ -14,7 +14,7 @@ Eon is aimed to be a replacement for [Toml](https://toml.io/en/) and Yaml.
 
 This repository contains:
 
-- `eon`: the main Rust crate for `serde`, dynamic `Value`, and formatting APIs
+- `eon`: the main Rust crate for dynamic `Value`, legacy formatting APIs, and optional `serde`
 - `eon_syntax`: the rich syntax tree, comment-aware formatting, and diagnostics stack
 - `eon_core`: an experimental zero-dependency, `no_std` parser and event writer
 - `eon_formatter_core`: an experimental zero-dependency, `no_std` formatting core
@@ -107,7 +107,7 @@ The reusable formatting logic lives in `eon_formatter_core`; `eonfmt` is the thi
 
 ## Workspace crates
 
-- `eon`: the main crate. It exposes the stable `serde` and `Value` APIs, plus `eon::experimental::*` adapters for the new core-backed path.
+- `eon`: the main crate. It exposes core-backed `Value` parsing by default, optional `serde` typed APIs, legacy formatting APIs, and the compact core helpers under `eon::experimental::*`.
 - `eon_syntax`: the legacy rich parser/formatter with comment preservation and detailed diagnostics.
 - `eon_core`: the experimental borrowed event parser/writer. It is `no_std`, has no external dependencies, and is aimed at embedded and high-performance use cases.
 - `eon_formatter_core`: the experimental minimal formatter library. It is `no_std`, has no external dependencies, and is the reusable formatting path used by `eonfmt`.
@@ -146,8 +146,8 @@ The Eon language (and library) are designed for config files that humans edit by
 
 There is nothing in the Eon spec that prevents a fast implementation, but there are now two different implementation paths in this repository:
 
-- the rich legacy stack (`eon_syntax`, `eon::from_str`, `eon::to_string`, `eon::reformat`), which prioritizes comments, diagnostics, and compatibility
-- the experimental minimal path (`eon_core`, `eon_formatter_core`, and `eon::experimental::*`), which prioritizes `no_std`, zero external dependencies, borrowed parsing, and smaller reusable components
+- the rich legacy stack (`eon_syntax`, `eon::to_string`, `eon::reformat`), which prioritizes comments, diagnostics, and compatibility
+- the core-backed path (`eon_core`, `eon_formatter_core`, `Value::from_str`, and `eon::from_str` when the optional `serde` feature is enabled), which prioritizes `no_std`, zero external dependencies, borrowed parsing, and smaller reusable components
 
 Benchmark baselines for the current branch live in [benchmark-data/README.md](benchmark-data/README.md). They are useful for tracking local trends, not as cross-machine promises.
 
@@ -180,6 +180,13 @@ Future work, which I may or may not get to (contributions welcome!)
 An Eon document is always encoded as UTF-8.
 
 Literal invisible Unicode format/control characters such as zero-width and bidi controls are rejected in comments and quoted text for security reasons. If you need one intentionally, use an explicit escape such as `\u{202E}`.
+
+The `eon` crate now has no default features. Enable `serde` explicitly if you want typed `Serialize` / `Deserialize` support:
+
+```toml
+[dependencies]
+eon = { version = "*", features = ["serde"] }
+```
 
 A document can be one of:
 - A single value, e.g. `42` or `{foo: 1337, bar: 32}`
@@ -392,7 +399,7 @@ true: "confusing"      // ⚠️ Confusing, but OK. Uses a boolean as key (not a
 "true": "fine"         // OK! Uses the string "true" as key
 ```
 
-The experimental compact core path (`eon_core`, `eon_formatter_core`, and `eon::experimental::*`) adds one more rule: a bare identifier in value position is not a string, it is a symbol/unit-variant. So `string: Hello` is still not a string there either.
+The default core-backed value parser adds one more rule: a bare identifier in value position is not a string, it is a symbol/unit-variant. So `string: Hello` is still not a string there either.
 
 #### `null/true/false` as map keys
 The last two lines in the above example show that you need to be careful when using key names that matches one of the three keywords (`true/false/null`). This is is a (small) footgun in Eon, but hopefully these key names are rare (they are already forbidden identifiers in many programming languages).
@@ -451,9 +458,9 @@ So different values for the above choice would be written as:
 - `"Hsl"(0, 100, 200)`
 - `"Rgb"({r: 255, g: 0, b: 0})`
 
-#### Experimental compact core syntax
+#### Core-backed default parse syntax
 
-The experimental core-backed path (`eon_core`, `eon_formatter_core`, and `eon::experimental::*`) makes the string/variant distinction explicit:
+The core-backed parse path (`Value::from_str`, `eon::from_str` with the `serde` feature, and `eon::experimental::*`) makes the string/variant distinction explicit:
 
 ```yaml
 color: Black
@@ -469,4 +476,4 @@ Quoted variant heads still work on the core path, and are required when the vari
 
 The compact serializers also keep variant map keys explicit with `()`, e.g. `EnumKey(): Value`, so map-key syntax stays locally decidable.
 
-The stable and experimental paths intentionally overlap, but they are not identical. The legacy `eon::from_str` / `eon::to_string` path still uses the stable quoted-variant syntax, while the experimental core path accepts and emits the more compact bare-identifier form in value position.
+The legacy and core-backed paths intentionally overlap, but they are not identical. The default parse entry points are now core-backed, while the legacy formatter / serializer path still uses the stable quoted-variant syntax unless you opt into the compact core writers.

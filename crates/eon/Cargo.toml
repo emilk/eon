@@ -1,7 +1,7 @@
 [package]
 authors.workspace = true
 categories.workspace = true
-description = "Use the Eon config format with serde"
+description = "Use the Eon config format with Value and optional serde"
 edition.workspace = true
 homepage.workspace = true
 include = [
@@ -29,7 +29,7 @@ targets = ["x86_64-unknown-linux-gnu", "wasm32-unknown-unknown"]
 
 
 [features]
-default = ["serde"]
+default = []
 
 ## Enable serializing/deserializing Eon values with `serde`.
 serde = ["dep:serde"]
@@ -59,3 +59,8 @@ harness = false
 [[bench]]
 name = "bench_core_vs_serde"
 harness = false
+required-features = ["serde"]
+
+[[example]]
+name = "profile_paths"
+required-features = ["serde"]

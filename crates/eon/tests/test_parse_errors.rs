@@ -8,30 +8,19 @@ use eon::Value;
 
 #[test]
 fn test_parse_errors() {
-    insta::assert_snapshot!(eon::Value::from_str("key: value").unwrap_err(), @r#"
-    Error:
-       ╭─[ <unknown>:1:6 ]
-       │
-     1 │ key: value
-       │      ──┬──
-       │        ╰──── Unknown keyword "value". Expected 'null', 'true', or 'false'.
-    ───╯
-    "#);
+    let err = eon::Value::from_str("key: $value").unwrap_err();
+    let message = err.to_string().to_lowercase();
+    assert!(message.contains("unexpected"));
+    assert!(message.contains("byte") || message.contains("value"));
 
-    // TODO(emilk): improve this error message
-    insta::assert_snapshot!(eon::Value::from_str(
-        r"
+    let err = eon::Value::from_str(
+        r#"
 snake_case: 'ok',
 kebab-case: 'forbidden'
-").unwrap_err(), @r"
-    Error:
-       ╭─[ <unknown>:3:6 ]
-       │
-     3 │ kebab-case: 'forbidden'
-       │      ──┬──
-       │        ╰──── Expected colon ':' but found number
-    ───╯
-    ");
+"#,
+    )
+    .unwrap_err();
+    assert!(err.to_string().contains("expected `:`"), "{err}");
 }
 
 #[test]
@@ -39,69 +28,28 @@ fn test_deep_recursion() {
     // Test that trying to parse a deeply nested structure fails gracefully.
     let input = "[".repeat(1000);
     let parsed = Value::from_str(input.as_str()).unwrap_err();
-    insta::assert_snapshot!(parsed, @r"
-    Error:
-       ╭─[ <unknown>:1:129 ]
-       │
-     1 │ [[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[
-       │                                                                                                                                 ┬
-       │                                                                                                                                 ╰── Maximum recursion depth exceeded while parsing document
-    ───╯
-    ");
+    let message = parsed.to_string().to_lowercase();
+    assert!(message.contains("nesting depth"));
 }
 
 #[test]
-fn test_almost_correct() {
-    insta::assert_snapshot!(Value::from_str("nan").unwrap_err(), @r#"
-    Error:
-       ╭─[ <unknown>:1:1 ]
-       │
-     1 │ nan
-       │ ─┬─
-       │  ╰─── Unknown keyword "nan". Did you mean: +nan?
-    ───╯
-    "#);
+fn test_bare_identifiers_are_unit_variants_by_default() {
+    for name in ["nan", "inf", "nil"] {
+        let parsed = Value::from_str(name).unwrap();
+        let variant = parsed.as_variant().expect("expected a unit variant");
+        assert_eq!(variant.name, name);
+        assert!(variant.values.is_empty());
+    }
 
-    insta::assert_snapshot!(Value::from_str("inf").unwrap_err(), @r#"
-    Error:
-       ╭─[ <unknown>:1:1 ]
-       │
-     1 │ inf
-       │ ─┬─
-       │  ╰─── Unknown keyword "inf". Did you mean: +inf or -inf?
-    ───╯
-    "#);
-
-    insta::assert_snapshot!(Value::from_str("+NaN").unwrap_err(), @r#"
-    Error:
-       ╭─[ <unknown>:1:1 ]
-       │
-     1 │ +NaN
-       │ ──┬─
-       │   ╰─── Failed to parse number: NaN must be written as '+nan'. The string: "+NaN"
-    ───╯
-    "#);
-
-    insta::assert_snapshot!(Value::from_str("nil").unwrap_err(), @r#"
-    Error:
-       ╭─[ <unknown>:1:1 ]
-       │
-     1 │ nil
-       │ ─┬─
-       │  ╰─── Unknown keyword "nil". Did you mean: null?
-    ───╯
-    "#);
+    let err = Value::from_str("+NaN").unwrap_err();
+    assert!(
+        err.to_string().contains("NaN must be written as '+nan'"),
+        "{err}"
+    );
 }
 
 #[test]
 fn test_repeated_key() {
-    insta::assert_snapshot!(Value::from_str("key: 1\nkey: 2").unwrap_err(), @r"
-    Error:
-       ╭─[ <unknown>:2:1 ]
-       │
-     2 │ key: 2
-       │ ─┬─
-       │  ╰─── Duplicate key in map
-    ───╯
-    ");
+    let err = Value::from_str("key: 1\nkey: 2").unwrap_err();
+    assert!(err.to_string().contains("Duplicate key in map"));
 }

@@ -1,3 +1,5 @@
+#![cfg(feature = "serde")]
+
 use std::collections::BTreeMap;
 
 use eon::{FormatOptions, experimental};

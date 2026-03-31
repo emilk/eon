@@ -21,7 +21,7 @@
 //! Read more about Eon at <https://github.com/emilk/eon>.
 //!
 //! ## Usage with `serde`
-//! Make sure to enable the `serde` feature for `eon` in your `Cargo.toml` (it's currently enabled by default):
+//! Enable the optional `serde` feature for `eon` in your `Cargo.toml`:
 //! ```toml
 //! [dependencies]
 //! eon = { version = "*", features = ["serde"] }
@@ -35,6 +35,7 @@
 //! You can also treat an Eon document as a dynamically types [`Value`].
 //!
 //! Load an Eon document into a [`Value`] using [`Value::from_str`](std::str::FromStr::from_str).
+//! The default parse path is core-backed.
 //!
 //! Serialize a [`Value`] into an Eon string using [`Value::format`].
 //!
@@ -67,7 +68,7 @@ pub use {
     eon_syntax::{Error, FormatOptions, Result, reformat},
 };
 
-/// Experimental APIs that sit on top of the new `eon_core` parser.
+/// APIs that expose the core-backed parse and compact-write paths directly.
 pub mod experimental {
     #[cfg(feature = "serde")]
     pub use crate::serde::from_str_with_core;

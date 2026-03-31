@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+### Breaking
+
+- `eon` no longer enables `serde` by default. Typed `Serialize` / `Deserialize` support now requires `features = ["serde"]`.
+- The default `eon::Value` parse path is now core-backed, so bare identifiers in value position parse as unit variants instead of legacy “unknown keyword” errors.
+- The default typed `eon::from_str` path is now core-backed when the optional `serde` feature is enabled.
+
 ### Added
 
 - Added the experimental `eon_core` crate: a zero-dependency, `no_std`, borrowed event parser and compact event writer for Eon.

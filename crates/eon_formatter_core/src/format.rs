@@ -1,4 +1,4 @@
-use alloc::{borrow::ToOwned, string::String};
+use alloc::{borrow::ToOwned as _, string::String};
 
 use crate::{
     Document, KeyValue, List, Map, Result, Value, ValueTree, Variant, VariantName, parse_document,
@@ -323,9 +323,49 @@ impl<'o> Formatter<'o> {
 
     fn write_variant_name(&mut self, name: VariantName<'_>) {
         match name {
-            VariantName::Identifier(text) | VariantName::Quoted(text) => self.out.push_str(text),
+            VariantName::Identifier(text) => self.out.push_str(text),
+            VariantName::Quoted(text) => {
+                if let Some(identifier) = canonical_variant_identifier(text) {
+                    self.out.push_str(identifier);
+                } else {
+                    self.out.push_str(text);
+                }
+            }
         }
     }
+}
+
+fn canonical_variant_identifier(raw: &str) -> Option<&str> {
+    let inner = raw
+        .strip_prefix('"')
+        .and_then(|value| value.strip_suffix('"'))
+        .or_else(|| {
+            raw.strip_prefix('\'')
+                .and_then(|value| value.strip_suffix('\''))
+        })?;
+
+    if inner.contains(['\\', '\n', '\r']) || !is_valid_identifier(inner) {
+        return None;
+    }
+
+    Some(inner)
+}
+
+fn is_valid_identifier(value: &str) -> bool {
+    if matches!(value, "true" | "false" | "null") {
+        return false;
+    }
+
+    let mut chars = value.chars();
+    let Some(first) = chars.next() else {
+        return false;
+    };
+
+    if !first.is_ascii_alphabetic() && first != '_' {
+        return false;
+    }
+
+    chars.all(|chr| chr.is_ascii_alphanumeric() || chr == '_')
 }
 
 fn should_format_list_on_one_line(list: &List<'_>) -> bool {
@@ -395,7 +435,29 @@ mod tests {
         let formatted = reformat(input, &FormatOptions::default()).unwrap();
         assert_eq!(
             formatted,
-            "// outside\nkey: true // suffix\nvariants: [\n\tEnumValue\n\t\"Quoted\"({\n\t\tfoo: 1\n\t\tbar: 2\n\t})\n]\n"
+            "// outside\nkey: true // suffix\nvariants: [\n\tEnumValue\n\tQuoted({\n\t\tfoo: 1\n\t\tbar: 2\n\t})\n]\n"
+        );
+    }
+
+    #[test]
+    fn reformat_canonicalizes_safe_quoted_variant_names() {
+        let formatted = reformat(
+            r#"
+            variants: [
+                "Rgb"(1, 2, 3)
+                'Named'({ enabled: true })
+                "not-valid-name"(1)
+                "line\nfeed"(1)
+                "null"(1)
+            ]
+        "#,
+            &FormatOptions::default(),
+        )
+        .unwrap();
+
+        assert_eq!(
+            formatted,
+            "variants: [\n\tRgb(1, 2, 3)\n\tNamed({\n\t\tenabled: true\n\t})\n\t\"not-valid-name\"(1)\n\t\"line\\nfeed\"(1)\n\t\"null\"(1)\n]\n"
         );
     }
 
@@ -466,7 +528,7 @@ mod tests {
         let formatted = reformat(input, &FormatOptions::default()).unwrap();
         assert_eq!(
             formatted,
-            "// This comment is outside the outermost map.\n// This comment proceeds the first key-value pair.\nkey: true // Suffix comment\n\n// Comment about the second key-value pair.\n// Very weird comment\nkey: null\nempty_map: {}\nempty_list: []\nshort_list: [1, 2, 3]\nvariants: [\n\t\"zero_variant\"\n\t\"one_variant\"(true)\n\t\"three_variant\"(1, 2, 3)\n\t\"map_variant\"({\n\t\t\"key\": \"value\"\n\t\t\"another_key\": 42\n\t})\n\t\"list_variant\"([\n\t\t\"doc\"\n\t\t\"grumpy\"\n\t\t\"happy\"\n\t\t\"sleepy\"\n\t\t\"sneezy\"\n\t\t\"bashful\"\n\t\t\"dopey\"\n\t])\n]\n"
+            "// This comment is outside the outermost map.\n// This comment proceeds the first key-value pair.\nkey: true // Suffix comment\n\n// Comment about the second key-value pair.\n// Very weird comment\nkey: null\nempty_map: {}\nempty_list: []\nshort_list: [1, 2, 3]\nvariants: [\n\tzero_variant\n\tone_variant(true)\n\tthree_variant(1, 2, 3)\n\tmap_variant({\n\t\t\"key\": \"value\"\n\t\t\"another_key\": 42\n\t})\n\tlist_variant([\n\t\t\"doc\"\n\t\t\"grumpy\"\n\t\t\"happy\"\n\t\t\"sleepy\"\n\t\t\"sneezy\"\n\t\t\"bashful\"\n\t\t\"dopey\"\n\t])\n]\n"
         );
     }
 }

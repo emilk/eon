@@ -54,14 +54,14 @@ fn test_reformat_1() {
     empty_list: []
     short_list: [1, 2, 3]
     variants: [
-    	"zero_variant"
-    	"one_variant"(true)
-    	"three_variant"(1, 2, 3)
-    	"map_variant"({
+    	zero_variant
+    	one_variant(true)
+    	three_variant(1, 2, 3)
+    	map_variant({
     		"key": "value"
     		"another_key": 42
     	})
-    	"list_variant"([
+    	list_variant([
     		"doc"
     		"grumpy"
     		"happy"

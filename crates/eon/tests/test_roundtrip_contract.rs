@@ -70,16 +70,15 @@ fn test_legacy_value_roundtrip_excludes_keyword_map_keys() {
 }
 
 #[test]
-fn test_legacy_value_roundtrip_excludes_unit_variants() {
+fn test_value_format_roundtrips_unit_variants() {
     let original = Value::Variant(Variant {
         name: "EnumValue".to_owned(),
         values: vec![],
     });
 
     let serialized = original.format(&Default::default());
-    assert_eq!(serialized, "\"EnumValue\"");
+    assert_eq!(serialized, "EnumValue");
 
     let parsed: Value = serialized.parse().unwrap();
-    assert_eq!(parsed, Value::from("EnumValue"));
-    assert_ne!(parsed, original);
+    assert_eq!(parsed, original);
 }

@@ -144,7 +144,7 @@ impl<'stream, 'source> TriviaIter<'stream, 'source> {
     }
 }
 
-impl<'stream, 'source> Iterator for TriviaIter<'stream, 'source> {
+impl<'source> Iterator for TriviaIter<'_, 'source> {
     type Item = Trivia<'source>;
 
     fn next(&mut self) -> Option<Self::Item> {

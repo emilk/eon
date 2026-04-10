@@ -18,6 +18,9 @@ workspace = true
 
 [dependencies]
 eon.workspace = true
+eon_compose.workspace = true
+eon_schema.workspace = true
 eon_syntax.workspace = true
+serde_json.workspace = true
 tokio = { workspace = true, features = ["io-std", "macros", "rt-multi-thread", "sync"] }
 tower-lsp.workspace = true

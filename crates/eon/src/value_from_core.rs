@@ -81,8 +81,7 @@ impl CollectError {
     fn into_error(self, eon_source: &str) -> Error {
         let message = match self.kind {
             CollectErrorKind::InvalidState(msg) => msg.to_owned(),
-            CollectErrorKind::InvalidString(msg) => msg,
-            CollectErrorKind::InvalidNumber(msg) => msg,
+            CollectErrorKind::InvalidString(msg) | CollectErrorKind::InvalidNumber(msg) => msg,
             CollectErrorKind::DuplicateKey => "Duplicate key in map".to_owned(),
             CollectErrorKind::MissingRoot => {
                 "Expected the parser to produce a root value".to_owned()
@@ -121,11 +120,7 @@ impl ValueCollector {
         };
 
         match frame {
-            Frame::List { values } => {
-                values.push(value);
-                Ok(())
-            }
-            Frame::Variant { values, .. } => {
+            Frame::List { values } | Frame::Variant { values, .. } => {
                 values.push(value);
                 Ok(())
             }

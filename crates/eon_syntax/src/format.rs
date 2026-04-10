@@ -3,7 +3,7 @@
 use std::fmt::Write as _;
 
 use crate::{
-    escape_and_quote,
+    escape_and_quote, is_valid_identifier,
     token_tree::{TokenKeyValue, TokenList, TokenMap, TokenTree, TokenValue, TokenVariant},
     unescape_and_unquote,
 };
@@ -278,12 +278,12 @@ impl<'o> Formatter<'o> {
         } = variant;
 
         if values.is_empty() && closing_comments.is_empty() {
-            self.write_quoted_token(quoted_name); // Omit parentheses if no values
+            self.write_variant_name(quoted_name); // Omit parentheses if no values
             return;
         }
 
         if should_format_variant_on_one_line(variant) {
-            self.write_quoted_token(quoted_name);
+            self.write_variant_name(quoted_name);
             self.out.push('(');
             for (i, value) in values.iter().enumerate() {
                 self.value(&value.value);
@@ -301,12 +301,12 @@ impl<'o> Formatter<'o> {
             };
 
             if map.key_values.is_empty() && map.closing_comments.is_empty() {
-                self.write_quoted_token(quoted_name);
+                self.write_variant_name(quoted_name);
                 self.out.push_str("({ })");
             } else {
                 // A single map variant, like `"VariantName"({ key: value, … })`.
                 // Here we avoid double-indenting for nicer/more compact output.
-                self.write_quoted_token(quoted_name);
+                self.write_variant_name(quoted_name);
                 self.out.push_str("({");
                 self.indent += 1;
                 self.newline();
@@ -324,12 +324,12 @@ impl<'o> Formatter<'o> {
             };
 
             if list.values.is_empty() && list.closing_comments.is_empty() {
-                self.write_quoted_token(quoted_name);
+                self.write_variant_name(quoted_name);
                 self.out.push_str("([ ])");
             } else {
                 // A single list variant, like `"VariantName"({ key: value, … })`.
                 // Here we avoid double-indenting for nicer/more compact output.
-                self.write_quoted_token(quoted_name);
+                self.write_variant_name(quoted_name);
                 self.out.push_str("([");
                 self.indent += 1;
                 self.newline();
@@ -339,7 +339,7 @@ impl<'o> Formatter<'o> {
                 self.out.push_str("])");
             }
         } else {
-            self.write_quoted_token(quoted_name);
+            self.write_variant_name(quoted_name);
             self.out.push('(');
             self.indent += 1;
             self.newline();
@@ -391,6 +391,30 @@ impl<'o> Formatter<'o> {
             self.out.push_str(quoted);
         }
     }
+
+    fn write_variant_name(&mut self, raw: &str) {
+        if let Some(identifier) = canonical_variant_identifier(raw) {
+            self.out.push_str(identifier);
+        } else {
+            self.write_quoted_token(raw);
+        }
+    }
+}
+
+fn canonical_variant_identifier(raw: &str) -> Option<&str> {
+    let inner = raw
+        .strip_prefix('"')
+        .and_then(|value| value.strip_suffix('"'))
+        .or_else(|| {
+            raw.strip_prefix('\'')
+                .and_then(|value| value.strip_suffix('\''))
+        })?;
+
+    if inner.contains(['\\', '\n', '\r']) || !is_valid_identifier(inner) {
+        return None;
+    }
+
+    Some(inner)
 }
 
 fn contains_hidden_unicode(text: &str) -> bool {

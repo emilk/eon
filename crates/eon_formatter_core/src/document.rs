@@ -257,19 +257,26 @@ impl<'stream, 'source> Analyzer<'stream, 'source> {
     fn scan_balanced_value(&self, start_open: usize) -> Result<usize> {
         let mut expected_closers = Vec::new();
         expected_closers.push(
-            matching_close(self.stream.token(start_open).unwrap().kind).ok_or(
-                self.error_at_token(
-                    start_open,
-                    ErrorKind::MalformedStructure("expected an opening delimiter"),
-                ),
-            )?,
+            matching_close(
+                self.stream
+                    .token(start_open)
+                    .expect("scan_balanced_value starts on an existing token")
+                    .kind,
+            )
+            .ok_or(self.error_at_token(
+                start_open,
+                ErrorKind::MalformedStructure("expected an opening delimiter"),
+            ))?,
         );
 
         let mut next = start_open + 1;
         while let Some(token) = self.stream.token(next) {
             match token.kind {
                 TokenKind::OpenList | TokenKind::OpenBrace | TokenKind::OpenParen => {
-                    expected_closers.push(matching_close(token.kind).unwrap());
+                    expected_closers.push(
+                        matching_close(token.kind)
+                            .expect("opening delimiter must have a matching close delimiter"),
+                    );
                 }
                 TokenKind::CloseList | TokenKind::CloseBrace | TokenKind::CloseParen => {
                     let Some(expected) = expected_closers.pop() else {
@@ -302,7 +309,10 @@ impl<'stream, 'source> Analyzer<'stream, 'source> {
     }
 
     fn error_at_token(&self, token_index: usize, kind: ErrorKind) -> Error {
-        let token = self.stream.token(token_index).unwrap();
+        let token = self
+            .stream
+            .token(token_index)
+            .expect("error_at_token requires an existing token index");
         Error::new(token.span, kind)
     }
 

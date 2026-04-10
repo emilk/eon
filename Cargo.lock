@@ -291,6 +291,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "eon_compose"
+version = "0.2.0"
+dependencies = [
+ "eon",
+]
+
+[[package]]
 name = "eon_core"
 version = "0.2.0"
 
@@ -306,9 +313,29 @@ name = "eon_lsp"
 version = "0.2.0"
 dependencies = [
  "eon",
+ "eon_compose",
+ "eon_schema",
  "eon_syntax",
+ "serde_json",
  "tokio",
  "tower-lsp",
+]
+
+[[package]]
+name = "eon_schema"
+version = "0.2.0"
+dependencies = [
+ "eon",
+ "eon_schema_derive",
+]
+
+[[package]]
+name = "eon_schema_derive"
+version = "0.2.0"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn",
 ]
 
 [[package]]

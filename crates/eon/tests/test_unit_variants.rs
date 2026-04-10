@@ -15,5 +15,5 @@ fn test_explicit_unit_variant_parses_as_variant() {
 fn test_unit_variant_formats_like_current_canonical_syntax() {
     let parsed = Value::from_str("\"EnumValue\"()").unwrap();
 
-    assert_eq!(parsed.to_string(), "\"EnumValue\"");
+    assert_eq!(parsed.to_string(), "EnumValue");
 }

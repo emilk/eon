@@ -1,0 +1,21 @@
+[package]
+authors.workspace = true
+categories.workspace = true
+description = "Experimental import and reference resolver for Eon documents"
+edition.workspace = true
+homepage.workspace = true
+include.workspace = true
+keywords.workspace = true
+license.workspace = true
+name = "eon_compose"
+publish = false
+readme = "../../README.md"
+repository.workspace = true
+rust-version.workspace = true
+version.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+eon.workspace = true

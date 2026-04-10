@@ -383,7 +383,30 @@ fn parse_token_tree<'s>(
             consume_token(tokens, TokenKind::CloseBrace)?;
             TokenValue::Map(map)
         }
-        TokenKind::Identifier => TokenValue::Identifier(token.slice.into()),
+        TokenKind::Identifier => {
+            if tokens
+                .peek()
+                .is_some_and(|peeked| matches!(peeked.kind, Ok(TokenKind::OpenParen)))
+            {
+                tokens.next(); // Consume the open parenthesis
+
+                let TokenList {
+                    values,
+                    closing_comments,
+                } = parse_list_contents(tokens, recurse_depth + 1)?;
+
+                consume_token(tokens, TokenKind::CloseParen)?;
+
+                TokenValue::Variant(TokenVariant {
+                    name_span: Some(token.span),
+                    quoted_name: token.slice.into(),
+                    values,
+                    closing_comments,
+                })
+            } else {
+                TokenValue::Identifier(token.slice.into())
+            }
+        }
         TokenKind::Number => TokenValue::Number(token.slice.into()),
         TokenKind::DoubleQuotedString
         | TokenKind::SingleQuotedString
@@ -614,6 +637,20 @@ mod tests {
         } else {
             panic!("Expected a map value, got {value:?}");
         }
+    }
+
+    #[test]
+    fn test_parse_identifier_variant_payload() {
+        let value = parse_top_str("mode: Rgb(1, 2, 3)").unwrap();
+        let TokenValue::Map(map) = value.value else {
+            panic!("expected map");
+        };
+        let TokenValue::Variant(variant) = &map.key_values[0].value.value else {
+            panic!("expected variant");
+        };
+
+        assert_eq!(variant.quoted_name, "Rgb");
+        assert_eq!(variant.values.len(), 3);
     }
 
     #[test]

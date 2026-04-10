@@ -28,6 +28,14 @@ let formatted = eonfmt::format_str("key:true\n")?;
 assert_eq!(formatted, "key: true\n");
 ```
 
+The formatter also migrates safe legacy quoted variant heads to the canonical
+identifier form:
+
+```rust
+let formatted = eonfmt::format_str(r#"color: "Rgb"(255, 0, 0)"#)?;
+assert_eq!(formatted, "color: Rgb(255, 0, 0)\n");
+```
+
 ## Usage
 You can format individual files, or a whole folder recursively.
 When given a folder, only `.eon` files will be formatted,

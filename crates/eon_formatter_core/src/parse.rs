@@ -50,10 +50,7 @@ fn parse_document_with_limit(source: &str, max_depth: usize) -> Result<Document<
     let list_or_value = list_parser.parse_root_list_or_value();
 
     match (implicit_map, list_or_value) {
-        (Err(map_err), Ok(document)) => {
-            let _ = map_err;
-            Ok(document)
-        }
+        (Err(_map_err), Ok(document)) => Ok(document),
         (Err(map_err), Err(list_err)) => {
             if list_err.span.start >= map_err.span.start {
                 Err(list_err)
@@ -268,13 +265,13 @@ impl<'a, 'd> Parser<'a, 'd> {
             }
             TokenKind::Number => Value::Number(prepared.token.raw),
             TokenKind::CloseBrace | TokenKind::CloseList | TokenKind::CloseParen => {
-                return Err(self.parse_error(
+                return Err(Self::parse_error(
                     prepared.token.span,
                     ParseErrorKind::Unbalanced(prepared.token.kind),
                 ));
             }
             TokenKind::OpenParen | TokenKind::Colon | TokenKind::Comma => {
-                return Err(self.parse_error(
+                return Err(Self::parse_error(
                     prepared.token.span,
                     ParseErrorKind::UnexpectedToken(prepared.token.kind),
                 ));
@@ -302,13 +299,17 @@ impl<'a, 'd> Parser<'a, 'd> {
         };
 
         if prepared.token.kind != kind {
-            return Err(self.parse_error(prepared.token.span, ParseErrorKind::ExpectedToken(kind)));
+            return Err(Self::parse_error(
+                prepared.token.span,
+                ParseErrorKind::ExpectedToken(kind),
+            ));
         }
 
         if prepared.suffix_of_previous.is_some() || !prepared.prefix_comments.is_empty() {
-            return Err(
-                self.parse_error(prepared.token.span, ParseErrorKind::UnexpectedToken(kind))
-            );
+            return Err(Self::parse_error(
+                prepared.token.span,
+                ParseErrorKind::UnexpectedToken(kind),
+            ));
         }
 
         self.index += 1;
@@ -321,7 +322,10 @@ impl<'a, 'd> Parser<'a, 'd> {
         };
 
         if prepared.token.kind != kind {
-            return Err(self.parse_error(prepared.token.span, ParseErrorKind::ExpectedToken(kind)));
+            return Err(Self::parse_error(
+                prepared.token.span,
+                ParseErrorKind::ExpectedToken(kind),
+            ));
         }
 
         self.index += 1;
@@ -369,10 +373,10 @@ impl<'a, 'd> Parser<'a, 'd> {
     }
 
     fn parse_error_current(&self, kind: ParseErrorKind) -> Error {
-        self.parse_error(self.current_span(), kind)
+        Self::parse_error(self.current_span(), kind)
     }
 
-    fn parse_error(&self, span: Span, kind: ParseErrorKind) -> Error {
+    fn parse_error(span: Span, kind: ParseErrorKind) -> Error {
         Error::parse(span, kind)
     }
 
@@ -385,7 +389,7 @@ impl<'a, 'd> Parser<'a, 'd> {
 
 #[cfg(test)]
 mod tests {
-    use std::string::ToString;
+    use std::string::ToString as _;
 
     use super::{parse_document, parse_document_with_limit};
     use crate::{ParseErrorKind, Value, VariantName};

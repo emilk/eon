@@ -66,7 +66,7 @@ impl<'a> TokenStream<'a> {
     }
 }
 
-impl<'a> Default for TokenStream<'a> {
+impl Default for TokenStream<'_> {
     fn default() -> Self {
         Self::new("", Vec::new())
     }

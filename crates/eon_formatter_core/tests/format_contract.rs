@@ -73,7 +73,7 @@ fn quoted_variant_heads_remain_supported() {
         &FormatOptions::default(),
     )
     .unwrap();
-    assert_eq!(formatted, "mode: \"Quoted\"({\n\tanswer: 42\n})\n");
+    assert_eq!(formatted, "mode: Quoted({\n\tanswer: 42\n})\n");
 }
 
 #[test]

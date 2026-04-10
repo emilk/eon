@@ -1,0 +1,26 @@
+[package]
+authors.workspace = true
+categories.workspace = true
+description = "Experimental schema model for Eon configuration"
+edition.workspace = true
+homepage.workspace = true
+include.workspace = true
+keywords.workspace = true
+license.workspace = true
+name = "eon_schema"
+publish = false
+readme = "../../README.md"
+repository.workspace = true
+rust-version.workspace = true
+version.workspace = true
+
+[lints]
+workspace = true
+
+[features]
+default = ["derive"]
+derive = ["dep:eon_schema_derive"]
+
+[dependencies]
+eon.workspace = true
+eon_schema_derive = { workspace = true, optional = true }

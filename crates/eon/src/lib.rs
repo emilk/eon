@@ -21,7 +21,7 @@
 //! Read more about Eon at <https://github.com/emilk/eon>.
 //!
 //! ## Usage with `serde`
-//! Make sure to enable the `serde` feature for `eon` in your `Cargo.toml` (it's currently enabled by default):
+//! Enable the optional `serde` feature for `eon` in your `Cargo.toml`:
 //! ```toml
 //! [dependencies]
 //! eon = { version = "*", features = ["serde"] }
@@ -35,6 +35,7 @@
 //! You can also treat an Eon document as a dynamically types [`Value`].
 //!
 //! Load an Eon document into a [`Value`] using [`Value::from_str`](std::str::FromStr::from_str).
+//! The default parse path is core-backed.
 //!
 //! Serialize a [`Value`] into an Eon string using [`Value::format`].
 //!
@@ -52,9 +53,12 @@
 #![cfg_attr(feature = "document-features", doc = document_features::document_features!())]
 #![warn(missing_docs)] // let's keep eon well-documented
 
+mod core_string;
 mod token_tree_from_value;
 mod value;
+mod value_from_core;
 mod value_from_token_tree;
+mod value_to_core;
 
 #[cfg(feature = "serde")]
 mod serde;
@@ -63,6 +67,16 @@ pub use {
     crate::value::{Map, Number, Value, Variant},
     eon_syntax::{Error, FormatOptions, Result, reformat},
 };
+
+/// APIs that expose the core-backed parse and compact-write paths directly.
+pub mod experimental {
+    #[cfg(feature = "serde")]
+    pub use crate::serde::from_str_with_core;
+    #[cfg(feature = "serde")]
+    pub use crate::serde::to_string_with_core;
+    pub use crate::value_from_core::from_str_with_core as value_from_str_with_core;
+    pub use crate::value_to_core::to_string_with_core as value_to_string_with_core;
+}
 
 /// External crates used by `eon`.
 pub mod external {

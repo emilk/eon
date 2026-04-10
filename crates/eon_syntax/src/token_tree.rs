@@ -75,7 +75,7 @@ pub struct TokenVariant<'s> {
     /// Span of just the name
     pub name_span: Option<Span>,
 
-    /// The quoted name of the variant, like `"Rgb"`.
+    /// The raw name token of the variant, like `"Rgb"` or `Rgb`.
     pub quoted_name: Cow<'s, str>,
 
     /// The contents of the variant, like `255, 0, 0`.

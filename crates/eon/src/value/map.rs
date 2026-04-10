@@ -44,6 +44,11 @@ impl Map {
     /// This will replace the value if the key already exists.
     #[inline]
     pub fn insert(&mut self, key: Value, value: Value) -> Option<Value> {
+        if let Some((existing_key, existing_value)) = self.map.get_key_value(&key) {
+            self.hash_of_keys ^= hash_of(existing_key);
+            self.hash_of_values ^= hash_of(existing_value);
+        }
+
         let key_hash = hash_of(&key);
         let value_hash = hash_of(&value);
         self.hash_of_keys ^= key_hash; // Using XOR guarantees that it's order-independent
@@ -164,4 +169,16 @@ fn test_map() {
 
     assert_eq!(map_a, map_b);
     assert_eq!(hash_of(&map_a), hash_of(&map_b));
+}
+
+#[test]
+fn test_map_replace_updates_cached_hashes() {
+    let mut replaced = Map::new();
+    replaced.insert(Value::String(String::new()), Value::Null);
+    replaced.insert(Value::String(String::new()), Value::Null);
+
+    let single = Map::from_iter([(Value::String(String::new()), Value::Null)]);
+
+    assert_eq!(replaced, single);
+    assert_eq!(hash_of(&replaced), hash_of(&single));
 }

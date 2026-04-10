@@ -41,3 +41,21 @@ fn test_format() {
     let formatted = value.format(&Default::default());
     insta::assert_snapshot!(formatted);
 }
+
+#[test]
+fn test_format_preserves_multiline_variant_payloads() {
+    let value = Value::new_variant(
+        "_".to_owned(),
+        vec![
+            Value::List(vec![Value::from(0), Value::Null, Value::Null]),
+            Value::Null,
+            Value::Null,
+            Value::Null,
+        ],
+    );
+
+    let formatted = value.format(&Default::default());
+    let reparsed: Value = formatted.parse().unwrap();
+
+    assert_eq!(reparsed, value, "formatted variant: {formatted}");
+}

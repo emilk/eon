@@ -1,0 +1,47 @@
+[package]
+name = "eon-fuzz"
+version = "0.0.0"
+publish = false
+edition = "2024"
+
+[package.metadata]
+cargo-fuzz = true
+
+[dependencies]
+arbitrary = { version = "1", features = ["derive"] }
+eon = { path = "../crates/eon" }
+eon_core = { path = "../crates/eon_core" }
+eon_syntax = { path = "../crates/eon_syntax" }
+libfuzzer-sys = "0.4"
+serde = { version = "1", features = ["derive"] }
+
+[[bin]]
+name = "parser_paths"
+path = "fuzz_targets/parser_paths.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "hidden_unicode_rejection"
+path = "fuzz_targets/hidden_unicode_rejection.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "value_roundtrip"
+path = "fuzz_targets/value_roundtrip.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "typed_paths"
+path = "fuzz_targets/typed_paths.rs"
+test = false
+doc = false
+bench = false
+
+[workspace]
+members = ["."]

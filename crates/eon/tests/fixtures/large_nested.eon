@@ -1,0 +1,458 @@
+// Stress fixture for end-to-end parser/formatter coverage.
+fixture_name: "large_nested_fixture"
+version: 1
+summary: {
+	owner: "codex1"
+	mode: "stress"
+	active: true
+	tags: ["end-to-end", "nested", "large"]
+	escaped: "line-one\nline-two\tline-three"
+	literal_path: 'C:\Program Files\Eon\bin'
+}
+services: [
+	{
+		id: 0
+		name: "svc_00"
+		enabled: true
+		ports: [8000, 9000]
+		metadata: {
+			region: "r0"
+			weight: 1
+			channel: "Service"({
+				primary: "svc_00"
+				backup: "svc_01"
+			})
+		}
+	}
+	{
+		id: 1
+		name: "svc_01"
+		enabled: false
+		ports: [8001, 9001]
+		metadata: {
+			region: "r1"
+			weight: 2
+			channel: "Service"({
+				primary: "svc_01"
+				backup: "svc_02"
+			})
+		}
+	}
+	{
+		id: 2
+		name: "svc_02"
+		enabled: true
+		ports: [8002, 9002]
+		metadata: {
+			region: "r2"
+			weight: 3
+			channel: "Service"({
+				primary: "svc_02"
+				backup: "svc_03"
+			})
+		}
+	}
+	{
+		id: 3
+		name: "svc_03"
+		enabled: false
+		ports: [8003, 9003]
+		metadata: {
+			region: "r3"
+			weight: 4
+			channel: "Service"({
+				primary: "svc_03"
+				backup: "svc_04"
+			})
+		}
+	}
+	{
+		id: 4
+		name: "svc_04"
+		enabled: true
+		ports: [8004, 9004]
+		metadata: {
+			region: "r4"
+			weight: 5
+			channel: "Service"({
+				primary: "svc_04"
+				backup: "svc_05"
+			})
+		}
+	}
+	{
+		id: 5
+		name: "svc_05"
+		enabled: false
+		ports: [8005, 9005]
+		metadata: {
+			region: "r5"
+			weight: 6
+			channel: "Service"({
+				primary: "svc_05"
+				backup: "svc_00"
+			})
+		}
+	}
+]
+matrix: [
+	[0, 1, 2, 3]
+	[1, 2, 3, 4]
+	[2, 3, 4, 5]
+	[3, 4, 5, 6]
+	[4, 5, 6, 7]
+	[5, 6, 7, 8]
+	[6, 7, 8, 9]
+	[7, 8, 9, 10]
+]
+deep_tree: {
+	layer_00: {
+		index: 0
+		label: "layer_00"
+		window: [0, 1, 2]
+		metrics: {
+			cpu: 10
+			memory: 100
+			latency: 0.25
+		}
+		payload: "Layer"({
+			checksum: "CHK-00"
+			notes: "layer-00 stable"
+			flags: {
+				enabled: true
+				audited: true
+				sealed: true
+			}
+			next: {
+				layer_01: {
+					index: 1
+					label: "layer_01"
+					window: [1, 2, 3]
+					metrics: {
+						cpu: 11
+						memory: 101
+						latency: 1.25
+					}
+					payload: "Layer"({
+						checksum: "CHK-01"
+						notes: "layer-01 stable"
+						flags: {
+							enabled: false
+							audited: true
+							sealed: false
+						}
+						next: {
+							layer_02: {
+								index: 2
+								label: "layer_02"
+								window: [2, 3, 4]
+								metrics: {
+									cpu: 12
+									memory: 102
+									latency: 2.25
+								}
+								payload: "Layer"({
+									checksum: "CHK-02"
+									notes: "layer-02 stable"
+									flags: {
+										enabled: true
+										audited: true
+										sealed: false
+									}
+									next: {
+										layer_03: {
+											index: 3
+											label: "layer_03"
+											window: [3, 4, 5]
+											metrics: {
+												cpu: 13
+												memory: 103
+												latency: 3.25
+											}
+											payload: "Layer"({
+												checksum: "CHK-03"
+												notes: "layer-03 stable"
+												flags: {
+													enabled: false
+													audited: true
+													sealed: true
+												}
+												next: {
+													layer_04: {
+														index: 4
+														label: "layer_04"
+														window: [4, 5, 6]
+														metrics: {
+															cpu: 14
+															memory: 104
+															latency: 4.25
+														}
+														payload: "Layer"({
+															checksum: "CHK-04"
+															notes: "layer-04 stable"
+															flags: {
+																enabled: true
+																audited: true
+																sealed: false
+															}
+															next: {
+																layer_05: {
+																	index: 5
+																	label: "layer_05"
+																	window: [5, 6, 7]
+																	metrics: {
+																		cpu: 15
+																		memory: 105
+																		latency: 5.25
+																	}
+																	payload: "Layer"({
+																		checksum: "CHK-05"
+																		notes: "layer-05 stable"
+																		flags: {
+																			enabled: false
+																			audited: true
+																			sealed: false
+																		}
+																		next: {
+																			layer_06: {
+																				index: 6
+																				label: "layer_06"
+																				window: [6, 7, 8]
+																				metrics: {
+																					cpu: 16
+																					memory: 106
+																					latency: 6.25
+																				}
+																				payload: "Layer"({
+																					checksum: "CHK-06"
+																					notes: "layer-06 stable"
+																					flags: {
+																						enabled: true
+																						audited: true
+																						sealed: true
+																					}
+																					next: {
+																						layer_07: {
+																							index: 7
+																							label: "layer_07"
+																							window: [7, 8, 9]
+																							metrics: {
+																								cpu: 17
+																								memory: 107
+																								latency: 7.25
+																							}
+																							payload: "Layer"({
+																								checksum: "CHK-07"
+																								notes: "layer-07 stable"
+																								flags: {
+																									enabled: false
+																									audited: true
+																									sealed: false
+																								}
+																								next: {
+																									layer_08: {
+																										index: 8
+																										label: "layer_08"
+																										window: [8, 9, 10]
+																										metrics: {
+																											cpu: 18
+																											memory: 108
+																											latency: 8.25
+																										}
+																										payload: "Layer"({
+																											checksum: "CHK-08"
+																											notes: "layer-08 stable"
+																											flags: {
+																												enabled: true
+																												audited: true
+																												sealed: false
+																											}
+																											next: {
+																												layer_09: {
+																													index: 9
+																													label: "layer_09"
+																													window: [9, 10, 11]
+																													metrics: {
+																														cpu: 19
+																														memory: 109
+																														latency: 9.25
+																													}
+																													payload: "Layer"({
+																														checksum: "CHK-09"
+																														notes: "layer-09 stable"
+																														flags: {
+																															enabled: false
+																															audited: true
+																															sealed: true
+																														}
+																														next: {
+																															layer_10: {
+																																index: 10
+																																label: "layer_10"
+																																window: [10, 11, 12]
+																																metrics: {
+																																	cpu: 20
+																																	memory: 110
+																																	latency: 10.25
+																																}
+																																payload: "Layer"({
+																																	checksum: "CHK-10"
+																																	notes: "layer-10 stable"
+																																	flags: {
+																																		enabled: true
+																																		audited: true
+																																		sealed: false
+																																	}
+																																	next: {
+																																		layer_11: {
+																																			index: 11
+																																			label: "layer_11"
+																																			window: [11, 12, 13]
+																																			metrics: {
+																																				cpu: 21
+																																				memory: 111
+																																				latency: 11.25
+																																			}
+																																			payload: "Layer"({
+																																				checksum: "CHK-11"
+																																				notes: "layer-11 stable"
+																																				flags: {
+																																					enabled: false
+																																					audited: true
+																																					sealed: false
+																																				}
+																																				next: {
+																																					layer_12: {
+																																						index: 12
+																																						label: "layer_12"
+																																						window: [12, 13, 14]
+																																						metrics: {
+																																							cpu: 22
+																																							memory: 112
+																																							latency: 12.25
+																																						}
+																																						payload: "Layer"({
+																																							checksum: "CHK-12"
+																																							notes: "layer-12 stable"
+																																							flags: {
+																																								enabled: true
+																																								audited: true
+																																								sealed: true
+																																							}
+																																							next: {
+																																								layer_13: {
+																																									index: 13
+																																									label: "layer_13"
+																																									window: [13, 14, 15]
+																																									metrics: {
+																																										cpu: 23
+																																										memory: 113
+																																										latency: 13.25
+																																									}
+																																									payload: "Layer"({
+																																										checksum: "CHK-13"
+																																										notes: "layer-13 stable"
+																																										flags: {
+																																											enabled: false
+																																											audited: true
+																																											sealed: false
+																																										}
+																																										next: {
+																																											layer_14: {
+																																												index: 14
+																																												label: "layer_14"
+																																												window: [14, 15, 16]
+																																												metrics: {
+																																													cpu: 24
+																																													memory: 114
+																																													latency: 14.25
+																																												}
+																																												payload: "Layer"({
+																																													checksum: "CHK-14"
+																																													notes: "layer-14 stable"
+																																													flags: {
+																																														enabled: true
+																																														audited: true
+																																														sealed: false
+																																													}
+																																													next: {
+																																														layer_15: {
+																																															index: 15
+																																															label: "layer_15"
+																																															window: [15, 16, 17]
+																																															metrics: {
+																																																cpu: 25
+																																																memory: 115
+																																																latency: 15.25
+																																															}
+																																															payload: "Layer"({
+																																																checksum: "CHK-15"
+																																																notes: "layer-15 stable"
+																																																flags: {
+																																																	enabled: false
+																																																	audited: true
+																																																	sealed: true
+																																																}
+																																																terminal: {
+																																																	summary: "deep end"
+																																																	codes: [900, 901, 902]
+																																																}
+																																															})
+																																														}
+																																													}
+																																												})
+																																											}
+																																										}
+																																									})
+																																								}
+																																							}
+																																						})
+																																					}
+																																				}
+																																			})
+																																		}
+																																	}
+																																})
+																															}
+																														}
+																													})
+																												}
+																											}
+																										})
+																									}
+																								}
+																							})
+																						}
+																					}
+																				})
+																			}
+																		}
+																	})
+																}
+															}
+														})
+													}
+												}
+											})
+										}
+									}
+								})
+							}
+						}
+					})
+				}
+			}
+		})
+	}
+}
+report: {
+	counts: {
+		services: 6
+		layers: 16
+		matrix_rows: 8
+	}
+	footer: "Report"({
+		status: "ok"
+		message: "fixture completed"
+	})
+}

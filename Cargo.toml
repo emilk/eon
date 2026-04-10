@@ -1,9 +1,15 @@
 [workspace]
 resolver = "2"
 members = [
+    "crates/eon_compose",
+    "crates/eon_core",
+    "crates/eon_formatter_core",
+    "crates/eon_schema",
+    "crates/eon_schema_derive",
     "crates/eon_syntax",
     "crates/eon",
     "crates/eonfmt",
+    "crates/eon_lsp",
 ]
 
 [workspace.package]
@@ -20,6 +26,12 @@ version = "0.2.0"
 
 
 [workspace.dependencies]
+eon = { path = "crates/eon", version = "0.2.0" }
+eon_compose = { path = "crates/eon_compose", version = "0.2.0" }
+eon_core = { path = "crates/eon_core", version = "0.2.0" }
+eon_formatter_core = { path = "crates/eon_formatter_core", version = "0.2.0" }
+eon_schema = { path = "crates/eon_schema", version = "0.2.0" }
+eon_schema_derive = { path = "crates/eon_schema_derive", version = "0.2.0" }
 eon_syntax = { path = "crates/eon_syntax", version = "0.2.0" }
 
 ariadne = "0.5.1"
@@ -30,12 +42,25 @@ ignore = "0.4.23"
 indexmap = "2.10.0"
 insta = "1.0.9"
 logos = "0.15.0"
+proc-macro2 = "1.0.95"
+quote = "1.0.40"
 ryu = "1.0.20"
 serde = "1.0.219"
+serde_json = "1.0.143"
+syn = "2.0.104"
+tokio = "1.47.1"
+tower-lsp = "0.20.0"
 vec1 = "1.12.1"
 
 
 [patch.crates-io]
+
+[profile.release]
+codegen-units = 1
+lto = true
+opt-level = "z"
+panic = "abort"
+strip = "symbols"
 
 # ----------------------------------------------------------------------------------------
 # Lints:

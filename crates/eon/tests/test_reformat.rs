@@ -54,14 +54,14 @@ fn test_reformat_1() {
     empty_list: []
     short_list: [1, 2, 3]
     variants: [
-    	"zero_variant"
-    	"one_variant"(true)
-    	"three_variant"(1, 2, 3)
-    	"map_variant"({
+    	zero_variant
+    	one_variant(true)
+    	three_variant(1, 2, 3)
+    	map_variant({
     		"key": "value"
     		"another_key": 42
     	})
-    	"list_variant"([
+    	list_variant([
     		"doc"
     		"grumpy"
     		"happy"
@@ -106,4 +106,16 @@ fn test_reformat_2() {
     	// Closing comment
     }
     ");
+}
+
+#[test]
+fn test_reformat_rejects_hidden_unicode_in_strings_comments_and_variant_names() {
+    let input = format!(
+        "// prefix\u{202E}\nmode: \"Enum\u{202E}Value\"()\ntext: 'a\u{200B}b' // suffix\u{2066}"
+    );
+
+    let err = eon::reformat(&input, &Default::default()).unwrap_err();
+    let message = err.to_string().to_lowercase();
+    assert!(message.contains("invisible unicode"));
+    assert!(message.contains("hide malicious content"));
 }

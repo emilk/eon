@@ -1,3 +1,5 @@
+mod core_deserializer;
+mod core_serializer;
 mod deserialize_value;
 mod deserializer;
 mod serializer;
@@ -42,6 +44,24 @@ where
     value.serialize(&serializer)
 }
 
+/// Serialize a value (using serde) directly into the experimental compact
+/// `eon_core` syntax.
+pub fn to_string_with_core<T>(value: &T) -> Result<String, SerializationError>
+where
+    T: ?Sized + Serialize,
+{
+    self::core_serializer::to_string_with_core(value)
+}
+
+/// Parse an Eon value from a string into a type `T` using the core-backed
+/// parser.
+pub fn from_str_with_core<T>(eon_source: &str) -> Result<T, crate::Error>
+where
+    T: serde::de::DeserializeOwned,
+{
+    self::core_deserializer::from_str_with_core(eon_source)
+}
+
 /// Serialize a value (using serde) into an Eon string.
 ///
 /// ## Example
@@ -71,10 +91,12 @@ where
     to_value(value).map(|value| value.format(options))
 }
 
-/// Parse an Eon value from a string into a type `T` that implements [`serde::de::DeserializeOwned`].
+/// Parse an Eon value from a string into a type `T` that implements
+/// [`serde::de::DeserializeOwned`].
 ///
 /// ## Example
 /// ```rust
+/// # #[cfg(feature = "serde")] {
 /// #[derive(serde::Deserialize)]
 /// struct Config {
 ///     string: String,
@@ -90,13 +112,11 @@ where
 ///
 /// assert_eq!(config.string, "Hello Eon!");
 /// assert_eq!(config.age, 42);
+/// # }
 /// ```
 pub fn from_str<T>(eon_source: &str) -> Result<T, crate::Error>
 where
     T: serde::de::DeserializeOwned,
 {
-    eon_syntax::TokenTree::parse_str(eon_source).and_then(|token_tree| {
-        let deser = self::deserializer::TokenTreeDeserializer::new(&token_tree);
-        T::deserialize(deser).map_err(|err| err.into_error(eon_source))
-    })
+    from_str_with_core(eon_source)
 }

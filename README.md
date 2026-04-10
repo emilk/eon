@@ -12,12 +12,19 @@ Eon uses the `.eon` file ending.
 
 Eon is aimed to be a replacement for [Toml](https://toml.io/en/) and Yaml.
 
-This repository also contains a Rust crate `eon` for using Eon with `serde`, and a `eonfmt` binary for formatting Eon files.
+This repository contains:
+
+- `eon`: the main Rust crate for dynamic `Value`, legacy formatting APIs, and optional `serde`
+- `eon_syntax`: the rich syntax tree, comment-aware formatting, and diagnostics stack
+- `eon_core`: an experimental zero-dependency, `no_std` parser and event writer
+- `eon_formatter_core`: an experimental zero-dependency, `no_std` formatting core
+- `eonfmt`: the CLI formatter built on top of `eon_formatter_core`
 
 ## Sections:
 
 * [Overview](#overview)
 * [Design goals](#design-goals)
+* [Workspace crates](#workspace-crates)
 * [Why another config format?](#why-another-config-format)
 * [Performance](#performance)
 * [Roadmap](#roadmap)
@@ -87,12 +94,24 @@ multiline_literal_strings: {
 
 
 ## Formatter
-You can format any Eon file using the `eonfmt` binary
+You can format any Eon file using the `eonfmt` binary.
 
 ```sh
 cargo install --locked eonfmt
-eonfmt *.eon
+eonfmt config.eon
+eonfmt --check .
+cat config.eon | eonfmt -
 ```
+
+The reusable formatting logic lives in `eon_formatter_core`; `eonfmt` is the thin CLI wrapper that adds argument parsing and filesystem walking.
+
+## Workspace crates
+
+- `eon`: the main crate. It exposes core-backed `Value` parsing by default, optional `serde` typed APIs, legacy formatting APIs, and the compact core helpers under `eon::experimental::*`.
+- `eon_syntax`: the legacy rich parser/formatter with comment preservation and detailed diagnostics.
+- `eon_core`: the experimental borrowed event parser/writer. It is `no_std`, has no external dependencies, and is aimed at embedded and high-performance use cases.
+- `eon_formatter_core`: the experimental minimal formatter library. It is `no_std`, has no external dependencies, and is the reusable formatting path used by `eonfmt`.
+- `eonfmt`: the CLI formatter.
 
 
 ## Why another config format?
@@ -125,21 +144,29 @@ Yaml is clean, but over-complicated, inconsistent, and filled with foot guns. [I
 ## Performance
 The Eon language (and library) are designed for config files that humans edit by hand.
 
-There is nothing in the Eon spec that would not make it as fast (or as slow, depending on your perspective) as JSON, but the library has not been optimized for performance (no crazy SIMD stuff etc).
-It still parses a chunky 1MB file in under 10ms on an M3 MacBook.
+There is nothing in the Eon spec that prevents a fast implementation, but there are now two different implementation paths in this repository:
 
-I would not recommend using Eon as a data transfer format. For that, use a binary format (like MsgPack or protobuffs), or JSON (which has optimized parser/formatters for every programming language).
+- the rich legacy stack (`eon_syntax`, `eon::to_string`, `eon::reformat`), which prioritizes comments, diagnostics, and compatibility
+- the core-backed path (`eon_core`, `eon_formatter_core`, `Value::from_str`, and `eon::from_str` when the optional `serde` feature is enabled), which prioritizes `no_std`, zero external dependencies, borrowed parsing, and smaller reusable components
+
+Benchmark baselines for the current branch live in [benchmark-data/README.md](benchmark-data/README.md). They are useful for tracking local trends, not as cross-machine promises.
+
+I would still not recommend using Eon as a data transfer format. For that, use a binary format (like MsgPack or Protobuf), or JSON (which has heavily optimized parser/formatter implementations in every programming language).
 
 
 ## Roadmap
 Future work, which I may or may not get to (contributions welcome!)
 
-### Additional tools
+### In progress
+- Production-grade `eon_core` and `eon_formatter_core` with explicit semantics, fuzzing, benchmarks, and wasm / `no_std` validation
 - VSCode extension for
     - Syntax highlighting
-    - Formatting
+- Zed extension
+- tree-sitter / LSP integration
 
-### Extending the spec
+![Example](/example.png)
+
+### Possible spec extensions
 - Add special types?
     - ISO 8601
         - datetimes
@@ -151,6 +178,15 @@ Future work, which I may or may not get to (contributions welcome!)
 
 ## Eon specification
 An Eon document is always encoded as UTF-8.
+
+Literal invisible Unicode format/control characters such as zero-width and bidi controls are rejected in comments and quoted text for security reasons. If you need one intentionally, use an explicit escape such as `\u{202E}`.
+
+The `eon` crate now has no default features. Enable `serde` explicitly if you want typed `Serialize` / `Deserialize` support:
+
+```toml
+[dependencies]
+eon = { version = "*", features = ["serde"] }
+```
 
 A document can be one of:
 - A single value, e.g. `42` or `{foo: 1337, bar: 32}`
@@ -328,7 +364,7 @@ complex_map: {
 }
 ```
 
-You are allowed to omit the quotes around map keys (NOT values!) when the keys are _identifiers_.
+In stable Eon syntax you are allowed to omit the quotes around map keys when the keys are _identifiers_. Ordinary string values are still quoted.
 
 An identifier is defined in Eon as any string matching the regex `[a-zA-Z_][a-zA-Z0-9_]*`.
 This definition matches most programming languages (e.g. what is allowed as a variable name in C).
@@ -346,7 +382,7 @@ same: {
 }
 ```
 
-The convention is to use quotes for general strings (e.g. when representing a `HashMap<String, …>`
+The convention is to use quotes for general strings (e.g. when representing a `HashMap<String, …>`)
 and to use identifiers when representing struct fields.
 
 Examples of what is and isn't allowed:
@@ -362,6 +398,8 @@ key: null              // OK! 'null' is a special value (it's NOT a string)
 true: "confusing"      // ⚠️ Confusing, but OK. Uses a boolean as key (not a string!).
 "true": "fine"         // OK! Uses the string "true" as key
 ```
+
+The default core-backed value parser adds one more rule: a bare identifier in value position is not a string, it is a symbol/unit-variant. So `string: Hello` is still not a string there either.
 
 #### `null/true/false` as map keys
 The last two lines in the above example show that you need to be careful when using key names that matches one of the three keywords (`true/false/null`). This is is a (small) footgun in Eon, but hopefully these key names are rare (they are already forbidden identifiers in many programming languages).
@@ -384,13 +422,17 @@ enum Side {
 }
 ```
 
-The variants are encoded as strings in Eon, e.g.
+The repository currently supports two related enum encodings.
+
+#### Stable syntax
+
+In the stable `eon` / `eon_syntax` syntax, unit variants are encoded as strings, e.g.
 
 ```yaml
 side: "Middle"
 ```
 
-In other words, there is no difference between a string and an enum variant, as far as Eon is concerned.
+In other words, there is no surface-level difference between a string and a unit enum variant on that path. The surrounding typed context decides whether `"Middle"` should become a string or an enum value.
 
 Now consider this more complicated Rust `enum`:
 
@@ -407,7 +449,7 @@ Here a simple string will not suffice, as some of the enum variants contain data
 
 There are several competing techniques of encoding this in JSON (external tagging, internal tagging, adjaceny tagging, …) all with their own shortcomings.
 
-In Eon, enum variants are written as `"Variant"(data)`.
+In the stable syntax, enum variants with payload are written as `"Variant"(data)`.
 
 So different values for the above choice would be written as:
 
@@ -416,17 +458,22 @@ So different values for the above choice would be written as:
 - `"Hsl"(0, 100, 200)`
 - `"Rgb"({r: 255, g: 0, b: 0})`
 
-#### Digression: why this syntax for sum types?
+#### Core-backed default parse syntax
 
-Why the quotes, and not just `Black`, `Gray(128)`, etc?
-Consider this hypothetical Eon file:
+The core-backed parse path (`Value::from_str`, `eon::from_str` with the `serde` feature, and `eon::experimental::*`) makes the string/variant distinction explicit:
 
 ```yaml
 color: Black
-name: Emil
+accent: Gray(128)
+label: "Black"
 ```
 
-Is `name` really a multiple-choice enum? Maybe. Maybe not.
-But the Eon parser wouldn't know, so must accept it.
-And this will leave the door open to weirdness where _some_ strings need quotes and not others (and we'll end up similar to YAML).
-So instead we explicitly forbid the above, and always require quotes for strings (…except for map keys that are identifiers).
+- `Black` is a unit variant
+- `Gray(128)` is a payload variant
+- `"Black"` is a string
+
+Quoted variant heads still work on the core path, and are required when the variant name is not a valid identifier, e.g. `"kebab-case"()`.
+
+The compact serializers also keep variant map keys explicit with `()`, e.g. `EnumKey(): Value`, so map-key syntax stays locally decidable.
+
+The legacy and core-backed paths intentionally overlap, but they are not identical. The default parse entry points are now core-backed, while the legacy formatter / serializer path still uses the stable quoted-variant syntax unless you opt into the compact core writers.

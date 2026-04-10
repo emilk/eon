@@ -3,6 +3,7 @@
 use crate::{
     error::{Error, Result},
     span::Span,
+    strings::{find_disallowed_invisible_unicode, invisible_unicode_error},
     token_kind::TokenKind,
     token_tree::{TokenKeyValue, TokenList, TokenMap, TokenTree, TokenValue, TokenVariant},
 };
@@ -62,6 +63,31 @@ impl<'s> Iterator for PlacedTokenIter<'s> {
         };
         let slice = self.iter.slice();
         if let Ok(token) = result {
+            if matches!(
+                token,
+                TokenKind::Comment
+                    | TokenKind::DoubleQuotedString
+                    | TokenKind::SingleQuotedString
+                    | TokenKind::MultilineBasicString
+                    | TokenKind::MultilineLiteralString
+            ) {
+                if let Some((offset, chr)) = find_disallowed_invisible_unicode(slice) {
+                    let span = Span {
+                        start: span.start + offset,
+                        end: span.start + offset + chr.len_utf8(),
+                    };
+                    return Some(PlacedTokenResult {
+                        span,
+                        slice,
+                        kind: Err(Error::new_at(
+                            self.iter.source(),
+                            span,
+                            invisible_unicode_error(chr),
+                        )),
+                    });
+                }
+            }
+
             Some(PlacedTokenResult {
                 span,
                 slice,
@@ -164,7 +190,7 @@ fn parse_top_str(eon_source: &str) -> Result<TokenTree<'_>> {
     // Usually an Eon file contains a bunch of `key: value` pairs, without any
     // surrounding braces, so we optimize for that case:
     let mut tokens_a = PeekableIter::new(eon_source);
-    match parse_map_contents(&mut tokens_a, 0) {
+    match parse_map_contents(&mut tokens_a, 1) {
         Ok(map) => {
             check_for_trailing_tokens(&mut tokens_a)?;
             let value = TokenTree {
@@ -254,7 +280,7 @@ fn parse_list_contents<'s>(
             });
         }
 
-        let mut value = parse_token_tree(tokens, recurse_depth + 1)?;
+        let mut value = parse_token_tree(tokens, recurse_depth)?;
 
         {
             let mut prefix_comments = prefix_comments;
@@ -297,7 +323,7 @@ fn parse_map_contents<'s>(
             });
         }
 
-        let mut key = parse_token_tree(tokens, recurse_depth + 1)?;
+        let mut key = parse_token_tree(tokens, recurse_depth)?;
         debug_assert!(
             key.prefix_comments.is_empty(),
             "We should have already consumed these"
@@ -306,7 +332,7 @@ fn parse_map_contents<'s>(
 
         consume_token(tokens, TokenKind::Colon)?;
 
-        let mut value = parse_token_tree(tokens, recurse_depth + 1)?;
+        let mut value = parse_token_tree(tokens, recurse_depth)?;
 
         if tokens
             .peek()
@@ -326,7 +352,7 @@ fn parse_token_tree<'s>(
     tokens: &mut PeekableIter<'s>,
     recurse_depth: usize,
 ) -> Result<TokenTree<'s>> {
-    if recurse_depth >= MAX_RECURSION_DEPTH {
+    if recurse_depth > MAX_RECURSION_DEPTH {
         return Err(tokens.error_at(
             tokens.span_of_previous(),
             "Maximum recursion depth exceeded while parsing document",
@@ -357,7 +383,30 @@ fn parse_token_tree<'s>(
             consume_token(tokens, TokenKind::CloseBrace)?;
             TokenValue::Map(map)
         }
-        TokenKind::Identifier => TokenValue::Identifier(token.slice.into()),
+        TokenKind::Identifier => {
+            if tokens
+                .peek()
+                .is_some_and(|peeked| matches!(peeked.kind, Ok(TokenKind::OpenParen)))
+            {
+                tokens.next(); // Consume the open parenthesis
+
+                let TokenList {
+                    values,
+                    closing_comments,
+                } = parse_list_contents(tokens, recurse_depth + 1)?;
+
+                consume_token(tokens, TokenKind::CloseParen)?;
+
+                TokenValue::Variant(TokenVariant {
+                    name_span: Some(token.span),
+                    quoted_name: token.slice.into(),
+                    values,
+                    closing_comments,
+                })
+            } else {
+                TokenValue::Identifier(token.slice.into())
+            }
+        }
         TokenKind::Number => TokenValue::Number(token.slice.into()),
         TokenKind::DoubleQuotedString
         | TokenKind::SingleQuotedString
@@ -484,6 +533,30 @@ fn parse_comments<'s>(tokens: &mut PeekableIter<'s>) -> Vec<&'s str> {
 mod tests {
     use super::*;
 
+    fn nested_map_source(depth: usize) -> String {
+        let mut source = String::from("root: ");
+        for _ in 0..depth {
+            source.push_str("{ inner: ");
+        }
+        source.push('0');
+        for _ in 0..depth {
+            source.push('}');
+        }
+        source
+    }
+
+    fn nested_list_source(depth: usize) -> String {
+        let mut source = String::new();
+        for _ in 0..depth {
+            source.push('[');
+        }
+        source.push('0');
+        for _ in 0..depth {
+            source.push(']');
+        }
+        source
+    }
+
     #[test]
     fn test_parse_map() {
         let input = r#"
@@ -564,5 +637,37 @@ mod tests {
         } else {
             panic!("Expected a map value, got {value:?}");
         }
+    }
+
+    #[test]
+    fn test_parse_identifier_variant_payload() {
+        let value = parse_top_str("mode: Rgb(1, 2, 3)").unwrap();
+        let TokenValue::Map(map) = value.value else {
+            panic!("expected map");
+        };
+        let TokenValue::Variant(variant) = &map.key_values[0].value.value else {
+            panic!("expected variant");
+        };
+
+        assert_eq!(variant.quoted_name, "Rgb");
+        assert_eq!(variant.values.len(), 3);
+    }
+
+    #[test]
+    fn test_depth_limit_counts_root_maps_once() {
+        let allowed = nested_map_source(MAX_RECURSION_DEPTH - 1);
+        parse_top_str(&allowed).unwrap();
+
+        let rejected = nested_map_source(MAX_RECURSION_DEPTH);
+        assert!(parse_top_str(&rejected).is_err());
+    }
+
+    #[test]
+    fn test_depth_limit_counts_root_lists_once() {
+        let allowed = nested_list_source(MAX_RECURSION_DEPTH);
+        parse_top_str(&allowed).unwrap();
+
+        let rejected = nested_list_source(MAX_RECURSION_DEPTH + 1);
+        assert!(parse_top_str(&rejected).is_err());
     }
 }

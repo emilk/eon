@@ -162,14 +162,8 @@ impl Number {
         match self.0 {
             NumberImpl::I128(n) => i64::try_from(n).ok(),
             NumberImpl::U128(n) => i64::try_from(n).ok(),
-            NumberImpl::F32(n) => {
-                let i = n.round() as i64;
-                if n == i as f32 { Some(i) } else { None }
-            }
-            NumberImpl::F64(n) => {
-                let i = n.round() as i64;
-                if n == i as f64 { Some(i) } else { None }
-            }
+            NumberImpl::F32(n) => exact_float_to_i64(f64::from(n)),
+            NumberImpl::F64(n) => exact_float_to_i64(n),
         }
     }
 
@@ -178,14 +172,8 @@ impl Number {
         match self.0 {
             NumberImpl::I128(n) => u64::try_from(n).ok(),
             NumberImpl::U128(n) => u64::try_from(n).ok(),
-            NumberImpl::F32(n) => {
-                let i = n.round() as u64;
-                if n == i as f32 { Some(i) } else { None }
-            }
-            NumberImpl::F64(n) => {
-                let i = n.round() as u64;
-                if n == i as f64 { Some(i) } else { None }
-            }
+            NumberImpl::F32(n) => exact_float_to_u64(f64::from(n)),
+            NumberImpl::F64(n) => exact_float_to_u64(n),
         }
     }
 
@@ -194,14 +182,8 @@ impl Number {
         match self.0 {
             NumberImpl::I128(n) => Some(n),
             NumberImpl::U128(n) => i128::try_from(n).ok(),
-            NumberImpl::F32(n) => {
-                let i = n.round() as i128;
-                if n == i as f32 { Some(i) } else { None }
-            }
-            NumberImpl::F64(n) => {
-                let i = n.round() as i128;
-                if n == i as f64 { Some(i) } else { None }
-            }
+            NumberImpl::F32(n) => exact_float_to_i128(f64::from(n)),
+            NumberImpl::F64(n) => exact_float_to_i128(n),
         }
     }
 
@@ -210,14 +192,8 @@ impl Number {
         match self.0 {
             NumberImpl::I128(n) => u128::try_from(n).ok(),
             NumberImpl::U128(n) => Some(n),
-            NumberImpl::F32(n) => {
-                let i = n.round() as u128;
-                if n == i as f32 { Some(i) } else { None }
-            }
-            NumberImpl::F64(n) => {
-                let i = n.round() as u128;
-                if n == i as f64 { Some(i) } else { None }
-            }
+            NumberImpl::F32(n) => exact_float_to_u128(f64::from(n)),
+            NumberImpl::F64(n) => exact_float_to_u128(n),
         }
     }
 
@@ -242,6 +218,38 @@ impl Number {
             NumberImpl::F64(n) => Some(n),
         }
     }
+}
+
+fn exact_float_to_i64(n: f64) -> Option<i64> {
+    if !n.is_finite() || n.fract() != 0.0 || n < i64::MIN as f64 || n > i64::MAX as f64 {
+        return None;
+    }
+    let i = n as i64;
+    ((i as f64) == n).then_some(i)
+}
+
+fn exact_float_to_u64(n: f64) -> Option<u64> {
+    if !n.is_finite() || n.fract() != 0.0 || n < 0.0 || n > u64::MAX as f64 {
+        return None;
+    }
+    let i = n as u64;
+    ((i as f64) == n).then_some(i)
+}
+
+fn exact_float_to_i128(n: f64) -> Option<i128> {
+    if !n.is_finite() || n.fract() != 0.0 || n < i128::MIN as f64 || n > i128::MAX as f64 {
+        return None;
+    }
+    let i = n as i128;
+    ((i as f64) == n).then_some(i)
+}
+
+fn exact_float_to_u128(n: f64) -> Option<u128> {
+    if !n.is_finite() || n.fract() != 0.0 || n < 0.0 || n > u128::MAX as f64 {
+        return None;
+    }
+    let i = n as u128;
+    ((i as f64) == n).then_some(i)
 }
 
 impl From<i8> for Number {
